@@ -8,5 +8,8 @@
   ],
   "scripts": {
     "mobile": "npm run start --workspace=apps/mobile"
+  },
+  "devDependencies": {
+    "supabase": "^2.115.0"
   }
 }
