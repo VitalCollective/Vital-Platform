@@ -3,11 +3,15 @@ import path from "node:path";
 
 import type { ValidationReport } from "./types.js";
 
-export async function writeValidationReport(report: ValidationReport, outputPath: string): Promise<string> {
+export async function writeJsonReport(report: unknown, outputPath: string): Promise<string> {
   const resolvedPath = path.resolve(outputPath);
   await mkdir(path.dirname(resolvedPath), { recursive: true });
   await writeFile(resolvedPath, `${JSON.stringify(report, null, 2)}\n`, "utf8");
   return resolvedPath;
+}
+
+export async function writeValidationReport(report: ValidationReport, outputPath: string): Promise<string> {
+  return writeJsonReport(report, outputPath);
 }
 
 export function printValidationSummary(report: ValidationReport, reportPath: string): void {

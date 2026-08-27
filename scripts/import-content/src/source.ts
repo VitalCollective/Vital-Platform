@@ -21,6 +21,7 @@ import type {
   ActivityRow,
   ActivityStatus,
   ImportPlan,
+  ResourceAsset,
   ResourceRow,
   ResourceStatus,
   ResourceUseType,
@@ -616,6 +617,7 @@ export async function buildImportPlan(sourceInput: string, mode: "dry-run" | "ex
   const resourceById = new Map(rawResources.map((resource) => [typeof resource.id === "string" ? resource.id.trim() : "", resource]));
   const manifestById = new Map(manifestRows.map((row) => [row.resourceId, row]));
   const validatedPageCounts = new Map<string, number>();
+  const assets: ResourceAsset[] = [];
   let missingJsonPageCounts = 0;
 
   for (const manifest of manifestRows) {
@@ -709,6 +711,14 @@ export async function buildImportPlan(sourceInput: string, mode: "dry-run" | "ex
       const pdf = await PDFDocument.load(bytes, { updateMetadata: false });
       const actualPages = pdf.getPageCount();
       validatedPageCounts.set(manifest.resourceId, actualPages);
+      assets.push({
+        resourceId: manifest.resourceId,
+        canonicalFilename: manifest.filename,
+        sourcePath: path.join(pdfDirectory, actualFilename),
+        size: bytes.byteLength,
+        sha256,
+        pageCount: actualPages,
+      });
       report.counts.totalPdfPages += actualPages;
       if (actualPages !== manifest.pages) {
         pushError({
@@ -807,5 +817,5 @@ export async function buildImportPlan(sourceInput: string, mode: "dry-run" | "ex
 
   report.status = report.errors.length === 0 ? "PASS" : "FAIL";
   report.readyToImport = report.status === "PASS";
-  return { activities, resources, relationships, report };
+  return { activities, resources, relationships, assets, report };
 }

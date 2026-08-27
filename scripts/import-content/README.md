@@ -39,16 +39,32 @@ Execute mode validates first, refuses to continue on any error, and upserts in f
 
 The current implementation deliberately does not prune database rows absent from a later source bundle. Deletion/synchronization semantics should be approved separately and ideally performed through a transactional database function.
 
-## Storage plan (not executed)
+## Storage upload pipeline
 
-Use a private `vital-resources` bucket and immutable canonical object keys:
+Storage is a separate, explicit operation. Its offline dry-run is:
+
+```powershell
+npm run content:import -- --upload-storage --dry-run --source "C:\Users\clayj\Documents\VitalCollective\Finished assets\Vital_Collective_Deployment_R001-R088"
+```
+
+The dry-run reuses the complete source/manifest/PDF validation, computes all canonical paths, simulates bucket/object/database actions, and writes the gitignored `scripts/import-content/reports/storage-upload-report.json`. It never creates a Supabase client and therefore cannot inspect or mutate a bucket, object, or database row.
+
+After separate approval, real storage execution uses `--upload-storage --execute`. Normal database import never uploads PDFs. Execute mode:
+
+1. Queries all expected database resource IDs and canonical `pdf_filename` values; any missing/mismatched row aborts before bucket changes.
+2. Detects the `vital-resources` bucket, creates it privately if absent, or preserves its settings while changing it to private if necessary.
+3. Inspects each canonical object. An exact byte-size and stored SHA-256 match is skipped; a missing object is uploaded without overwrite, and any non-identical existing object is replaced with `upsert: true` at the same path.
+4. Stores SHA-256, resource ID, and canonical filename as object metadata, then writes only the canonical path to `public.resources.storage_path`.
+5. Reads the private bucket, all 88 expected objects, hashes/sizes, and all 88 database paths back. Any missing object, metadata mismatch, filename mismatch, or path mismatch exits non-zero and is recorded in the report.
+
+The private bucket uses resource-scoped immutable canonical object keys:
 
 ```text
 resources/R001/Vital_Animal_Tracks_and_Signs_Guide.pdf
 resources/R002/<canonical filename>.pdf
 ```
 
-The resource ID provides a stable namespace while retaining the human-readable canonical filename. A future upload stage should re-run the same byte-size, SHA-256, and page-count validation, reject filename drift, upload without public access, and then set `public.resources.storage_path` only after the object succeeds. Clients should receive time-limited signed URLs through an authorized application path rather than a public bucket.
+The resource ID provides a stable namespace while retaining the human-readable canonical filename. The pipeline never generates a public URL, adds read policies, or exposes the service-role key. It does not delete stale or unrelated objects; filename-change cleanup and exact deletion semantics require separate approval.
 
 ## Local checks
 

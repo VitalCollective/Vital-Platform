@@ -3,17 +3,20 @@
 import path from "node:path";
 
 import { executeDatabaseImport } from "./database.js";
-import { printValidationSummary, writeValidationReport } from "./report.js";
+import { printValidationSummary, writeJsonReport, writeValidationReport } from "./report.js";
 import { buildImportPlan } from "./source.js";
+import { printStorageSummary, runStoragePipeline } from "./storage.js";
 
 interface CliOptions {
   source: string;
   reportPath: string;
   mode: "dry-run" | "execute";
+  operation: "database" | "storage";
 }
 
 const importerDirectory = path.resolve(process.cwd(), "scripts", "import-content");
 const defaultReportPath = path.join(importerDirectory, "reports", "import-validation-report.json");
+const defaultStorageReportPath = path.join(importerDirectory, "reports", "storage-upload-report.json");
 
 function usage(): string {
   return [
@@ -22,10 +25,12 @@ function usage(): string {
     "Usage:",
     "  npm run content:import -- --dry-run --source <source-folder> [--report <report.json>]",
     "  npm run content:import -- --execute --source <source-folder> [--report <report.json>]",
+    "  npm run content:import -- --upload-storage --dry-run --source <source-folder> [--report <report.json>]",
+    "  npm run content:import -- --upload-storage --execute --source <source-folder> [--report <report.json>]",
     "",
     "Safety:",
-    "  Dry-run is the default and never creates a Supabase client or changes storage.",
-    "  Execute mode imports database rows only; it does not upload PDFs.",
+    "  Dry-run is the default and never creates a Supabase client or changes storage/database state.",
+    "  Database import and storage upload are separate; PDFs upload only with --upload-storage --execute.",
   ].join("\n");
 }
 
@@ -38,8 +43,9 @@ function parseArguments(args: string[]): CliOptions | null {
       : argument,
   );
   let source: string | undefined;
-  let reportPath = defaultReportPath;
+  let reportPath: string | undefined;
   let mode: "dry-run" | "execute" = "dry-run";
+  let operation: "database" | "storage" = "database";
   let sawDryRun = false;
   let sawExecute = false;
 
@@ -54,6 +60,10 @@ function parseArguments(args: string[]): CliOptions | null {
     if (argument === "--execute") {
       sawExecute = true;
       mode = "execute";
+      continue;
+    }
+    if (argument === "--upload-storage") {
+      operation = "storage";
       continue;
     }
     if (argument === "--source" || argument === "--report") {
@@ -77,7 +87,12 @@ function parseArguments(args: string[]): CliOptions | null {
 
   if (sawDryRun && sawExecute) throw new Error("Choose either --dry-run or --execute, not both.");
   if (!source?.trim()) throw new Error("--source is required.");
-  return { source, reportPath, mode };
+  return {
+    source,
+    reportPath: reportPath ?? (operation === "storage" ? defaultStorageReportPath : defaultReportPath),
+    mode,
+    operation,
+  };
 }
 
 async function main(): Promise<void> {
@@ -95,8 +110,23 @@ async function main(): Promise<void> {
     return;
   }
 
-  console.log(options.mode === "dry-run" ? "Mode: DRY RUN (no database or storage changes)" : "Mode: EXECUTE (database rows only; no storage uploads)");
+  if (options.operation === "storage") {
+    console.log(
+      options.mode === "dry-run"
+        ? "Mode: STORAGE DRY RUN (no bucket, object, or database changes)"
+        : "Mode: STORAGE EXECUTE (explicit bucket/object/storage_path operation)",
+    );
+  } else {
+    console.log(options.mode === "dry-run" ? "Mode: DRY RUN (no database or storage changes)" : "Mode: EXECUTE (database rows only; no storage uploads)");
+  }
   const plan = await buildImportPlan(options.source, options.mode);
+  if (options.operation === "storage") {
+    const storageReport = await runStoragePipeline(plan, options.mode);
+    const reportPath = await writeJsonReport(storageReport, options.reportPath);
+    printStorageSummary(storageReport, reportPath);
+    if (storageReport.status === "FAIL") process.exitCode = 1;
+    return;
+  }
   const reportPath = await writeValidationReport(plan.report, options.reportPath);
   printValidationSummary(plan.report, reportPath);
 

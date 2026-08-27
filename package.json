@@ -11,7 +11,8 @@
     "content:import:build": "tsc -p scripts/import-content/tsconfig.build.json",
     "content:import": "npm run content:import:build --silent && node scripts/import-content/.build/src/cli.js",
     "content:import:dry-run": "npm run content:import -- --dry-run",
-    "content:import:test": "npm run content:import:build --silent && node --test scripts/import-content/.build/tests/import-content.test.js",
+    "content:storage:dry-run": "npm run content:import -- --upload-storage --dry-run",
+    "content:import:test": "npm run content:import:build --silent && node --test scripts/import-content/.build/tests/import-content.test.js scripts/import-content/.build/tests/storage.test.js",
     "content:import:typecheck": "tsc -p scripts/import-content/tsconfig.json --noEmit"
   },
   "devDependencies": {

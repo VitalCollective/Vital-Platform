@@ -73,6 +73,15 @@ export interface ActivityResourceRow {
   sort_order: number;
 }
 
+export interface ResourceAsset {
+  resourceId: string;
+  canonicalFilename: string;
+  sourcePath: string;
+  size: number;
+  sha256: string;
+  pageCount: number;
+}
+
 export interface ValidationDetail {
   code: string;
   message: string;
@@ -145,6 +154,7 @@ export interface ImportPlan {
   activities: ActivityRow[];
   resources: ResourceRow[];
   relationships: ActivityResourceRow[];
+  assets: ResourceAsset[];
   report: ValidationReport;
 }
 
