@@ -25,4 +25,8 @@ Thumbs.db
 
 # Test / build output
 coverage/
+
+# Generated content-import validation reports
+scripts/import-content/reports/*.json
+scripts/import-content/.build/
 build/

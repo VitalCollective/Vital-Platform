@@ -7,9 +7,21 @@
     "packages/*"
   ],
   "scripts": {
-    "mobile": "npm run start --workspace=apps/mobile"
+    "mobile": "npm run start --workspace=apps/mobile",
+    "content:import:build": "tsc -p scripts/import-content/tsconfig.build.json",
+    "content:import": "npm run content:import:build --silent && node scripts/import-content/.build/src/cli.js",
+    "content:import:dry-run": "npm run content:import -- --dry-run",
+    "content:import:test": "npm run content:import:build --silent && node --test scripts/import-content/.build/tests/import-content.test.js",
+    "content:import:typecheck": "tsc -p scripts/import-content/tsconfig.json --noEmit"
   },
   "devDependencies": {
-    "supabase": "^2.115.0"
+    "@types/node": "^26.3.0",
+    "supabase": "^2.115.0",
+    "typescript": "^7.0.2"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
+    "csv-parse": "^7.0.2",
+    "pdf-lib": "^1.17.1"
   }
 }
