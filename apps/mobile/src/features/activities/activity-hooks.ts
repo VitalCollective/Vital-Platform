@@ -1,0 +1,133 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
+
+import {
+  fetchActivityWithResources,
+  fetchDiscoverActivities,
+  fetchIdeasForToday,
+} from '@/services/activities';
+import type {
+  ActivitySummary,
+  ActivityWithResources,
+  DiscoverFilters,
+  DiscoverResult,
+} from '@/types/content';
+
+type AsyncState<T> = {
+  data: T | null;
+  error: string | null;
+  isLoading: boolean;
+};
+
+export function useIdeasForToday() {
+  const [state, setState] = useState<AsyncState<ActivitySummary[]>>({
+    data: null,
+    error: null,
+    isLoading: true,
+  });
+
+  const load = useCallback(async () => {
+    setState((current) => ({ ...current, isLoading: true, error: null }));
+    try {
+      const data = await fetchIdeasForToday();
+      setState({ data, error: null, isLoading: false });
+    } catch (error) {
+      setState({
+        data: null,
+        error: error instanceof Error ? error.message : 'Unable to load ideas.',
+        isLoading: false,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
+
+  return { ...state, retry: load };
+}
+
+export function useDiscoverActivities(filters: DiscoverFilters) {
+  const requestId = useRef(0);
+  const [state, setState] = useState<AsyncState<DiscoverResult>>({
+    data: null,
+    error: null,
+    isLoading: true,
+  });
+
+  const { environment, page, pageSize, search, section } = filters;
+  const load = useCallback(async () => {
+    const currentRequestId = ++requestId.current;
+    setState((current) => ({ ...current, isLoading: true, error: null }));
+    try {
+      const data = await fetchDiscoverActivities({
+        environment,
+        page,
+        pageSize,
+        search,
+        section,
+      });
+      if (currentRequestId === requestId.current) {
+        setState({ data, error: null, isLoading: false });
+      }
+    } catch (error) {
+      if (currentRequestId === requestId.current) {
+        setState({
+          data: null,
+          error: error instanceof Error ? error.message : 'Unable to load activities.',
+          isLoading: false,
+        });
+      }
+    }
+  }, [environment, page, pageSize, search, section]);
+
+  useEffect(() => {
+    void load();
+    return () => {
+      requestId.current += 1;
+    };
+  }, [load]);
+
+  return { ...state, retry: load };
+}
+
+export function useActivity(activityId: string | undefined) {
+  const requestId = useRef(0);
+  const [state, setState] = useState<AsyncState<ActivityWithResources>>({
+    data: null,
+    error: null,
+    isLoading: true,
+  });
+
+  const load = useCallback(async () => {
+    const currentRequestId = ++requestId.current;
+    if (!activityId) {
+      setState({ data: null, error: 'No activity was selected.', isLoading: false });
+      return;
+    }
+
+    setState((current) => ({ ...current, isLoading: true, error: null }));
+    try {
+      const data = await fetchActivityWithResources(activityId);
+      if (currentRequestId === requestId.current) {
+        setState({ data, error: null, isLoading: false });
+      }
+    } catch (error) {
+      if (currentRequestId === requestId.current) {
+        setState({
+          data: null,
+          error: error instanceof Error ? error.message : 'Unable to load activity.',
+          isLoading: false,
+        });
+      }
+    }
+  }, [activityId]);
+
+  useEffect(() => {
+    void load();
+    return () => {
+      requestId.current += 1;
+    };
+  }, [load]);
+
+  return { ...state, retry: load };
+}

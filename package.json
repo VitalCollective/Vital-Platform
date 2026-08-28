@@ -16,7 +16,14 @@
     "content:import:typecheck": "tsc -p scripts/import-content/tsconfig.json --noEmit"
   },
   "devDependencies": {
+    "@types/react": "~19.2.2",
     "@types/node": "^26.3.0",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "react-native-gesture-handler": "2.32.0",
+    "react-native-reanimated": "4.5.1",
+    "react-native-screens": "4.26.2",
+    "react-native-worklets": "0.10.1",
     "supabase": "^2.115.0",
     "typescript": "^7.0.2"
   },

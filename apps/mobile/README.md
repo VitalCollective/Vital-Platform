@@ -1,56 +1,79 @@
-# Welcome to your Expo app 👋
+# Vital Collective mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+The Expo SDK 57 app is the first authenticated Vital vertical slice: sign in or create an account, browse published activities, inspect a full activity, and open its private printable PDF. Community, Saved, and the wider account area are intentionally limited shells.
 
-## Get started
+## Configure the public Supabase client
 
-1. Install dependencies
+Copy `.env.example` to `.env` inside `apps/mobile` and set:
 
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```text
+EXPO_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Obtain the project URL and **publishable** key from the Supabase Dashboard project API settings. `EXPO_PUBLIC_` values are compiled into the client bundle, so they must never contain a service-role or secret key. Real `.env` files are ignored by Git; `.env.example` contains placeholders only.
 
-### Other setup steps
+The app shows a clear configuration screen when either variable is missing. Supabase Auth uses persisted sessions, token refresh, and auth state listeners. Native sessions use Expo SQLite-backed `localStorage`; web sessions use the browser's persistent `localStorage`. Email/password account creation passes the display name to the existing new-user database trigger. When email confirmation is enabled, the form tells the member to confirm before signing in.
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Run the app
 
-## Learn more
+From the repository root:
 
-To learn more about developing your project with Expo, look at the following resources:
+```bash
+npm run mobile
+```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+Or from `apps/mobile`:
 
-## Join the community
+```bash
+npx expo start
+```
 
-Join our community of developers creating universal apps.
+Use `w`, `a`, or `i` in the Expo terminal to open web, Android, or iOS as available.
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+### Web and persisted sessions
+
+Supabase sessions use platform-specific storage: `expo-sqlite/localStorage/install` on Android and iOS, and the browser's built-in `localStorage` on web. Platform-specific modules keep Expo Router's server-rendering graph from importing a browser-only SQLite worker while preserving durable sessions on every platform.
+
+Expo SQLite's SDK 57 web implementation uses WebAssembly and `SharedArrayBuffer`. The app's Metro configuration treats `.wasm` files as assets, while the Expo Router plugin configures these response headers:
+
+- `Cross-Origin-Embedder-Policy: credentialless`
+- `Cross-Origin-Opener-Policy: same-origin`
+
+Expo's development server and `expo-server` use the Router header configuration. A different static host must be configured to return the same headers for app documents; copying the exported files alone cannot set HTTP response headers. In a correctly served web build, `globalThis.crossOriginIsolated` is `true`.
+
+After changing Metro configuration, restart with a cleared bundler cache:
+
+```bash
+cd apps/mobile
+npx expo start --web --clear
+```
+
+## Data, search, and private PDFs
+
+Every query uses the public Supabase client plus the authenticated member's JWT, so the existing database RLS policies remain authoritative. Discover performs bounded, server-side queries against published activities, with full-text search on `search_document`. If that operation is unavailable in a target PostgREST version, it visibly falls back to a server-side title/summary/instructions search.
+
+Activity details embed the `activity_resources` to `resources` relationship. A printable resource uses its database `storage_path` to request a signed URL for the private `vital-resources` bucket. The URL lasts ten minutes, is never persisted, and is opened through Expo Linking. The bucket is not public.
+
+Migration `20260827090000_authenticated_vital_resource_pdf_read.sql` adds authenticated, read-only access to objects in that bucket. It grants no insert, update, delete, or anonymous access. This is explicitly a development/V1 policy and **must become `subscription_entitlements`-aware before production release**.
+
+## Validation
+
+```bash
+npm run typecheck --workspace=apps/mobile
+npx expo-doctor apps/mobile
+cd apps/mobile && npx expo export --platform web --output-dir dist --clear
+git diff --check
+```
+
+The export command can be run with placeholder public environment values; no live database connection is made during compilation.
+The starter did not include an ESLint configuration, so lint is not an active validation step yet; `expo lint` will offer to scaffold one when the monorepo's TypeScript toolchain is ready to support it.
+
+## Known limitations
+
+- “What shall we do?” currently opens Discover; the recommendation engine is not built.
+- Ideas for today use a stable three-item published query rather than editorial scheduling.
+- Community, Saved, family onboarding, settings, and subscriptions are not implemented in this slice.
+- Authenticated members can read any Vital resource PDF under the V1 Storage policy; entitlement gating is the next required production security step.
+- Search fallback is less linguistically capable than PostgreSQL full-text search.
+- Final photography, illustration, icon, and branding assets are still to come; visual choices are centralized in `src/theme/tokens.ts`.
