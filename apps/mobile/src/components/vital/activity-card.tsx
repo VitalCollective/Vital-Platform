@@ -4,14 +4,31 @@ import { Ionicons } from '@expo/vector-icons';
 import { colors, radii, sectionColors, shadows, spacing, typography } from '@/theme/tokens';
 import type { ActivitySummary } from '@/types/content';
 
+function customerAgeValue(value: string | null): string | null {
+  const normalized = value?.trim().replace(/^ages?\s+/i, '') ?? '';
+  if (!normalized) return null;
+  if (normalized.toLowerCase() === 'all') return 'All ages';
+  return normalized;
+}
+
+function isNumericAge(value: string): boolean {
+  return /^\d+$/.test(value);
+}
+
 function ageLabel(activity: ActivitySummary): string | null {
-  if (activity.age_min && activity.age_max) {
-    return activity.age_min === activity.age_max
-      ? `Age ${activity.age_min}`
-      : `Ages ${activity.age_min}–${activity.age_max}`;
+  const minimum = customerAgeValue(activity.age_min);
+  const maximum = customerAgeValue(activity.age_max);
+
+  if (minimum && maximum) {
+    if (minimum.toLowerCase() === maximum.toLowerCase()) {
+      return isNumericAge(minimum) ? `Age ${minimum}` : minimum;
+    }
+    return isNumericAge(minimum) && isNumericAge(maximum)
+      ? `Ages ${minimum}–${maximum}`
+      : `${minimum}–${maximum}`;
   }
-  if (activity.age_min) return `Age ${activity.age_min}+`;
-  if (activity.age_max) return `Up to age ${activity.age_max}`;
+  if (minimum) return isNumericAge(minimum) ? `Age ${minimum}+` : minimum;
+  if (maximum) return isNumericAge(maximum) ? `Up to age ${maximum}` : maximum;
   return null;
 }
 
@@ -25,11 +42,16 @@ function environmentLabel(activity: ActivitySummary): string | null {
 export function ActivityCard({
   activity,
   onPress,
+  compact = false,
+  variant = 'standard',
 }: {
   activity: ActivitySummary;
   onPress: () => void;
+  compact?: boolean;
+  variant?: 'standard' | 'catalogue';
 }) {
   const accent = sectionColors[activity.section];
+  const isCatalogue = variant === 'catalogue';
   const details = [ageLabel(activity), activity.duration, environmentLabel(activity)].filter(
     (value): value is string => Boolean(value),
   );
@@ -42,6 +64,8 @@ export function ActivityCard({
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
+        compact && styles.cardCompact,
+        isCatalogue && styles.cardCatalogue,
         shadows.card,
         { opacity: pressed ? 0.82 : 1 },
       ]}>
@@ -49,16 +73,34 @@ export function ActivityCard({
         <View style={[styles.accent, { backgroundColor: accent.accent }]} />
         <Text style={[styles.section, { color: accent.accent }]}>{activity.section}</Text>
       </View>
-      <Text style={styles.title}>{activity.title}</Text>
+      <Text
+        style={[
+          styles.title,
+          compact && styles.titleCompact,
+          isCatalogue && styles.titleCatalogue,
+        ]}>
+        {activity.title}
+      </Text>
       {activity.summary ? (
-        <Text style={styles.summary} numberOfLines={3}>
+        <Text
+          style={[
+            styles.summary,
+            compact && styles.summaryCompact,
+            isCatalogue && styles.summaryCatalogue,
+          ]}
+          numberOfLines={compact || isCatalogue ? 2 : 3}>
           {activity.summary}
         </Text>
       ) : null}
       {details.length > 0 ? (
         <Text style={styles.details}>{details.join('  ·  ')}</Text>
       ) : null}
-      <View style={styles.openRow}>
+      <View
+        style={[
+          styles.openRow,
+          compact && styles.openRowCompact,
+          isCatalogue && styles.openRowCatalogue,
+        ]}>
         <Text style={styles.openText}>See the activity</Text>
         <Ionicons name="arrow-forward" size={18} color={colors.brand} />
       </View>
@@ -74,6 +116,17 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     backgroundColor: colors.surfaceRaised,
+  },
+  cardCompact: {
+    gap: spacing.xs,
+    padding: spacing.md,
+    borderRadius: radii.md,
+  },
+  cardCatalogue: {
+    gap: spacing.xxs,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.md,
   },
   topLine: {
     flexDirection: 'row',
@@ -99,11 +152,27 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     lineHeight: 28,
   },
+  titleCompact: {
+    fontSize: typography.subheading,
+    lineHeight: 25,
+  },
+  titleCatalogue: {
+    fontSize: typography.subheading,
+    lineHeight: 24,
+  },
   summary: {
     color: colors.inkMuted,
     fontFamily: typography.bodyFamily,
     fontSize: typography.body,
     lineHeight: 23,
+  },
+  summaryCompact: {
+    fontSize: typography.small,
+    lineHeight: 20,
+  },
+  summaryCatalogue: {
+    fontSize: typography.small,
+    lineHeight: 19,
   },
   details: {
     color: colors.inkSubtle,
@@ -117,6 +186,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  openRowCompact: {
+    minHeight: 28,
+    marginTop: 0,
+  },
+  openRowCatalogue: {
+    minHeight: 28,
+    marginTop: 0,
   },
   openText: {
     color: colors.brand,

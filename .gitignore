@@ -26,6 +26,12 @@ Thumbs.db
 # Test / build output
 coverage/
 
+# Local validation exports and handoff archive copies
+/apps/mobile/dist-final-validation/
+/apps/mobile.zip
+/scripts/import-content.zip
+/scripts/import-content (2).zip
+
 # Generated content-import validation reports
 scripts/import-content/reports/*.json
 scripts/import-content/.build/

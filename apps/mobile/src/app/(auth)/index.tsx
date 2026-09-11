@@ -1,19 +1,16 @@
 import { useState } from 'react';
-import {
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { Link } from 'expo-router';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 
+import {
+  AuthField,
+  AuthNotice,
+  AuthShell,
+} from '@/components/vital/auth-shell';
 import { Button } from '@/components/vital/button';
 import { useAuth } from '@/features/auth/auth-context';
-import { colors, layout, radii, spacing, typography } from '@/theme/tokens';
+import { customerSafeErrorMessage } from '@/lib/errors';
+import { colors, layout, spacing, typography } from '@/theme/tokens';
 
 type AuthMode = 'sign-in' | 'sign-up';
 
@@ -51,13 +48,18 @@ export default function AuthScreen() {
             'Check your inbox to confirm your email, then come back and sign in.',
           );
           setMode('sign-in');
+          setPassword('');
         }
       }
     } catch (submitError) {
       setError(
-        submitError instanceof Error
-          ? submitError.message
-          : 'Authentication was not completed.',
+        customerSafeErrorMessage(
+          isSignIn ? 'Sign in failed' : 'Sign up failed',
+          submitError,
+          isSignIn
+            ? "We couldn't sign you in. Check your details and try again."
+            : "We couldn't create your account just now. Please try again.",
+        ),
       );
     } finally {
       setIsSubmitting(false);
@@ -68,195 +70,128 @@ export default function AuthScreen() {
     setMode((current) => (current === 'sign-in' ? 'sign-up' : 'sign-in'));
     setError(null);
     setMessage(null);
+    setPassword('');
   };
 
+  const isSignIn = mode === 'sign-in';
+
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <KeyboardAvoidingView
-        style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView
-          contentContainerStyle={styles.scrollContent}
-          keyboardShouldPersistTaps="handled">
-          <View style={styles.content}>
-            <Text style={styles.eyebrow}>Vital Collective</Text>
-            <Text style={styles.title}>Find something worth doing.</Text>
-            <Text style={styles.intro}>
-              Choose a useful idea, gather what you need, and get away from the screen.
-            </Text>
+    <AuthShell
+      title={isSignIn ? 'Welcome back' : 'Join the collective'}
+      intro={
+        isSignIn
+          ? 'Sign in to return to thoughtful ideas for family life.'
+          : 'Create an account to save ideas and make Vital your own.'
+      }>
+      {mode === 'sign-up' ? (
+        <AuthField
+          label="Display name"
+          autoCapitalize="words"
+          autoComplete="name"
+          textContentType="name"
+          value={displayName}
+          onChangeText={setDisplayName}
+          placeholder="How should we greet you?"
+        />
+      ) : null}
 
-            <View style={styles.form}>
-              <Text style={styles.formTitle} accessibilityRole="header">
-                {mode === 'sign-in' ? 'Welcome back' : 'Create your account'}
-              </Text>
+      <AuthField
+        label="Email address"
+        autoCapitalize="none"
+        autoComplete="email"
+        autoCorrect={false}
+        keyboardType="email-address"
+        textContentType="emailAddress"
+        value={email}
+        onChangeText={setEmail}
+        placeholder="you@example.com"
+        returnKeyType="next"
+      />
 
-              {mode === 'sign-up' ? (
-                <View style={styles.field}>
-                  <Text style={styles.label}>Display name</Text>
-                  <TextInput
-                    accessibilityLabel="Display name"
-                    autoCapitalize="words"
-                    autoComplete="name"
-                    value={displayName}
-                    onChangeText={setDisplayName}
-                    placeholder="How should we greet you?"
-                    placeholderTextColor={colors.inkSubtle}
-                    style={styles.input}
-                  />
-                </View>
-              ) : null}
+      <View style={styles.passwordGroup}>
+        <AuthField
+          label="Password"
+          autoCapitalize="none"
+          autoComplete={isSignIn ? 'current-password' : 'new-password'}
+          autoCorrect={false}
+          textContentType={isSignIn ? 'password' : 'newPassword'}
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+          placeholder={isSignIn ? 'Enter your password' : 'At least 8 characters'}
+          returnKeyType="done"
+          onSubmitEditing={() => void submit()}
+        />
 
-              <View style={styles.field}>
-                <Text style={styles.label}>Email address</Text>
-                <TextInput
-                  accessibilityLabel="Email address"
-                  autoCapitalize="none"
-                  autoComplete="email"
-                  keyboardType="email-address"
-                  value={email}
-                  onChangeText={setEmail}
-                  placeholder="you@example.com"
-                  placeholderTextColor={colors.inkSubtle}
-                  style={styles.input}
-                />
-              </View>
+        {isSignIn ? (
+          <Link href="/forgot-password" asChild>
+            <Pressable
+              accessibilityRole="link"
+              hitSlop={8}
+              style={({ pressed }) => [
+                styles.forgotLink,
+                pressed && styles.linkPressed,
+              ]}>
+              <Text style={styles.linkText}>Forgot password?</Text>
+            </Pressable>
+          </Link>
+        ) : null}
+      </View>
 
-              <View style={styles.field}>
-                <Text style={styles.label}>Password</Text>
-                <TextInput
-                  accessibilityLabel="Password"
-                  autoCapitalize="none"
-                  autoComplete={mode === 'sign-up' ? 'new-password' : 'current-password'}
-                  secureTextEntry
-                  value={password}
-                  onChangeText={setPassword}
-                  placeholder="At least 8 characters"
-                  placeholderTextColor={colors.inkSubtle}
-                  style={styles.input}
-                  onSubmitEditing={() => void submit()}
-                />
-              </View>
+      {error ? <AuthNotice kind="error">{error}</AuthNotice> : null}
+      {message ? <AuthNotice kind="success">{message}</AuthNotice> : null}
 
-              {error ? (
-                <Text style={styles.error} accessibilityRole="alert">
-                  {error}
-                </Text>
-              ) : null}
-              {message ? <Text style={styles.message}>{message}</Text> : null}
+      <Button
+        label={isSignIn ? 'Sign in' : 'Create account'}
+        onPress={() => void submit()}
+        loading={isSubmitting}
+      />
 
-              <Button
-                label={mode === 'sign-in' ? 'Sign in' : 'Create account'}
-                onPress={() => void submit()}
-                loading={isSubmitting}
-              />
-
-              <Pressable
-                accessibilityRole="button"
-                onPress={switchMode}
-                style={styles.switchButton}>
-                <Text style={styles.switchText}>
-                  {mode === 'sign-in'
-                    ? 'New to Vital? Create an account'
-                    : 'Already a member? Sign in'}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
-        </ScrollView>
-      </KeyboardAvoidingView>
-    </SafeAreaView>
+      <Pressable
+        accessibilityRole="button"
+        onPress={switchMode}
+        style={({ pressed }) => [
+          styles.switchButton,
+          pressed && styles.linkPressed,
+        ]}>
+        <Text style={styles.switchText}>
+          {isSignIn
+            ? 'New to Vital? Create an account'
+            : 'Already a member? Sign in'}
+        </Text>
+      </Pressable>
+    </AuthShell>
   );
 }
 
 const styles = StyleSheet.create({
-  flex: { flex: 1 },
-  safeArea: { flex: 1, backgroundColor: colors.canvas },
-  scrollContent: { flexGrow: 1, justifyContent: 'center', paddingVertical: spacing.xl },
-  content: {
-    width: '100%',
-    maxWidth: 520,
-    alignSelf: 'center',
-    paddingHorizontal: spacing.lg,
-    gap: spacing.md,
+  passwordGroup: {
+    gap: spacing.xxs,
   },
-  eyebrow: {
-    color: colors.brand,
-    fontFamily: typography.bodyFamily,
-    fontSize: typography.eyebrow,
-    fontWeight: '800',
-    letterSpacing: 1.7,
-    textTransform: 'uppercase',
-  },
-  title: {
-    color: colors.ink,
-    fontFamily: typography.headingFamily,
-    fontSize: typography.display,
-    fontWeight: '600',
-    lineHeight: 46,
-  },
-  intro: {
-    color: colors.inkMuted,
-    fontFamily: typography.bodyFamily,
-    fontSize: typography.body,
-    lineHeight: 24,
-    marginBottom: spacing.md,
-  },
-  form: {
-    gap: spacing.md,
-    padding: spacing.lg,
-    borderRadius: radii.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-  formTitle: {
-    color: colors.ink,
-    fontFamily: typography.headingFamily,
-    fontSize: typography.heading,
-    fontWeight: '600',
-  },
-  field: { gap: spacing.xs },
-  label: {
-    color: colors.ink,
-    fontFamily: typography.bodyFamily,
-    fontSize: typography.small,
-    fontWeight: '700',
-  },
-  input: {
+  forgotLink: {
     minHeight: layout.touchTarget,
-    paddingHorizontal: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.borderStrong,
-    borderRadius: radii.md,
-    backgroundColor: colors.white,
-    color: colors.ink,
-    fontFamily: typography.bodyFamily,
-    fontSize: typography.body,
+    alignSelf: 'flex-end',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xs,
   },
-  error: {
-    color: colors.danger,
-    fontFamily: typography.bodyFamily,
-    fontSize: typography.small,
-    lineHeight: 20,
+  linkPressed: {
+    opacity: 0.68,
   },
-  message: {
-    padding: spacing.sm,
-    borderRadius: radii.sm,
-    backgroundColor: colors.successSoft,
-    color: colors.success,
-    fontFamily: typography.bodyFamily,
+  linkText: {
+    color: colors.plum,
+    fontFamily: typography.bodySemiboldFamily,
     fontSize: typography.small,
-    lineHeight: 20,
   },
   switchButton: {
     minHeight: layout.touchTarget,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: spacing.sm,
   },
   switchText: {
     color: colors.brand,
-    fontFamily: typography.bodyFamily,
+    fontFamily: typography.bodySemiboldFamily,
     fontSize: typography.small,
-    fontWeight: '700',
+    textAlign: 'center',
   },
 });

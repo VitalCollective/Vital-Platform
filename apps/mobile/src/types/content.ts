@@ -9,6 +9,8 @@ export const VITAL_SECTIONS = [
 export type VitalSection = (typeof VITAL_SECTIONS)[number];
 
 export type EnvironmentFilter = 'any' | 'indoor' | 'outdoor';
+export type AgeFilter = 'any' | '2-4' | '5-7' | '8-10' | '11-13' | 'all-ages' | 'adults';
+export type DurationFilter = 'any' | 'quick' | 'half-hour' | 'hour' | 'longer' | 'flexible';
 
 export type ActivitySummary = {
   id: string;
@@ -17,13 +19,19 @@ export type ActivitySummary = {
   age_min: string | null;
   age_max: string | null;
   summary: string | null;
+  type: string;
+  tags: string[];
   duration: string | null;
   indoor: boolean;
   outdoor: boolean;
+  equipment: string | null;
+  physical_benefits: string | null;
+  mental_benefits: string | null;
+  weather: string | null;
+  collection_labels: string[];
 };
 
 export type ActivityDetail = ActivitySummary & {
-  type: string;
   instructions: string | null;
   why_children_enjoy_it: string | null;
   physical_benefits: string | null;
@@ -55,8 +63,9 @@ export type DiscoverFilters = {
   search: string;
   section: VitalSection | null;
   environment: EnvironmentFilter;
-  page: number;
-  pageSize: number;
+  age: AgeFilter;
+  duration: DurationFilter;
+  limit: number;
 };
 
 export type DiscoverResult = {
@@ -68,4 +77,5 @@ export type DiscoverResult = {
 export type ActivityWithResources = {
   activity: ActivityDetail;
   resources: ActivityResource[];
+  printableResourceState: 'available' | 'not-required' | 'unavailable';
 };

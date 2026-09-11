@@ -1,4 +1,4 @@
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 
@@ -6,6 +6,8 @@ import { ActivityCard } from '@/components/vital/activity-card';
 import { Screen } from '@/components/vital/screen';
 import { StatePanel } from '@/components/vital/state-panel';
 import { useIdeasForToday } from '@/features/activities/activity-hooks';
+import { useAuth } from '@/features/auth/auth-context';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import {
   colors,
   radii,
@@ -13,102 +15,204 @@ import {
   spacing,
   typography,
 } from '@/theme/tokens';
-import { VITAL_SECTIONS, type VitalSection } from '@/types/content';
+import type { VitalSection } from '@/types/content';
 
-const sectionDescriptions: Record<VitalSection, string> = {
-  'Vital Kids': 'Play, make and explore',
-  'Vital Together': 'Time that feels well spent',
-  'Vital Life': 'Practical everyday capability',
-  'Vital Food': 'Cook, taste and understand',
-  'Vital Mums': 'Space for the grown-ups too',
+const primaryLogo = require('../../../assets/brand/vital-logo-main.png');
+const secondaryLogo = require('../../../assets/brand/vital-logo-simple.png');
+
+type HomeSection = {
+  section: VitalSection;
+  href:
+    | '/vital-mums'
+    | '/vital-kids'
+    | '/vital-together'
+    | '/vital-life'
+    | '/vital-food';
+  description: string;
 };
+
+const homeSections: HomeSection[] = [
+  {
+    section: 'Vital Mums',
+    href: '/vital-mums',
+    description: 'Practical care, perspective and space for the grown-ups.',
+  },
+  {
+    section: 'Vital Kids',
+    href: '/vital-kids',
+    description: 'Play, make, learn and follow their curiosity.',
+  },
+  {
+    section: 'Vital Together',
+    href: '/vital-together',
+    description: 'Shared rituals, adventures and time that feels well spent.',
+  },
+  {
+    section: 'Vital Life',
+    href: '/vital-life',
+    description: 'Everyday skills, confidence and capability for family life.',
+  },
+  {
+    section: 'Vital Food',
+    href: '/vital-food',
+    description: 'Cook, taste, grow and understand what is on the table.',
+  },
+];
+
+function firstNameFromDisplayName(value: unknown): string | null {
+  if (typeof value !== 'string') return null;
+  const [firstName] = value.trim().split(/\s+/);
+  return firstName || null;
+}
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { user } = useAuth();
+  const { isDesktop, isTablet } = useResponsiveLayout();
   const ideas = useIdeasForToday();
-
-  const openDiscover = (section?: VitalSection) => {
-    router.push(section ? { pathname: '/discover', params: { section } } : '/discover');
-  };
+  const firstName = firstNameFromDisplayName(user?.user_metadata.display_name);
 
   return (
     <Screen>
-      <View style={styles.brandRow}>
-        <View>
-          <Text style={styles.brand}>Vital Collective</Text>
-          <Text style={styles.brandLine}>Ideas for family life, properly considered.</Text>
+      <View style={[styles.hero, isTablet && styles.heroWide]}>
+        <View style={styles.heroCopy}>
+          <Text style={styles.eyebrow}>
+            {firstName ? `Welcome back, ${firstName}` : 'Welcome to Vital'}
+          </Text>
+          <Text style={[styles.heroTitle, isDesktop && styles.heroTitleDesktop]}>
+            What can Vital help you do today?
+          </Text>
+          <Text style={styles.heroIntro}>
+            Find a useful idea for your family, make time together, or learn
+            something that makes everyday life feel more possible.
+          </Text>
         </View>
-        <View style={styles.brandMark} accessibilityElementsHidden>
-          <Ionicons name="leaf" color={colors.brand} size={24} />
-        </View>
-      </View>
 
-      <View style={styles.welcome}>
-        <Text style={styles.eyebrow}>Welcome</Text>
-        <Text style={styles.display}>Less scrolling. More living.</Text>
-        <Text style={styles.intro}>
-          Find a worthwhile activity for the time, people and energy you have today.
-        </Text>
+        <Image
+          accessibilityLabel={
+            isDesktop
+              ? 'Vital Collective detailed family logo'
+              : 'Vital Collective simplified family logo'
+          }
+          resizeMode="contain"
+          source={isDesktop ? primaryLogo : secondaryLogo}
+          style={[
+            styles.heroLogo,
+            isTablet && styles.heroLogoTablet,
+            isDesktop && styles.heroLogoDesktop,
+          ]}
+        />
       </View>
 
       <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="What shall we do?"
-        accessibilityHint="Opens Discover to browse activities"
-        onPress={() => openDiscover()}
-        style={({ pressed }) => [styles.heroAction, { opacity: pressed ? 0.86 : 1 }]}>
-        <View style={styles.heroCopy}>
-          <Text style={styles.heroEyebrow}>Start here</Text>
-          <Text style={styles.heroTitle}>What shall we do?</Text>
-          <Text style={styles.heroText}>
-            Browse real Vital ideas now. A more personal recommendation flow comes later.
+        accessibilityRole="link"
+        accessibilityLabel="Find something"
+        accessibilityHint="Opens Discover to search Vital activities"
+        onPress={() => router.push('/discover')}
+        style={({ pressed }) => [
+          styles.findCard,
+          isTablet && styles.findCardWide,
+          pressed && styles.pressed,
+        ]}>
+        <View style={styles.findCopy}>
+          <View style={styles.findLabelRow}>
+            <Ionicons name="search" size={19} color={colors.onBrandMuted} />
+            <Text style={styles.findLabel}>Find something</Text>
+          </View>
+          <Text style={styles.findTitle}>What would help right now?</Text>
+          <Text style={styles.findText}>
+            Search real Vital activities and ideas, then narrow them by part of
+            Vital or where you want to be.
           </Text>
         </View>
-        <Ionicons name="arrow-forward-circle" color={colors.white} size={38} />
+        <View style={styles.findArrow}>
+          <Ionicons name="arrow-forward" size={23} color={colors.brand} />
+        </View>
       </Pressable>
 
-      <View style={styles.sectionBlock}>
-        <View style={styles.sectionHeadingRow}>
-          <Text style={styles.sectionHeading}>Explore Vital</Text>
-          <Text style={styles.sectionKicker}>Five ways in</Text>
+      <View style={[styles.sectionBlock, !isTablet && styles.sectionBlockPhone]}>
+        <View style={styles.sectionHeading}>
+          <Text style={styles.sectionEyebrow}>Explore the collective</Text>
+          <Text style={styles.sectionTitle}>Five parts of family life</Text>
+          <Text style={styles.sectionIntro}>
+            Each part of Vital has its own focus, with practical ideas that are
+            made to be used away from the screen.
+          </Text>
         </View>
-        <View style={styles.sectionLinks}>
-          {VITAL_SECTIONS.map((section) => {
-            const accent = sectionColors[section];
+
+        <View style={styles.sectionGrid}>
+          {homeSections.map((item, index) => {
+            const accent = sectionColors[item.section];
+
             return (
               <Pressable
-                key={section}
-                accessibilityRole="button"
-                accessibilityLabel={`${section}: ${sectionDescriptions[section]}`}
-                onPress={() => openDiscover(section)}
+                key={item.section}
+                accessibilityRole="link"
+                accessibilityLabel={`${item.section}: ${item.description}`}
+                onPress={() => router.push(item.href)}
                 style={({ pressed }) => [
-                  styles.sectionLink,
-                  { backgroundColor: accent.soft, opacity: pressed ? 0.8 : 1 },
+                  styles.sectionCard,
+                  !isTablet && styles.sectionCardPhone,
+                  isTablet && styles.sectionCardTablet,
+                  isDesktop && styles.sectionCardDesktop,
+                  {
+                    backgroundColor: accent.soft,
+                    borderTopColor: accent.accent,
+                  },
+                  pressed && styles.pressed,
                 ]}>
-                <View style={styles.sectionLinkCopy}>
-                  <Text style={[styles.sectionLinkTitle, { color: accent.accent }]}>
-                    {section}
+                <View style={[styles.sectionCardCopy, !isTablet && styles.sectionCardCopyPhone]}>
+                  <Text style={[styles.sectionNumber, { color: accent.accent }]}>
+                    {String(index + 1).padStart(2, '0')}
                   </Text>
-                  <Text style={styles.sectionLinkText}>{sectionDescriptions[section]}</Text>
+                  <Text style={[styles.sectionCardTitle, { color: accent.accent }]}>
+                    {item.section}
+                  </Text>
+                  <Text style={styles.sectionCardText} numberOfLines={isTablet ? undefined : 2}>
+                    {item.description}
+                  </Text>
                 </View>
-                <Ionicons name="chevron-forward" color={accent.accent} size={21} />
+                <View
+                  style={[
+                    styles.sectionCardAction,
+                    !isTablet && styles.sectionCardActionPhone,
+                  ]}>
+                  {isTablet ? (
+                    <Text style={[styles.sectionCardActionText, { color: accent.accent }]}>
+                      Explore
+                    </Text>
+                  ) : null}
+                  <Ionicons name="arrow-forward" size={17} color={accent.accent} />
+                </View>
               </Pressable>
             );
           })}
         </View>
       </View>
 
-      <View style={styles.sectionBlock}>
-        <View style={styles.sectionHeadingRow}>
-          <Text style={styles.sectionHeading}>Ideas for today</Text>
-          <Text style={styles.sectionKicker}>From Vital</Text>
-        </View>
-        <View style={styles.ideas}>
+      {ideas.isLoading || ideas.error || ideas.data?.length ? (
+        <View style={[styles.sectionBlock, !isTablet && styles.sectionBlockPhone]}>
+          <View style={styles.sectionHeadingRow}>
+            <View style={styles.sectionHeading}>
+              <Text style={styles.sectionTitle}>Ideas to try</Text>
+            </View>
+            <Pressable
+              accessibilityRole="link"
+              onPress={() => router.push('/discover')}
+              style={({ pressed }) => [
+                styles.viewAllLink,
+                pressed && styles.pressed,
+              ]}>
+              <Text style={styles.viewAllText}>View all</Text>
+              <Ionicons name="arrow-forward" size={17} color={colors.plum} />
+            </Pressable>
+          </View>
+
           {ideas.isLoading ? (
             <StatePanel
               kind="loading"
               title="Finding a few good ideas"
-              message="We’re looking through the published Vital collection."
+              message="We are looking through the Vital collection."
             />
           ) : ideas.error ? (
             <StatePanel
@@ -117,182 +221,278 @@ export default function HomeScreen() {
               message={ideas.error}
               onRetry={() => void ideas.retry()}
             />
-          ) : ideas.data?.length ? (
-            ideas.data.map((activity) => (
-              <ActivityCard
-                key={activity.id}
-                activity={activity}
-                onPress={() =>
-                  router.push({ pathname: '/activity/[id]', params: { id: activity.id } })
-                }
-              />
-            ))
           ) : (
-            <StatePanel
-              title="No ideas are published yet"
-              message="When activities are available, a small selection will appear here."
-            />
+            <View style={styles.ideasGrid}>
+              {ideas.data?.map((activity) => (
+                <View
+                  key={activity.id}
+                  style={[
+                    styles.ideaCard,
+                    isTablet && styles.ideaCardTablet,
+                    isDesktop && styles.ideaCardDesktop,
+                  ]}>
+                  <ActivityCard
+                    activity={activity}
+                    compact
+                    onPress={() =>
+                      router.push({
+                        pathname: '/activity/[id]',
+                        params: { id: activity.id },
+                      })
+                    }
+                  />
+                </View>
+              ))}
+            </View>
           )}
         </View>
-      </View>
-
-      <View style={styles.putDownNote}>
-        <Ionicons name="print-outline" color={colors.brand} size={28} />
-        <View style={styles.putDownCopy}>
-          <Text style={styles.putDownTitle}>Choose it. Print it. Go do it.</Text>
-          <Text style={styles.putDownText}>
-            Vital uses the phone to start experiences—not become the experience.
-          </Text>
-        </View>
-      </View>
+      ) : null}
     </Screen>
   );
 }
 
 const styles = StyleSheet.create({
-  brandRow: {
+  hero: {
+    gap: spacing.lg,
+    paddingBottom: spacing.xl,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  heroWide: {
+    minHeight: 250,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.md,
-    marginBottom: spacing.xxl,
+    gap: spacing.xxl,
   },
-  brand: {
-    color: colors.ink,
-    fontFamily: typography.headingFamily,
-    fontSize: typography.heading,
-    fontWeight: '600',
+  heroCopy: {
+    flex: 1,
+    gap: spacing.sm,
   },
-  brandLine: {
-    color: colors.inkSubtle,
-    fontFamily: typography.bodyFamily,
-    fontSize: typography.small,
-    marginTop: spacing.xxs,
-  },
-  brandMark: {
-    width: 48,
-    height: 48,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.pill,
-    backgroundColor: colors.brandSoft,
-  },
-  welcome: { gap: spacing.sm, marginBottom: spacing.xl },
   eyebrow: {
-    color: colors.brand,
-    fontFamily: typography.bodyFamily,
+    color: colors.plum,
+    fontFamily: typography.bodyBoldFamily,
     fontSize: typography.eyebrow,
-    fontWeight: '800',
-    letterSpacing: 1.7,
+    letterSpacing: 1.6,
     textTransform: 'uppercase',
   },
-  display: {
+  heroTitle: {
     maxWidth: 620,
     color: colors.ink,
     fontFamily: typography.headingFamily,
-    fontSize: typography.display,
-    fontWeight: '600',
-    lineHeight: 47,
+    fontSize: typography.title,
+    lineHeight: 40,
   },
-  intro: {
-    maxWidth: 580,
+  heroTitleDesktop: {
+    fontSize: typography.display,
+    lineHeight: 54,
+  },
+  heroIntro: {
+    maxWidth: 590,
     color: colors.inkMuted,
     fontFamily: typography.bodyFamily,
-    fontSize: typography.subheading,
-    lineHeight: 27,
+    fontSize: typography.body,
+    lineHeight: 25,
   },
-  heroAction: {
+  heroLogo: {
+    width: 176,
+    height: 124,
+    alignSelf: 'center',
+  },
+  heroLogoTablet: {
+    width: 224,
+    height: 168,
+  },
+  heroLogoDesktop: {
+    width: 360,
+    height: 240,
+  },
+  findCard: {
+    minHeight: 164,
+    marginTop: spacing.xl,
+    padding: spacing.lg,
+    gap: spacing.lg,
+    borderRadius: radii.lg,
+    backgroundColor: colors.brand,
+  },
+  findCardWide: {
     minHeight: 150,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    gap: spacing.lg,
-    padding: spacing.xl,
-    borderRadius: radii.lg,
-    backgroundColor: colors.brand,
+    paddingHorizontal: spacing.xl,
   },
-  heroCopy: { flex: 1, gap: spacing.xs },
-  heroEyebrow: {
-    color: '#C9D9CC',
-    fontFamily: typography.bodyFamily,
+  findCopy: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  findLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  findLabel: {
+    color: colors.onBrandMuted,
+    fontFamily: typography.bodyBoldFamily,
     fontSize: typography.eyebrow,
-    fontWeight: '800',
-    letterSpacing: 1.2,
+    letterSpacing: 1.4,
     textTransform: 'uppercase',
   },
-  heroTitle: {
-    color: colors.white,
+  findTitle: {
+    color: colors.onBrand,
     fontFamily: typography.headingFamily,
-    fontSize: typography.title,
-    fontWeight: '600',
+    fontSize: typography.heading,
+    lineHeight: 32,
   },
-  heroText: {
-    maxWidth: 520,
-    color: '#E8EFE9',
+  findText: {
+    maxWidth: 650,
+    color: colors.onBrandMuted,
     fontFamily: typography.bodyFamily,
     fontSize: typography.small,
     lineHeight: 21,
   },
-  sectionBlock: { gap: spacing.md, marginTop: spacing.xxl },
+  findArrow: {
+    width: 48,
+    height: 48,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'flex-end',
+    borderRadius: radii.pill,
+    backgroundColor: colors.canvas,
+  },
+  sectionBlock: {
+    gap: spacing.lg,
+    marginTop: spacing.xxxl,
+  },
+  sectionBlockPhone: {
+    gap: spacing.md,
+    marginTop: spacing.xxl,
+  },
+  sectionHeading: {
+    flex: 1,
+    gap: spacing.xs,
+  },
   sectionHeadingRow: {
     flexDirection: 'row',
-    alignItems: 'baseline',
+    alignItems: 'flex-end',
     justifyContent: 'space-between',
     gap: spacing.md,
   },
-  sectionHeading: {
+  sectionEyebrow: {
+    color: colors.plum,
+    fontFamily: typography.bodyBoldFamily,
+    fontSize: typography.eyebrow,
+    letterSpacing: 1.4,
+    textTransform: 'uppercase',
+  },
+  sectionTitle: {
     color: colors.ink,
     fontFamily: typography.headingFamily,
     fontSize: typography.heading,
-    fontWeight: '600',
+    lineHeight: 32,
   },
-  sectionKicker: {
-    color: colors.inkSubtle,
-    fontFamily: typography.bodyFamily,
-    fontSize: typography.small,
-  },
-  sectionLinks: { gap: spacing.sm },
-  sectionLink: {
-    minHeight: 70,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderRadius: radii.md,
-  },
-  sectionLinkCopy: { flex: 1, gap: spacing.xxs },
-  sectionLinkTitle: {
-    fontFamily: typography.headingFamily,
-    fontSize: typography.subheading,
-    fontWeight: '700',
-  },
-  sectionLinkText: {
-    color: colors.inkMuted,
-    fontFamily: typography.bodyFamily,
-    fontSize: typography.small,
-  },
-  ideas: { gap: spacing.md },
-  putDownNote: {
-    flexDirection: 'row',
-    gap: spacing.md,
-    marginTop: spacing.xxl,
-    paddingTop: spacing.xl,
-    borderTopWidth: 1,
-    borderTopColor: colors.borderStrong,
-  },
-  putDownCopy: { flex: 1, gap: spacing.xs },
-  putDownTitle: {
-    color: colors.ink,
-    fontFamily: typography.headingFamily,
-    fontSize: typography.subheading,
-    fontWeight: '600',
-  },
-  putDownText: {
+  sectionIntro: {
+    maxWidth: 620,
     color: colors.inkMuted,
     fontFamily: typography.bodyFamily,
     fontSize: typography.small,
     lineHeight: 21,
+  },
+  sectionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  sectionCard: {
+    width: '100%',
+    minHeight: 172,
+    justifyContent: 'space-between',
+    gap: spacing.lg,
+    padding: spacing.lg,
+    borderTopWidth: 3,
+    borderRadius: radii.md,
+  },
+  sectionCardPhone: {
+    minHeight: 108,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.md,
+  },
+  sectionCardTablet: {
+    width: '48%',
+    flexGrow: 1,
+  },
+  sectionCardDesktop: {
+    width: '18%',
+  },
+  sectionCardCopy: {
+    gap: spacing.xs,
+  },
+  sectionCardCopyPhone: {
+    flex: 1,
+    gap: spacing.xxs,
+  },
+  sectionNumber: {
+    fontFamily: typography.bodyBoldFamily,
+    fontSize: 10,
+    letterSpacing: 1.2,
+  },
+  sectionCardTitle: {
+    fontFamily: typography.headingFamily,
+    fontSize: typography.subheading,
+    lineHeight: 25,
+  },
+  sectionCardText: {
+    color: colors.inkMuted,
+    fontFamily: typography.bodyFamily,
+    fontSize: typography.small,
+    lineHeight: 20,
+  },
+  sectionCardAction: {
+    minHeight: 28,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.xs,
+  },
+  sectionCardActionPhone: {
+    width: 44,
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  sectionCardActionText: {
+    fontFamily: typography.bodySemiboldFamily,
+    fontSize: typography.small,
+  },
+  viewAllLink: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    paddingHorizontal: spacing.xs,
+  },
+  viewAllText: {
+    color: colors.plum,
+    fontFamily: typography.bodySemiboldFamily,
+    fontSize: typography.small,
+  },
+  ideasGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  ideaCard: {
+    width: '100%',
+  },
+  ideaCardTablet: {
+    width: '48%',
+    flexGrow: 1,
+  },
+  ideaCardDesktop: {
+    width: '31%',
+  },
+  pressed: {
+    opacity: 0.82,
   },
 });

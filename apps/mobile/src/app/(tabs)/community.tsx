@@ -1,12 +1,16 @@
-import { ShellScreen } from '@/components/vital/shell-screen';
+import { useCallback, useMemo, useState } from 'react';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { useAuth } from '@/features/auth/auth-context';
+import { CommunityScreenContent } from '@/features/community/community-screen';
+import { communityApi } from '@/services/community';
 
 export default function CommunityScreen() {
-  return (
-    <ShellScreen
-      title="Community"
-      description="A thoughtful place for families to share what worked, ask useful questions and encourage one another."
-      note="Community discussion is being built carefully. There are no pretend posts here in the meantime."
-      icon="people-outline"
-    />
-  );
+  const { user } = useAuth();
+  const router = useRouter();
+  const api = useMemo(() => communityApi(), []);
+  const [refreshKey, setRefreshKey] = useState(0);
+  useFocusEffect(useCallback(() => { setRefreshKey((value) => value + 1); }, []));
+  if (!user) return null;
+  return <CommunityScreenContent api={api} userId={user.id} refreshKey={refreshKey}
+    onActivity={(id) => router.push({ pathname: '/activity/[id]', params: { id } })} />;
 }

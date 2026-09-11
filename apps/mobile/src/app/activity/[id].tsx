@@ -8,6 +8,7 @@ import { DetailSection, DetailText } from '@/components/vital/detail-section';
 import { Screen, ScreenHeader } from '@/components/vital/screen';
 import { StatePanel } from '@/components/vital/state-panel';
 import { useActivity } from '@/features/activities/activity-hooks';
+import { customerSafeErrorMessage } from '@/lib/errors';
 import { openPrintableResource } from '@/services/resources';
 import {
   colors,
@@ -50,7 +51,11 @@ export default function ActivityDetailScreen() {
       await openPrintableResource(storagePath);
     } catch (error) {
       setResourceError(
-        error instanceof Error ? error.message : 'Unable to open this printable resource.',
+        customerSafeErrorMessage(
+          'Printable resource failed to open',
+          error,
+          "We couldn't open this printable resource just now. Please try again.",
+        ),
       );
     } finally {
       setOpeningResourceId(null);
@@ -82,7 +87,7 @@ export default function ActivityDetailScreen() {
     );
   }
 
-  const { activity, resources } = result.data;
+  const { activity, printableResourceState, resources } = result.data;
   const accent = sectionColors[activity.section];
   const metadata = [
     { label: 'Age', value: ageLabel(activity) },
@@ -219,11 +224,17 @@ export default function ActivityDetailScreen() {
               </View>
             ))}
           </View>
-        ) : (
+        ) : null}
+        {printableResourceState === 'not-required' ? (
           <Text style={styles.noResource}>
-            There is no printable companion linked to this activity yet.
+            No printable resource needed for this activity.
           </Text>
-        )}
+        ) : null}
+        {printableResourceState === 'unavailable' ? (
+          <Text style={styles.resourceUnavailable} accessibilityRole="alert">
+            A printable resource for this activity is temporarily unavailable.
+          </Text>
+        ) : null}
       </DetailSection>
 
       <View style={styles.finishNote}>
@@ -320,6 +331,8 @@ const styles = StyleSheet.create({
   safetyNote: {
     flexDirection: 'row',
     alignItems: 'flex-start',
+    alignSelf: 'stretch',
+    minWidth: 0,
     gap: spacing.sm,
     padding: spacing.md,
     borderRadius: radii.md,
@@ -327,6 +340,8 @@ const styles = StyleSheet.create({
   },
   safetyText: {
     flex: 1,
+    flexShrink: 1,
+    minWidth: 0,
     color: colors.warning,
     fontFamily: typography.bodyFamily,
     fontSize: typography.body,
@@ -372,6 +387,15 @@ const styles = StyleSheet.create({
   },
   noResource: {
     color: colors.inkMuted,
+    fontFamily: typography.bodyFamily,
+    fontSize: typography.body,
+    lineHeight: 24,
+  },
+  resourceUnavailable: {
+    padding: spacing.sm,
+    borderRadius: radii.sm,
+    backgroundColor: colors.dangerSoft,
+    color: colors.danger,
     fontFamily: typography.bodyFamily,
     fontSize: typography.body,
     lineHeight: 24,

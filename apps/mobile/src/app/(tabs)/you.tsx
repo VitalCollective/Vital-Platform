@@ -1,19 +1,27 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { ProfileAvatar } from '@/components/vital/profile-avatar';
 
 import { Button } from '@/components/vital/button';
 import { Screen, ScreenHeader } from '@/components/vital/screen';
 import { useAuth } from '@/features/auth/auth-context';
+import { customerSafeErrorMessage } from '@/lib/errors';
+import { getOwnCommunityProfile } from '@/services/profiles';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
 
 export default function YouScreen() {
   const { signOut, user } = useAuth();
   const [isSigningOut, setIsSigningOut] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [profile, setProfile] = useState<Awaited<ReturnType<typeof getOwnCommunityProfile>>>(null);
+  useEffect(() => {
+    let active = true; setProfile(null);
+    if (user?.id) void getOwnCommunityProfile(user.id).then(value => { if (active) setProfile(value); }).catch(() => {});
+    return () => { active = false; };
+  }, [user?.id]);
 
   const metadataName = user?.user_metadata.display_name;
-  const displayName = typeof metadataName === 'string' ? metadataName : 'Vital Member';
+  const displayName = profile?.displayName ?? (typeof metadataName === 'string' ? metadataName : 'Vital Member');
 
   const handleSignOut = async () => {
     setError(null);
@@ -22,7 +30,11 @@ export default function YouScreen() {
       await signOut();
     } catch (signOutError) {
       setError(
-        signOutError instanceof Error ? signOutError.message : 'Unable to sign out.',
+        customerSafeErrorMessage(
+          'Sign out failed',
+          signOutError,
+          "We couldn't sign you out just now. Please try again.",
+        ),
       );
     } finally {
       setIsSigningOut(false);
@@ -38,9 +50,7 @@ export default function YouScreen() {
       />
 
       <View style={styles.accountCard}>
-        <View style={styles.avatar}>
-          <Ionicons name="person" size={28} color={colors.brand} />
-        </View>
+        <ProfileAvatar name={displayName} imageUrl={profile?.imageUrl} size={54} />
         <View style={styles.accountCopy}>
           <Text style={styles.accountName}>{displayName}</Text>
           <Text style={styles.email}>{user?.email ?? 'No email available'}</Text>
@@ -79,15 +89,7 @@ const styles = StyleSheet.create({
     borderRadius: radii.lg,
     backgroundColor: colors.surface,
   },
-  avatar: {
-    width: 54,
-    height: 54,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: radii.pill,
-    backgroundColor: colors.brandSoft,
-  },
-  accountCopy: { flex: 1, gap: spacing.xxs },
+  accountCopy: { flex: 1, minWidth: 0, gap: spacing.xxs },
   accountName: {
     color: colors.ink,
     fontFamily: typography.headingFamily,

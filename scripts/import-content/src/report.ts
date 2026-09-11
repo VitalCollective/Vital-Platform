@@ -24,6 +24,19 @@ export function printValidationSummary(report: ValidationReport, reportPath: str
   console.log(`Duplicate IDs: ${duplicateIdCount}`);
   console.log(`Filename mismatches: ${report.filenameMismatches.length}`);
   console.log(`Page-count mismatches: ${report.pageCountMismatches.length}`);
+  console.log(
+    `Setting audit: ${report.activityEnvironmentAudit.repeatedOutdoorOnlyRows} repeated outdoor-only source rows; ` +
+    `${report.activityEnvironmentAudit.neutralizedForManualReview} mapped to neutral for review`,
+  );
+  console.log(
+    `Environment/content audit: ${report.environmentContentConsistencyAudit.definiteContradictions.length} definite; ` +
+    `${report.environmentContentConsistencyAudit.manualReview.length} manual-review cases`,
+  );
+  console.log(
+    `Printable states: ${report.activityResourceStateAudit.withAvailablePrintable} available; ` +
+    `${report.activityResourceStateAudit.noPrintableRequired} not required; ` +
+    `${report.activityResourceStateAudit.missingOrBrokenPrintable} missing/broken`,
+  );
   console.log(`Validation: ${report.status}`);
   console.log(`Report: ${reportPath}`);
 }

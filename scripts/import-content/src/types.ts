@@ -98,6 +98,49 @@ export interface UnmappedResourceField {
   resourceIds: string[];
 }
 
+export interface ActivityEnvironmentAudit {
+  source: {
+    indoorOnly: number;
+    indoorAndOutdoor: number;
+    outdoorOnly: number;
+    neutral: number;
+  };
+  normalized: {
+    indoorOnly: number;
+    indoorAndOutdoor: number;
+    outdoorOnly: number;
+    neutral: number;
+  };
+  repeatedOutdoorOnlyRows: number;
+  normalizedToIndoorOnly: number;
+  normalizedToIndoorAndOutdoor: number;
+  retainedSupportedOutdoorOnly: number;
+  neutralizedForManualReview: number;
+  manualReviewIds: string[];
+}
+
+export interface ActivityEnvironmentConsistencyFlag {
+  activityId: string;
+  title: string;
+  classification: "indoor-only" | "indoor-and-outdoor" | "outdoor-only" | "neutral";
+  reason: string;
+  indoorEvidence: string[];
+  outdoorEvidence: string[];
+}
+
+export interface ActivityEnvironmentConsistencyAudit {
+  auditedActivities: number;
+  definiteContradictions: ActivityEnvironmentConsistencyFlag[];
+  manualReview: ActivityEnvironmentConsistencyFlag[];
+}
+
+export interface ActivityResourceStateAudit {
+  withAvailablePrintable: number;
+  noPrintableRequired: number;
+  missingOrBrokenPrintable: number;
+  missingOrBrokenActivityIds: string[];
+}
+
 export interface ValidationReport {
   generatedAt: string;
   mode: "dry-run" | "execute";
@@ -144,6 +187,9 @@ export interface ValidationReport {
   unexpectedPdfs: string[];
   unmappedCsvFields: string[];
   unmappedResourceFields: UnmappedResourceField[];
+  activityEnvironmentAudit: ActivityEnvironmentAudit;
+  environmentContentConsistencyAudit: ActivityEnvironmentConsistencyAudit;
+  activityResourceStateAudit: ActivityResourceStateAudit;
   transformations: string[];
   schemaMismatches: string[];
   warnings: string[];

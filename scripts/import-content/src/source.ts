@@ -18,6 +18,9 @@ import {
 } from "./constants.js";
 import type {
   ActivityResourceRow,
+  ActivityEnvironmentAudit,
+  ActivityEnvironmentConsistencyAudit,
+  ActivityEnvironmentConsistencyFlag,
   ActivityRow,
   ActivityStatus,
   ImportPlan,
@@ -50,6 +53,18 @@ interface AssetManifestRow {
 }
 
 const noProblem: ProblemSink = () => undefined;
+
+const indoorEvidencePattern = /\bindoors?\b/i;
+const outdoorEvidencePattern = /\boutdoors?\b/i;
+const indoorWeatherPattern = /(^|;\s*)(home|kitchen)(\s*;|$)/i;
+const indoorContentEvidencePattern =
+  /\b(indoors?|inside|at home|around the house|living room|bedroom|hallway|bathroom|(?:a|the|your) room|(?:in|inside|around|through|within) (?:a|the|your) (?:house|home|kitchen))\b/i;
+const outdoorContentEvidencePattern =
+  /\b(outdoors?|outside|garden|park|woodland|forest|beach|trail|playground|pavement|street|pond|riverbank|coast|nature reserve)\b/i;
+const explicitIndoorDirectionPattern =
+  /\b(?:head|go|step|move|stay) inside\b|\b(?:choose|find|use|work|play|do|try|perform|set up)[^.!?]{0,80}\bindoors?\b|\bindoor (?:space|area|location|room|setting)\b/i;
+const explicitOutdoorDirectionPattern =
+  /\b(?:head|go|step|move) outside\b|\b(?:choose|find|visit|use|work|play|do|try|perform|set up|test|testing)[^.!?]{0,80}\b(?:outdoors?|outside)\b|\b(?:outdoor|outside) (?:space|area|location|workspace|setting)\b/i;
 
 function nullable(value: string | undefined): string | null {
   const trimmed = value?.trim() ?? "";
@@ -140,6 +155,205 @@ function strictBoolean(
   return false;
 }
 
+function normalizedActivityEnvironment(
+  row: CsvRow,
+  sourceIndoor: boolean,
+  sourceOutdoor: boolean,
+): { indoor: boolean; outdoor: boolean } {
+  if (sourceIndoor || !sourceOutdoor) {
+    return { indoor: sourceIndoor, outdoor: sourceOutdoor };
+  }
+
+  // The final source repeats outdoor-only across 395 rows, including whole
+  // indoor-oriented sections. Retain only environment claims supported by
+  // explicit source metadata and leave everything else honestly neutral.
+  const evidenceText = [
+    row.Title,
+    row.Summary,
+    row.Tags,
+    row.Collections,
+    row.Weather,
+  ].join(" ");
+
+  return {
+    indoor:
+      indoorEvidencePattern.test(evidenceText) ||
+      indoorWeatherPattern.test(row.Weather ?? ""),
+    outdoor: outdoorEvidencePattern.test(evidenceText),
+  };
+}
+
+function environmentCounts(
+  environments: readonly { indoor: boolean; outdoor: boolean }[],
+): ActivityEnvironmentAudit["source"] {
+  return {
+    indoorOnly: environments.filter(({ indoor, outdoor }) => indoor && !outdoor).length,
+    indoorAndOutdoor: environments.filter(({ indoor, outdoor }) => indoor && outdoor).length,
+    outdoorOnly: environments.filter(({ indoor, outdoor }) => !indoor && outdoor).length,
+    neutral: environments.filter(({ indoor, outdoor }) => !indoor && !outdoor).length,
+  };
+}
+
+function activityEnvironmentAudit(
+  rows: readonly CsvRow[],
+  activities: readonly ActivityRow[],
+): ActivityEnvironmentAudit {
+  const sourceEnvironments = rows.map((row) => ({
+    indoor: row.Indoor?.trim().toLowerCase() === "true",
+    outdoor: row.Outdoor?.trim().toLowerCase() === "true",
+  }));
+  const repeatedOutdoorOnlyIndexes = sourceEnvironments
+    .map((environment, index) => ({ environment, index }))
+    .filter(({ environment }) => !environment.indoor && environment.outdoor);
+  const normalizedRepeatedRows = repeatedOutdoorOnlyIndexes.map(
+    ({ index }) => activities[index],
+  );
+  const manualReviewIds = normalizedRepeatedRows
+    .filter(({ indoor, outdoor }) => !indoor && !outdoor)
+    .map(({ id }) => id);
+
+  return {
+    source: environmentCounts(sourceEnvironments),
+    normalized: environmentCounts(activities),
+    repeatedOutdoorOnlyRows: repeatedOutdoorOnlyIndexes.length,
+    normalizedToIndoorOnly: normalizedRepeatedRows.filter(
+      ({ indoor, outdoor }) => indoor && !outdoor,
+    ).length,
+    normalizedToIndoorAndOutdoor: normalizedRepeatedRows.filter(
+      ({ indoor, outdoor }) => indoor && outdoor,
+    ).length,
+    retainedSupportedOutdoorOnly: normalizedRepeatedRows.filter(
+      ({ indoor, outdoor }) => !indoor && outdoor,
+    ).length,
+    neutralizedForManualReview: manualReviewIds.length,
+    manualReviewIds,
+  };
+}
+
+function environmentClassification(
+  activity: Pick<ActivityRow, "indoor" | "outdoor">,
+): ActivityEnvironmentConsistencyFlag["classification"] {
+  if (activity.indoor && activity.outdoor) return "indoor-and-outdoor";
+  if (activity.indoor) return "indoor-only";
+  if (activity.outdoor) return "outdoor-only";
+  return "neutral";
+}
+
+function conciseEvidence(field: string, value: string): string {
+  const normalized = value.replace(/\s+/g, " ").trim();
+  const excerpt = normalized.length > 240
+    ? `${normalized.slice(0, 237).trimEnd()}...`
+    : normalized;
+  return `${field}: ${excerpt}`;
+}
+
+function contentEnvironmentEvidence(row: CsvRow): {
+  indoor: string[];
+  outdoor: string[];
+  explicitIndoorDirection: boolean;
+  explicitOutdoorDirection: boolean;
+} {
+  const fields: Array<[string, string | undefined]> = [
+    ["Title", row.Title],
+    ["Summary", row.Summary],
+    ["Instructions", row.Instructions],
+    ["Weather", row.Weather],
+    ["Tags", row.Tags],
+    ["Collections", row.Collections],
+  ];
+  const indoor: string[] = [];
+  const outdoor: string[] = [];
+  const directionalText = [row.Title, row.Summary, row.Instructions]
+    .filter(Boolean)
+    .join(" ");
+
+  for (const [field, value] of fields) {
+    if (!value?.trim()) continue;
+    if (
+      indoorContentEvidencePattern.test(value) ||
+      (field === "Weather" && indoorWeatherPattern.test(value))
+    ) {
+      indoor.push(conciseEvidence(field, value));
+    }
+    if (outdoorContentEvidencePattern.test(value)) {
+      outdoor.push(conciseEvidence(field, value));
+    }
+  }
+
+  return {
+    indoor,
+    outdoor,
+    explicitIndoorDirection: explicitIndoorDirectionPattern.test(directionalText),
+    explicitOutdoorDirection: explicitOutdoorDirectionPattern.test(directionalText),
+  };
+}
+
+export function auditActivityEnvironmentConsistency(
+  rows: readonly CsvRow[],
+  activities: readonly ActivityRow[],
+): ActivityEnvironmentConsistencyAudit {
+  const definiteContradictions: ActivityEnvironmentConsistencyFlag[] = [];
+  const manualReview: ActivityEnvironmentConsistencyFlag[] = [];
+
+  for (let index = 0; index < activities.length; index += 1) {
+    const activity = activities[index];
+    const row = rows[index] ?? {};
+    const evidence = contentEnvironmentEvidence(row);
+    const hasIndoorEvidence = evidence.indoor.length > 0;
+    const hasOutdoorEvidence = evidence.outdoor.length > 0;
+    const classification = environmentClassification(activity);
+    let reason: string | null = null;
+    let confidence: "definite" | "manual" | null = null;
+
+    if (classification === "indoor-only" && hasOutdoorEvidence && !hasIndoorEvidence) {
+      reason = "Indoor-only metadata conflicts with prose that provides only explicit outdoor evidence.";
+      confidence = "definite";
+    } else if (classification === "outdoor-only" && hasIndoorEvidence && !hasOutdoorEvidence) {
+      reason = "Outdoor-only metadata conflicts with prose that provides only explicit indoor evidence.";
+      confidence = "definite";
+    } else if (
+      classification === "indoor-and-outdoor" &&
+      hasIndoorEvidence !== hasOutdoorEvidence
+    ) {
+      const hasExplicitOneSidedDirection = hasIndoorEvidence
+        ? evidence.explicitIndoorDirection
+        : evidence.explicitOutdoorDirection;
+      reason = hasExplicitOneSidedDirection
+        ? "Both-setting metadata conflicts with customer-facing directions that explicitly describe only one setting."
+        : "Both-setting metadata is supported explicitly by only one side of the customer-facing prose.";
+      confidence = hasExplicitOneSidedDirection ? "definite" : "manual";
+    } else if (
+      (classification === "indoor-only" || classification === "outdoor-only") &&
+      hasIndoorEvidence &&
+      hasOutdoorEvidence
+    ) {
+      reason = "Single-setting metadata accompanies explicit evidence for both indoor and outdoor use.";
+      confidence = "manual";
+    } else if (classification === "neutral" && (hasIndoorEvidence || hasOutdoorEvidence)) {
+      reason = "Neutral metadata accompanies explicit indoor or outdoor language that warrants editorial review.";
+      confidence = "manual";
+    }
+
+    if (!reason || !confidence) continue;
+    const flag: ActivityEnvironmentConsistencyFlag = {
+      activityId: activity.id,
+      title: activity.title,
+      classification,
+      reason,
+      indoorEvidence: evidence.indoor,
+      outdoorEvidence: evidence.outdoor,
+    };
+    if (confidence === "definite") definiteContradictions.push(flag);
+    else manualReview.push(flag);
+  }
+
+  return {
+    auditedActivities: activities.length,
+    definiteContradictions,
+    manualReview,
+  };
+}
+
 function jsonBoolean(
   value: unknown,
   fallback: boolean,
@@ -190,6 +404,13 @@ export function mapActivityRecord(row: CsvRow, onProblem: ProblemSink = noProble
   const activityId = requiredString(row.ID, "ID", {}, onProblem);
   const context = { activityId };
   const section = requiredString(row.Section, "Section", context, onProblem);
+  const sourceIndoor = strictBoolean(row.Indoor, "Indoor", context, onProblem);
+  const sourceOutdoor = strictBoolean(row.Outdoor, "Outdoor", context, onProblem);
+  const environment = normalizedActivityEnvironment(
+    row,
+    sourceIndoor,
+    sourceOutdoor,
+  );
   if (section && !ACTIVITY_SECTIONS.has(section)) {
     onProblem({
       code: "invalid_activity_section",
@@ -213,8 +434,8 @@ export function mapActivityRecord(row: CsvRow, onProblem: ProblemSink = noProble
     physical_benefits: nullable(row["Physical Benefits"]),
     mental_benefits: nullable(row["Mental Benefits"]),
     social_benefits: nullable(row["Social Benefits"]),
-    indoor: strictBoolean(row.Indoor, "Indoor", context, onProblem),
-    outdoor: strictBoolean(row.Outdoor, "Outdoor", context, onProblem),
+    indoor: environment.indoor,
+    outdoor: environment.outdoor,
     cost: nullable(row.Cost),
     equipment: nullable(row.Equipment),
     prep_time: nullable(row["Prep Time"]),
@@ -498,9 +719,31 @@ export async function buildImportPlan(sourceInput: string, mode: "dry-run" | "ex
     unexpectedPdfs: [],
     unmappedCsvFields: [],
     unmappedResourceFields: [],
+    activityEnvironmentAudit: {
+      source: { indoorOnly: 0, indoorAndOutdoor: 0, outdoorOnly: 0, neutral: 0 },
+      normalized: { indoorOnly: 0, indoorAndOutdoor: 0, outdoorOnly: 0, neutral: 0 },
+      repeatedOutdoorOnlyRows: 0,
+      normalizedToIndoorOnly: 0,
+      normalizedToIndoorAndOutdoor: 0,
+      retainedSupportedOutdoorOnly: 0,
+      neutralizedForManualReview: 0,
+      manualReviewIds: [],
+    },
+    environmentContentConsistencyAudit: {
+      auditedActivities: 0,
+      definiteContradictions: [],
+      manualReview: [],
+    },
+    activityResourceStateAudit: {
+      withAvailablePrintable: 0,
+      noPrintableRequired: 0,
+      missingOrBrokenPrintable: 0,
+      missingOrBrokenActivityIds: [],
+    },
     transformations: [
       "Activity Status value 'Research Complete' maps to public.activities.status = 'published'.",
       "Semicolon-delimited activity Tags and Collections map to text arrays.",
+      "Repeated source outdoor-only flags are retained only where title, summary, tags, collections or weather explicitly support an environment; Home/Kitchen weather values count as indoor evidence and unsupported rows map to a neutral setting.",
       "Resource page_count uses the verified PDF page count after matching the manifest and any JSON page_count value.",
     ],
     schemaMismatches: [],
@@ -532,6 +775,24 @@ export async function buildImportPlan(sourceInput: string, mode: "dry-run" | "ex
 
   const activities = activityRows.map((row) => mapActivityRecord(row, pushError));
   report.counts.mappedActivities = activities.length;
+  report.activityEnvironmentAudit = activityEnvironmentAudit(activityRows, activities);
+  report.environmentContentConsistencyAudit = auditActivityEnvironmentConsistency(
+    activityRows,
+    activities,
+  );
+  if (report.activityEnvironmentAudit.neutralizedForManualReview > 0) {
+    report.warnings.push(
+      `${report.activityEnvironmentAudit.neutralizedForManualReview} activities have no trustworthy explicit indoor/outdoor evidence and were mapped to a neutral setting for manual metadata review.`,
+    );
+  }
+  if (
+    report.environmentContentConsistencyAudit.definiteContradictions.length > 0 ||
+    report.environmentContentConsistencyAudit.manualReview.length > 0
+  ) {
+    report.warnings.push(
+      `Environment/content consistency audit flagged ${report.environmentContentConsistencyAudit.definiteContradictions.length} definite contradictions and ${report.environmentContentConsistencyAudit.manualReview.length} possible cases for editorial review.`,
+    );
+  }
 
   const resourceDocument = JSON.parse(
     await readFile(path.join(resolvedSourceRoot, SOURCE_FILES.resources), "utf8"),
@@ -814,6 +1075,41 @@ export async function buildImportPlan(sourceInput: string, mode: "dry-run" | "ex
   if (report.counts.manifestRows !== EXPECTED_COUNTS.resources) {
     pushError(countMismatchDetail("manifest rows", EXPECTED_COUNTS.resources, report.counts.manifestRows));
   }
+
+  const invalidResourceIds = new Set(
+    report.errors
+      .map(({ resourceId }) => resourceId)
+      .filter((resourceId): resourceId is string => Boolean(resourceId)),
+  );
+  const relationshipsByActivity = new Map<string, ActivityResourceRow[]>();
+  for (const relationship of relationships) {
+    const current = relationshipsByActivity.get(relationship.activity_id) ?? [];
+    current.push(relationship);
+    relationshipsByActivity.set(relationship.activity_id, current);
+  }
+  const missingOrBrokenActivityIds: string[] = [];
+  let noPrintableRequired = 0;
+  let withAvailablePrintable = 0;
+  for (const row of activityRows) {
+    const activityId = row.ID?.trim() ?? "";
+    const declaredResourceIds = splitSemicolonList(row["Resource IDs"]);
+    if (declaredResourceIds.length === 0) {
+      noPrintableRequired += 1;
+      continue;
+    }
+    const validRelationships = relationshipsByActivity.get(activityId) ?? [];
+    const hasBrokenPrintable =
+      validRelationships.length !== declaredResourceIds.length ||
+      validRelationships.some(({ resource_id }) => invalidResourceIds.has(resource_id));
+    if (hasBrokenPrintable) missingOrBrokenActivityIds.push(activityId);
+    else withAvailablePrintable += 1;
+  }
+  report.activityResourceStateAudit = {
+    withAvailablePrintable,
+    noPrintableRequired,
+    missingOrBrokenPrintable: missingOrBrokenActivityIds.length,
+    missingOrBrokenActivityIds,
+  };
 
   report.status = report.errors.length === 0 ? "PASS" : "FAIL";
   report.readyToImport = report.status === "PASS";

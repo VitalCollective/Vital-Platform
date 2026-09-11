@@ -3,6 +3,8 @@
   "main": "expo-router/entry",
   "version": "1.0.0",
   "dependencies": {
+    "@expo-google-fonts/dm-serif-display": "^0.4.2",
+    "@expo-google-fonts/inter": "^0.4.2",
     "@expo/metro-runtime": "~57.0.14",
     "@expo/ui": "~57.0.14",
     "@expo/vector-icons": "^15.0.2",
@@ -43,6 +45,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
+    "test": "node --test tests/errors.test.mjs tests/discover.test.mjs tests/activity-detail.test.mjs tests/community.test.mjs tests/profile-images.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "private": true

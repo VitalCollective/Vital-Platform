@@ -5,6 +5,7 @@ import {
   fetchDiscoverActivities,
   fetchIdeasForToday,
 } from '@/services/activities';
+import { customerSafeErrorMessage } from '@/lib/errors';
 import type {
   ActivitySummary,
   ActivityWithResources,
@@ -33,7 +34,11 @@ export function useIdeasForToday() {
     } catch (error) {
       setState({
         data: null,
-        error: error instanceof Error ? error.message : 'Unable to load ideas.',
+        error: customerSafeErrorMessage(
+          'Unable to load Home ideas',
+          error,
+          "We couldn't load your ideas just now.",
+        ),
         isLoading: false,
       });
     }
@@ -54,15 +59,16 @@ export function useDiscoverActivities(filters: DiscoverFilters) {
     isLoading: true,
   });
 
-  const { environment, page, pageSize, search, section } = filters;
+  const { age, duration, environment, limit, search, section } = filters;
   const load = useCallback(async () => {
     const currentRequestId = ++requestId.current;
     setState((current) => ({ ...current, isLoading: true, error: null }));
     try {
       const data = await fetchDiscoverActivities({
         environment,
-        page,
-        pageSize,
+        age,
+        duration,
+        limit,
         search,
         section,
       });
@@ -73,12 +79,16 @@ export function useDiscoverActivities(filters: DiscoverFilters) {
       if (currentRequestId === requestId.current) {
         setState({
           data: null,
-          error: error instanceof Error ? error.message : 'Unable to load activities.',
+          error: customerSafeErrorMessage(
+            'Unable to load Discover activities',
+            error,
+            "We couldn't load activities just now.",
+          ),
           isLoading: false,
         });
       }
     }
-  }, [environment, page, pageSize, search, section]);
+  }, [age, duration, environment, limit, search, section]);
 
   useEffect(() => {
     void load();
@@ -115,7 +125,11 @@ export function useActivity(activityId: string | undefined) {
       if (currentRequestId === requestId.current) {
         setState({
           data: null,
-          error: error instanceof Error ? error.message : 'Unable to load activity.',
+          error: customerSafeErrorMessage(
+            'Unable to load activity details',
+            error,
+            "We couldn't load this activity just now.",
+          ),
           isLoading: false,
         });
       }

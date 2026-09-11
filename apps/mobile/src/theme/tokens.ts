@@ -1,33 +1,46 @@
 import { Platform, type ViewStyle } from 'react-native';
 
 export const colors = {
-  canvas: '#F7F2E8',
-  surface: '#FFFDF8',
+  canvas: '#FDF5E7',
+  surface: '#FFFCF6',
   surfaceRaised: '#FFFFFF',
-  ink: '#27261F',
-  inkMuted: '#666257',
-  inkSubtle: '#837E72',
-  border: '#D9D1C2',
-  borderStrong: '#B9AF9D',
-  brand: '#2F4B3C',
-  brandPressed: '#22382D',
-  brandSoft: '#DFE8DE',
-  focus: '#315E7D',
+  ink: '#344834',
+  inkMuted: '#596859',
+  inkSubtle: '#778277',
+  border: '#D8DCCF',
+  borderStrong: '#B8C1B3',
+  brand: '#344834',
+  brandPressed: '#253625',
+  brandSoft: '#E8EDE6',
+  onBrand: '#FFFFFF',
+  onBrandMuted: '#E8EDE6',
+  plum: '#783F49',
+  plumPressed: '#60323A',
+  plumSoft: '#F1E6E8',
+  focus: '#783F49',
   danger: '#9B342D',
   dangerSoft: '#F9E4E0',
-  success: '#2E694F',
-  successSoft: '#E0EEE5',
-  warning: '#835F21',
-  warningSoft: '#F5EACF',
+  success: '#344834',
+  successSoft: '#E8EDE6',
+  warning: '#783F49',
+  warningSoft: '#F1E6E8',
   white: '#FFFFFF',
 } as const;
 
+export const backgrounds = {
+  app: colors.canvas,
+  card: colors.surface,
+  raised: colors.surfaceRaised,
+  softGreen: colors.brandSoft,
+  softPlum: colors.plumSoft,
+} as const;
+
 export const sectionColors = {
-  'Vital Kids': { accent: '#A84F35', soft: '#F2DED5' },
-  'Vital Together': { accent: '#365F66', soft: '#DCE8E8' },
-  'Vital Life': { accent: '#49633D', soft: '#E1E9DA' },
-  'Vital Food': { accent: '#8A622A', soft: '#F1E5CF' },
-  'Vital Mums': { accent: '#76506B', soft: '#EADDE7' },
+  'Vital Kids': { accent: colors.brand, soft: colors.brandSoft },
+  'Vital Together': { accent: colors.plum, soft: colors.plumSoft },
+  'Vital Life': { accent: colors.brand, soft: colors.brandSoft },
+  'Vital Food': { accent: colors.plum, soft: colors.plumSoft },
+  'Vital Mums': { accent: colors.plum, soft: colors.plumSoft },
 } as const;
 
 export const spacing = {
@@ -37,34 +50,37 @@ export const spacing = {
   md: 16,
   lg: 24,
   xl: 32,
+  section: 40,
   xxl: 48,
   xxxl: 64,
+  page: 80,
 } as const;
 
 export const radii = {
   sm: 8,
-  md: 14,
-  lg: 20,
+  md: 12,
+  lg: 18,
   pill: 999,
 } as const;
 
+export const fontFamilies = {
+  heading: 'DMSerifDisplay_400Regular',
+  body: 'Inter_400Regular',
+  bodyMedium: 'Inter_500Medium',
+  bodySemibold: 'Inter_600SemiBold',
+  bodyBold: 'Inter_700Bold',
+} as const;
+
 export const typography = {
-  headingFamily: Platform.select({
-    ios: 'Georgia',
-    android: 'serif',
-    web: 'Georgia, Times New Roman, serif',
-    default: 'serif',
-  }),
-  bodyFamily: Platform.select({
-    ios: 'System',
-    android: 'sans-serif',
-    web: 'system-ui, -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif',
-    default: 'sans-serif',
-  }),
-  display: 40,
-  title: 30,
-  heading: 22,
-  subheading: 18,
+  headingFamily: fontFamilies.heading,
+  bodyFamily: fontFamilies.body,
+  bodyMediumFamily: fontFamilies.bodyMedium,
+  bodySemiboldFamily: fontFamilies.bodySemibold,
+  bodyBoldFamily: fontFamilies.bodyBold,
+  display: 48,
+  title: 34,
+  heading: 26,
+  subheading: 20,
   body: 16,
   small: 14,
   eyebrow: 12,
@@ -72,18 +88,30 @@ export const typography = {
 
 export const shadows: { card: ViewStyle } = {
   card: Platform.select<ViewStyle>({
-    web: { boxShadow: '0 8px 24px rgba(55, 48, 37, 0.08)' },
+    web: { boxShadow: '0 6px 18px rgba(52, 72, 52, 0.06)' },
     default: {
-      shadowColor: '#372F25',
-      shadowOffset: { width: 0, height: 5 },
-      shadowOpacity: 0.08,
-      shadowRadius: 12,
-      elevation: 2,
+      shadowColor: colors.brand,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.06,
+      shadowRadius: 10,
+      elevation: 1,
     },
   }) ?? {},
 };
 
+export const breakpoints = {
+  tablet: 768,
+  desktop: 1024,
+  wide: 1440,
+} as const;
+
 export const layout = {
-  contentMaxWidth: 760,
+  contentMaxWidth: 1040,
+  readingMaxWidth: 720,
+  headerMaxWidth: 1400,
+  headerHeight: 72,
+  mobileGutter: 20,
+  tabletGutter: 32,
+  desktopGutter: 48,
   touchTarget: 48,
 } as const;

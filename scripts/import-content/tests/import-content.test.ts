@@ -1,7 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
-import { mapActivityRecord, mapResourceRecord, parseActivityRelationships } from "../src/source.js";
+import {
+  auditActivityEnvironmentConsistency,
+  mapActivityRecord,
+  mapResourceRecord,
+  parseActivityRelationships,
+} from "../src/source.js";
 import type { ValidationDetail } from "../src/types.js";
 import { compareSourceSets, formatVerificationFailure } from "../src/verification.js";
 
@@ -26,6 +31,126 @@ test("maps activity fields and the final source status deterministically", () =>
   assert.deepEqual(activity.tags, ["nature", "movement"]);
   assert.deepEqual(activity.collection_labels, ["Outdoors", "Weekend"]);
   assert.deepEqual(problems, []);
+});
+
+test("normalizes the repeated outdoor-only source flag from explicit evidence", () => {
+  const indoor = mapActivityRecord({
+    ID: "VF-0031",
+    Type: "Activity",
+    Section: "Vital Food",
+    Title: "Acid Before Salt",
+    Indoor: "false",
+    Outdoor: "true",
+    Weather: "Kitchen",
+    Status: "Research Complete",
+  });
+  const outdoor = mapActivityRecord({
+    ID: "VK-8-10-0001",
+    Type: "Activity",
+    Section: "Vital Kids",
+    Title: "Trail activity",
+    Summary: "Explore outdoors and notice what changes.",
+    Indoor: "false",
+    Outdoor: "true",
+    Status: "Research Complete",
+  });
+  const both = mapActivityRecord({
+    ID: "VK-5-7-0001",
+    Type: "Activity",
+    Section: "Vital Kids",
+    Title: "Move anywhere",
+    Indoor: "false",
+    Outdoor: "true",
+    Tags: "indoors; outdoors",
+    Status: "Research Complete",
+  });
+
+  assert.deepEqual(
+    [indoor.indoor, indoor.outdoor],
+    [true, false],
+  );
+  assert.deepEqual(
+    [outdoor.indoor, outdoor.outdoor],
+    [false, true],
+  );
+  assert.deepEqual(
+    [both.indoor, both.outdoor],
+    [true, true],
+  );
+});
+
+test("uses a neutral setting when the repeated source flag has no support", () => {
+  const activity = mapActivityRecord({
+    ID: "VK-2-4-0001",
+    Type: "Activity",
+    Section: "Vital Kids",
+    Title: "Adventure Jar",
+    Indoor: "false",
+    Outdoor: "true",
+    Weather: "Anywhere",
+    Status: "Research Complete",
+  });
+
+  assert.equal(activity.indoor, false);
+  assert.equal(activity.outdoor, false);
+});
+
+test("flags only evidence-backed environment/content inconsistencies", () => {
+  const rows = [
+    {
+      ID: "INDOOR-CONFLICT",
+      Type: "Activity",
+      Section: "Vital Kids",
+      Title: "Park mission",
+      Instructions: "Follow the trail through the park.",
+      Indoor: "true",
+      Outdoor: "false",
+      Status: "Research Complete",
+    },
+    {
+      ID: "BOTH-REVIEW",
+      Type: "Activity",
+      Section: "Vital Kids",
+      Title: "Garden search",
+      Instructions: "Hide the object in the garden.",
+      Indoor: "true",
+      Outdoor: "true",
+      Status: "Research Complete",
+    },
+    {
+      ID: "BOTH-CONFLICT",
+      Type: "Activity",
+      Section: "Vital Kids",
+      Title: "Outside mission",
+      Instructions: "Head outside and complete the course in the park.",
+      Indoor: "true",
+      Outdoor: "true",
+      Status: "Research Complete",
+    },
+    {
+      ID: "CORRECTED-BOTH",
+      Type: "Activity",
+      Section: "Vital Kids",
+      Title: "Rescue the Explorer",
+      Instructions: "Hide a toy around the house, garden or park.",
+      Indoor: "true",
+      Outdoor: "true",
+      Status: "Research Complete",
+    },
+  ];
+  const activities = rows.map((row) => mapActivityRecord(row));
+  const audit = auditActivityEnvironmentConsistency(rows, activities);
+
+  assert.equal(audit.auditedActivities, 4);
+  assert.deepEqual(
+    audit.definiteContradictions.map(({ activityId }) => activityId),
+    ["INDOOR-CONFLICT", "BOTH-CONFLICT"],
+  );
+  assert.deepEqual(
+    audit.manualReview.map(({ activityId }) => activityId),
+    ["BOTH-REVIEW"],
+  );
+  assert.match(audit.definiteContradictions[0].outdoorEvidence[0], /Park mission/);
 });
 
 test("creates stable relationship rows from ID-prefixed Resource Use entries", () => {

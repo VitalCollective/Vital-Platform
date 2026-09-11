@@ -26,7 +26,7 @@ export function StatePanel({
         <ActivityIndicator size="small" color={colors.brand} />
       ) : (
         <Ionicons
-          name={kind === 'error' ? 'alert-circle-outline' : 'leaf-outline'}
+          name={kind === 'error' ? 'alert-circle-outline' : 'information-circle-outline'}
           size={27}
           color={kind === 'error' ? colors.danger : colors.brand}
         />

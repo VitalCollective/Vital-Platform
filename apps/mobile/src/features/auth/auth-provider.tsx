@@ -1,14 +1,69 @@
-import { useEffect, useMemo, useState, type PropsWithChildren } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PropsWithChildren,
+} from 'react';
 import { AppState, Platform } from 'react-native';
 import type { Session } from '@supabase/supabase-js';
+import * as Linking from 'expo-linking';
 
 import { AuthContext, type SignUpResult } from '@/features/auth/auth-context';
+import { parsePasswordRecoveryUrl } from '@/features/auth/password-recovery';
 import { mobileConfig } from '@/lib/config';
 import { supabase } from '@/lib/supabase';
+
+const invalidRecoveryLinkMessage =
+  'This password reset link is invalid or has expired. Request a new link and try again.';
+
+function clearRecoveryParametersFromWebUrl() {
+  if (Platform.OS !== 'web' || typeof window === 'undefined') return;
+
+  const url = new URL(window.location.href);
+  url.hash = '';
+  [
+    'access_token',
+    'refresh_token',
+    'expires_in',
+    'expires_at',
+    'token_type',
+    'type',
+    'code',
+    'sb_flow_id',
+    'token_hash',
+    'error',
+    'error_code',
+    'error_description',
+  ].forEach((parameter) => url.searchParams.delete(parameter));
+  window.history.replaceState(window.history.state, '', url.toString());
+}
+
+function clearRecoveryParametersAfterNavigation() {
+  clearRecoveryParametersFromWebUrl();
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    window.requestAnimationFrame(clearRecoveryParametersFromWebUrl);
+  }
+}
 
 export function AuthProvider({ children }: PropsWithChildren) {
   const [session, setSession] = useState<Session | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(false);
+  const [isPasswordRecoveryLinkLoading, setIsPasswordRecoveryLinkLoading] =
+    useState(false);
+  const [passwordRecoveryError, setPasswordRecoveryError] = useState<
+    string | null
+  >(null);
+  const recoveryFlowRef = useRef(false);
+
+  const clearPasswordRecovery = useCallback(() => {
+    recoveryFlowRef.current = false;
+    setIsPasswordRecovery(false);
+    setIsPasswordRecoveryLinkLoading(false);
+    setPasswordRecoveryError(null);
+  }, []);
 
   useEffect(() => {
     if (!supabase) {
@@ -18,20 +73,137 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     const client = supabase;
     let isMounted = true;
+    let hasValidatedInitialSession = false;
 
-    client.auth.getSession().then(({ data, error }) => {
-      if (!isMounted) return;
-      if (error) console.warn('Unable to restore Supabase session:', error.message);
-      setSession(data.session);
-      setIsLoading(false);
-    });
+    const handlePasswordRecoveryUrl = async (url: string) => {
+      const recovery = parsePasswordRecoveryUrl(url);
+      if (!recovery.isRecovery) return false;
+
+      recoveryFlowRef.current = true;
+      if (isMounted) {
+        setIsPasswordRecovery(true);
+        setIsPasswordRecoveryLinkLoading(true);
+        setPasswordRecoveryError(null);
+      }
+
+      try {
+        if (recovery.errorDescription) {
+          throw new Error(invalidRecoveryLinkMessage);
+        }
+
+        let nextSession: Session | null = null;
+
+        if (recovery.accessToken && recovery.refreshToken) {
+          const { data, error } = await client.auth.setSession({
+            access_token: recovery.accessToken,
+            refresh_token: recovery.refreshToken,
+          });
+          if (error) throw error;
+          nextSession = data.session;
+        } else if (recovery.code) {
+          const { data, error } = await client.auth.exchangeCodeForSession(
+            recovery.code,
+            recovery.flowId ? { flowId: recovery.flowId } : undefined,
+          );
+          if (error) throw error;
+          nextSession = data.session;
+        } else if (recovery.tokenHash) {
+          const { data, error } = await client.auth.verifyOtp({
+            token_hash: recovery.tokenHash,
+            type: 'recovery',
+          });
+          if (error) throw error;
+          nextSession = data.session;
+        } else {
+          throw new Error(invalidRecoveryLinkMessage);
+        }
+
+        if (!nextSession) throw new Error(invalidRecoveryLinkMessage);
+        if (isMounted) setSession(nextSession);
+      } catch {
+        if (isMounted) setPasswordRecoveryError(invalidRecoveryLinkMessage);
+      } finally {
+        clearRecoveryParametersAfterNavigation();
+        if (isMounted) setIsPasswordRecoveryLinkLoading(false);
+      }
+
+      return true;
+    };
 
     const { data: authListener } = client.auth.onAuthStateChange(
-      (_event, nextSession) => {
+      (event, nextSession) => {
+        if (!isMounted || event === 'INITIAL_SESSION' || !hasValidatedInitialSession) {
+          return;
+        }
+
+        if (event === 'PASSWORD_RECOVERY') {
+          recoveryFlowRef.current = true;
+          setIsPasswordRecovery(true);
+          setPasswordRecoveryError(null);
+        } else if (event === 'SIGNED_OUT') {
+          clearPasswordRecovery();
+        } else if (event === 'SIGNED_IN' && !recoveryFlowRef.current) {
+          clearPasswordRecovery();
+        }
         setSession(nextSession);
         setIsLoading(false);
       },
     );
+
+    const linkingListener = Linking.addEventListener('url', ({ url }) => {
+      void handlePasswordRecoveryUrl(url);
+    });
+
+    void (async () => {
+      try {
+        const { data, error } = await client.auth.getSession();
+        if (!isMounted) return;
+        if (error) console.warn('Unable to restore Supabase session:', error.message);
+
+        let verifiedSession: Session | null = null;
+
+        if (!error && data.session) {
+          const { data: userData, error: userError } = await client.auth.getUser();
+
+          if (
+            !userError &&
+            userData.user &&
+            userData.user.id === data.session.user.id
+          ) {
+            verifiedSession = { ...data.session, user: userData.user };
+          } else {
+            const { error: signOutError } = await client.auth.signOut({
+              scope: 'local',
+            });
+            if (signOutError) {
+              console.warn(
+                'Unable to clear an invalid stored Supabase session:',
+                signOutError.message,
+              );
+            }
+          }
+        }
+
+        if (!isMounted) return;
+        setSession(verifiedSession);
+
+        const initialUrl = await Linking.getInitialURL();
+        if (initialUrl) await handlePasswordRecoveryUrl(initialUrl);
+      } catch (initializationError) {
+        if (isMounted) {
+          setSession(null);
+          console.warn(
+            'Unable to initialize Supabase authentication:',
+            initializationError instanceof Error
+              ? initializationError.message
+              : 'Unknown error',
+          );
+        }
+      } finally {
+        hasValidatedInitialSession = true;
+        if (isMounted) setIsLoading(false);
+      }
+    })();
 
     const appStateListener =
       Platform.OS === 'web'
@@ -51,10 +223,11 @@ export function AuthProvider({ children }: PropsWithChildren) {
     return () => {
       isMounted = false;
       authListener.subscription.unsubscribe();
+      linkingListener.remove();
       appStateListener?.remove();
       if (Platform.OS !== 'web') client.auth.stopAutoRefresh();
     };
-  }, []);
+  }, [clearPasswordRecovery]);
 
   const value = useMemo(
     () => ({
@@ -62,8 +235,14 @@ export function AuthProvider({ children }: PropsWithChildren) {
       user: session?.user ?? null,
       isLoading,
       configurationError: mobileConfig.error,
+      isPasswordRecovery,
+      isPasswordRecoveryLinkLoading,
+      passwordRecoveryError,
       async signIn(email: string, password: string) {
         if (!supabase) throw new Error(mobileConfig.error ?? 'Supabase is not configured.');
+
+        clearPasswordRecovery();
+        clearRecoveryParametersAfterNavigation();
 
         const { error } = await supabase.auth.signInWithPassword({
           email: email.trim(),
@@ -78,6 +257,9 @@ export function AuthProvider({ children }: PropsWithChildren) {
       ): Promise<SignUpResult> {
         if (!supabase) throw new Error(mobileConfig.error ?? 'Supabase is not configured.');
 
+        clearPasswordRecovery();
+        clearRecoveryParametersAfterNavigation();
+
         const { data, error } = await supabase.auth.signUp({
           email: email.trim(),
           password,
@@ -91,13 +273,46 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
         return { needsEmailConfirmation: data.session === null };
       },
-      async signOut() {
+      async requestPasswordReset(email: string) {
         if (!supabase) throw new Error(mobileConfig.error ?? 'Supabase is not configured.');
-        const { error } = await supabase.auth.signOut();
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
+          redirectTo: Linking.createURL('/reset-password'),
+        });
         if (error) throw error;
       },
+      async updatePassword(password: string) {
+        if (!supabase) throw new Error(mobileConfig.error ?? 'Supabase is not configured.');
+        if (!isPasswordRecovery || !session) {
+          throw new Error('Open a valid password reset link before choosing a new password.');
+        }
+
+        const { error } = await supabase.auth.updateUser({ password });
+        if (error) throw error;
+      },
+      completePasswordRecovery() {
+        clearPasswordRecovery();
+      },
+      async signOut() {
+        if (!supabase) throw new Error(mobileConfig.error ?? 'Supabase is not configured.');
+
+        setSession(null);
+        clearPasswordRecovery();
+        const { error } = await supabase.auth.signOut();
+        if (error) {
+          await supabase.auth.signOut({ scope: 'local' });
+          throw error;
+        }
+      },
     }),
-    [isLoading, session],
+    [
+      clearPasswordRecovery,
+      isLoading,
+      isPasswordRecovery,
+      isPasswordRecoveryLinkLoading,
+      passwordRecoveryError,
+      session,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -8,6 +8,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { colors, layout, spacing, typography } from '@/theme/tokens';
 
 type ScreenProps = PropsWithChildren<{
@@ -16,13 +17,24 @@ type ScreenProps = PropsWithChildren<{
 }>;
 
 export function Screen({ children, footer, scrollProps }: ScreenProps) {
+  const { horizontalPadding, isDesktop } = useResponsiveLayout();
+
   return (
-    <SafeAreaView edges={['top', 'left', 'right']} style={styles.safeArea}>
+    <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         {...scrollProps}>
-        <View style={styles.content}>{children}</View>
+        <View
+          style={[
+            styles.content,
+            {
+              paddingHorizontal: horizontalPadding,
+              paddingTop: isDesktop ? spacing.xxl : spacing.xl,
+            },
+          ]}>
+          {children}
+        </View>
       </ScrollView>
       {footer}
     </SafeAreaView>
@@ -38,10 +50,12 @@ export function ScreenHeader({
   title: string;
   description?: string;
 }) {
+  const { isDesktop } = useResponsiveLayout();
+
   return (
     <View style={styles.header} accessibilityRole="header">
       {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-      <Text style={styles.title}>{title}</Text>
+      <Text style={[styles.title, isDesktop && styles.titleDesktop]}>{title}</Text>
       {description ? <Text style={styles.description}>{description}</Text> : null}
     </View>
   );
@@ -60,8 +74,6 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: layout.contentMaxWidth,
     alignSelf: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
   },
   header: {
     gap: spacing.xs,
@@ -69,9 +81,8 @@ const styles = StyleSheet.create({
   },
   eyebrow: {
     color: colors.brand,
-    fontFamily: typography.bodyFamily,
     fontSize: typography.eyebrow,
-    fontWeight: '800',
+    fontFamily: typography.bodyBoldFamily,
     letterSpacing: 1.7,
     textTransform: 'uppercase',
   },
@@ -79,11 +90,15 @@ const styles = StyleSheet.create({
     color: colors.ink,
     fontFamily: typography.headingFamily,
     fontSize: typography.title,
-    fontWeight: '600',
-    lineHeight: 37,
+    lineHeight: 41,
+  },
+  titleDesktop: {
+    maxWidth: layout.readingMaxWidth,
+    fontSize: typography.display,
+    lineHeight: 55,
   },
   description: {
-    maxWidth: 620,
+    maxWidth: layout.readingMaxWidth,
     color: colors.inkMuted,
     fontFamily: typography.bodyFamily,
     fontSize: typography.body,

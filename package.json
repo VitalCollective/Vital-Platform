@@ -8,6 +8,9 @@
   ],
   "scripts": {
     "mobile": "npm run start --workspace=apps/mobile",
+    "community:seed": "node scripts/community/seed.mjs",
+    "community:test": "node --test scripts/community/seed.test.mjs",
+    "community:test:db": "node --test scripts/community/database.test.mjs scripts/community/migration-guards.test.mjs scripts/community/profile-images.test.mjs",
     "content:import:build": "tsc -p scripts/import-content/tsconfig.build.json",
     "content:import": "npm run content:import:build --silent && node scripts/import-content/.build/src/cli.js",
     "content:import:dry-run": "npm run content:import -- --dry-run",

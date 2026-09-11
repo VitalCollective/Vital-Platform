@@ -1,73 +1,86 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
+import { AppShell } from '@/components/vital/app-shell';
+import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { colors, typography } from '@/theme/tokens';
 
 export default function TabLayout() {
+  const { isDesktop } = useResponsiveLayout();
+
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.brand,
-        tabBarInactiveTintColor: colors.inkSubtle,
-        tabBarStyle: {
-          height: 68,
-          paddingTop: 7,
-          paddingBottom: 8,
-          borderTopColor: colors.border,
-          backgroundColor: colors.surface,
-        },
-        tabBarLabelStyle: {
-          fontFamily: typography.bodyFamily,
-          fontSize: 11,
-          fontWeight: '600',
-        },
-      }}>
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? 'home' : 'home-outline'} color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="discover"
-        options={{
-          title: 'Discover',
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? 'compass' : 'compass-outline'} color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="community"
-        options={{
-          title: 'Community',
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? 'people' : 'people-outline'} color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="saved"
-        options={{
-          title: 'Saved',
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? 'bookmark' : 'bookmark-outline'} color={color} size={size} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="you"
-        options={{
-          title: 'You',
-          tabBarIcon: ({ color, focused, size }) => (
-            <Ionicons name={focused ? 'person' : 'person-outline'} color={color} size={size} />
-          ),
-        }}
-      />
-    </Tabs>
+    <AppShell>
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          sceneStyle: { backgroundColor: colors.canvas },
+          tabBarActiveTintColor: colors.plum,
+          tabBarInactiveTintColor: colors.inkSubtle,
+          tabBarStyle: isDesktop
+            ? { display: 'none' }
+            : {
+                height: 68,
+                paddingTop: 7,
+                paddingBottom: 8,
+                borderTopColor: colors.border,
+                backgroundColor: colors.surface,
+              },
+          tabBarLabelStyle: {
+            fontFamily: typography.bodySemiboldFamily,
+            fontSize: 11,
+          },
+        }}>
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: 'Home',
+            tabBarIcon: ({ color, focused, size }) => (
+              <Ionicons name={focused ? 'home' : 'home-outline'} color={color} size={size} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="discover"
+          options={{
+            title: 'Discover',
+            tabBarIcon: ({ color, focused, size }) => (
+              <Ionicons name={focused ? 'compass' : 'compass-outline'} color={color} size={size} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="community"
+          options={{
+            title: 'Community',
+            tabBarIcon: ({ color, focused, size }) => (
+              <Ionicons name={focused ? 'people' : 'people-outline'} color={color} size={size} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="saved"
+          options={{
+            title: 'Saved',
+            tabBarIcon: ({ color, focused, size }) => (
+              <Ionicons name={focused ? 'bookmark' : 'bookmark-outline'} color={color} size={size} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="you"
+          options={{
+            title: 'You',
+            tabBarIcon: ({ color, focused, size }) => (
+              <Ionicons name={focused ? 'person' : 'person-outline'} color={color} size={size} />
+            ),
+          }}
+        />
+        <Tabs.Screen name="vital-mums" options={{ href: null }} />
+        <Tabs.Screen name="vital-kids" options={{ href: null }} />
+        <Tabs.Screen name="vital-together" options={{ href: null }} />
+        <Tabs.Screen name="vital-life" options={{ href: null }} />
+        <Tabs.Screen name="vital-food" options={{ href: null }} />
+      </Tabs>
+    </AppShell>
   );
 }
