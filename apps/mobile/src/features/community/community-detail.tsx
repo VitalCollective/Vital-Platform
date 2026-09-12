@@ -8,9 +8,9 @@ import { useCommunityPage } from './community-hooks';
 import { participationMessage, POST_TYPES, validateReply, type CommunityAccess, type CommunityPostDetail, type CommunityReply, type ReportTarget } from './community-model';
 import { CommunityAction, CommunityAuthor, CommunityField, CommunityNotice, s } from './community-ui';
 
-export function CommunityDetail({ api, id, userId, access, onBack, onRules, onReport, onActivity }: {
+export function CommunityDetail({ api, id, userId, access, onBack, onRules, onReport, onActivity, refreshKey = 0 }: {
   api: CommunityApi; id: string; userId: string; access: CommunityAccess | null; onBack: () => void;
-  onRules: () => void; onReport: (target: ReportTarget) => void; onActivity: (id: string) => void;
+  onRules: () => void; onReport: (target: ReportTarget) => void; onActivity: (id: string) => void; refreshKey?: number;
 }) {
   const [post, setPost] = useState<CommunityPostDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -23,7 +23,7 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
   const [busy, setBusy] = useState(false);
   const [confirmRemove, setConfirmRemove] = useState<{ kind: 'post' | 'comment'; id: string } | null>(null);
   const [reload, setReload] = useState(0);
-  const loadReplies = useCallback((offset: number) => api.replies(id, offset), [api, id]);
+  const loadReplies = useCallback((offset: number) => api.replies(id, offset), [api, id, refreshKey]);
   const replies = useCommunityPage(loadReplies);
   useEffect(() => {
     let active = true; setLoading(true); setError(null);
@@ -31,7 +31,7 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
       if (active) setError(customerSafeErrorMessage('Community post', cause, "We couldn't open this conversation. It may no longer be available."));
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [api, id, reload]);
+  }, [api, id, reload, refreshKey]);
   async function action(operation: () => Promise<void>) {
     if (busy) return;
     setBusy(true); setActionError(null); setNotice(null);
@@ -59,7 +59,7 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
       <View style={s.card}>
         <Text style={s.eyebrow}>{POST_TYPES.find((type) => type.value === post.post_type)?.noun ?? 'Conversation'}{post.topic ? ` · ${post.topic}` : ''}</Text>
         <Text accessibilityRole="header" style={s.title}>{post.title}</Text>
-        <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded} />
+        <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} bio={post.author_bio} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded} />
         <Text selectable style={s.body}>{post.body}</Text>
         {post.activity_id && post.activity_title && <CommunityAction label={`Vital activity: ${post.activity_title}`} icon="link-outline" onPress={() => onActivity(post.activity_id!)} />}
         <View style={s.row}>
@@ -74,7 +74,7 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
       <Text accessibilityRole="header" style={s.title}>Replies</Text>
       {replies.loading ? <Text style={s.meta}>Loading replies…</Text> : !replies.items.length && !replies.error ? <Text style={s.body}>No replies yet. A useful thought or a little encouragement is welcome.</Text> : null}
       {replies.items.map((reply) => <View key={reply.id} style={s.card}>
-        <CommunityAuthor name={reply.author_name} imageUrl={reply.author_image_url} createdAt={reply.created_at} seeded={reply.is_seeded} />
+        <CommunityAuthor name={reply.author_name} imageUrl={reply.author_image_url} bio={reply.author_bio} createdAt={reply.created_at} seeded={reply.is_seeded} />
         {reply.parent_comment_id && <Text style={s.meta}>In reply to {reply.reply_to_name ?? 'an earlier reply'}</Text>}
         <Text selectable style={s.body}>{reply.body}</Text>
         <View style={s.row}>

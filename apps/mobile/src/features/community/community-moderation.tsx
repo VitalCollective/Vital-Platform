@@ -42,7 +42,7 @@ export function CommunityModeration({ api, onClose }: { api: CommunityApi; onClo
       <Text style={s.label}>{REPORT_REASONS.find(([key]) => key === selected.reason_category)?.[1] ?? 'Reported concern'}</Text>
       {selected.details && <Text selectable style={s.body}>{selected.details}</Text>}
       <Text style={s.title}>{selected.target?.title ?? 'Reported content'}</Text>
-      {selected.target?.author_name && <CommunityAuthor name={selected.target.author_name} imageUrl={selected.target.author_image_url}
+      {selected.target?.author_name && <CommunityAuthor name={selected.target.author_name} imageUrl={selected.target.author_image_url} bio={selected.target.author_bio}
         seeded={selected.target.author_is_seeded ?? false} createdAt={selected.target.created_at ?? selected.created_at} />}
       <Text selectable style={s.body}>{selected.target?.body ?? 'The content is no longer available, or this report concerns a profile.'}</Text>
       <CommunityField label="Moderation reason / review note" value={note} onChangeText={setNote} multiline maxLength={2000} editable={!busy} />

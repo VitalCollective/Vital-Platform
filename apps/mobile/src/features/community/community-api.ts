@@ -16,13 +16,13 @@ export function createCommunityApi(client: SupabaseClient) {
     // One bounded directory query + one batched signing call, not per-card reads.
     // Works against the already-applied schema; no new view/RPC columns required.
     try {
-      const { data, error } = await client.from('profiles').select('id,display_name,avatar_url,is_seeded').in('id', [...new Set(rows.map(row => row.author_id))]);
+      const { data, error } = await client.from('profiles').select('id,display_name,avatar_url,is_seeded,bio').in('id', [...new Set(rows.map(row => row.author_id))]);
       if (error) return rows;
       const profiles = data ?? [];
       const images = await resolveImages(profiles);
       return rows.map(row => {
         const profile = profiles.find(p => p.id === row.author_id);
-        return { ...row, ...(profile ? { author_name: profile.display_name, author_is_seeded: profile.is_seeded } : {}), author_image_url: images.get(row.author_id) ?? null };
+        return { ...row, ...(profile ? { author_name: profile.display_name, author_is_seeded: profile.is_seeded, author_bio: profile.bio ?? null } : {}), author_image_url: images.get(row.author_id) ?? null };
       });
     } catch { return rows; } // Image/directory decoration must not hide content.
   }

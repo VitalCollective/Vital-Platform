@@ -1,12 +1,8 @@
-import { ShellScreen } from '@/components/vital/shell-screen';
+import { useAuth } from '@/features/auth/auth-context';
+import { SavedActivitiesScreen } from '@/features/saved/saved-activities-screen';
 
 export default function SavedScreen() {
-  return (
-    <ShellScreen
-      title="Saved"
-      description="Your place for ideas to try later, plans already made and activities worth remembering."
-      note="Favourites, Try Later and Completed will live here once the saving flow joins this slice."
-      icon="bookmark-outline"
-    />
-  );
+  const { user, isLoading } = useAuth();
+  if (isLoading || !user) return null; // The existing navigator owns the auth gate.
+  return <SavedActivitiesScreen key={user.id} profileId={user.id} />;
 }

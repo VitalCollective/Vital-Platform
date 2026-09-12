@@ -8,6 +8,7 @@ import { DetailSection, DetailText } from '@/components/vital/detail-section';
 import { Screen, ScreenHeader } from '@/components/vital/screen';
 import { StatePanel } from '@/components/vital/state-panel';
 import { useActivity } from '@/features/activities/activity-hooks';
+import { ActivitySaveControl } from '@/features/saved/activity-save-control';
 import { customerSafeErrorMessage } from '@/lib/errors';
 import { openPrintableResource } from '@/services/resources';
 import {
@@ -120,6 +121,7 @@ export default function ActivityDetailScreen() {
         <Text style={[styles.sectionName, { color: accent.accent }]}>{activity.section}</Text>
       </View>
       <ScreenHeader title={activity.title} description={activity.summary ?? undefined} />
+      <ActivitySaveControl activityId={activity.id} />
 
       {metadata.length ? (
         <View style={styles.metadataGrid}>

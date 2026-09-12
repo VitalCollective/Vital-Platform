@@ -35,6 +35,7 @@ export type CommunityAccess = {
 export type CommunityPost = {
   id: string; author_id: string; author_name: string; author_is_seeded: boolean;
   author_image_url?: string | null;
+  author_bio?: string | null;
   title: string; excerpt: string; post_type: PostType; topic: CommunityTopic | null;
   tags: string[]; activity_id: string | null; activity_title: string | null;
   is_seeded: boolean; locked: boolean; pinned: boolean;
@@ -45,6 +46,7 @@ export type CommunityPostDetail = CommunityPost & { body: string };
 export type CommunityReply = {
   id: string; post_id: string; author_id: string; author_name: string;
   author_image_url?: string | null;
+  author_bio?: string | null;
   body: string; created_at: string; is_seeded: boolean;
   parent_comment_id: string | null; reply_to_name: string | null;
   helpful_count: number; viewer_helpful: boolean;
@@ -62,7 +64,7 @@ export type ReportTarget = { type: 'post' | 'comment'; id: string; authorId: str
 export type CommunityReport = {
   id: string; target_type: 'post' | 'comment' | 'profile'; target_id: string;
   reason_category: ReportReason; details: string | null; created_at: string; status: string;
-  target?: { author_id: string; body: string; title?: string; moderation_status?: string; author_name?: string; author_image_url?: string | null; author_is_seeded?: boolean; created_at?: string };
+  target?: { author_id: string; body: string; title?: string; moderation_status?: string; author_name?: string; author_bio?: string | null; author_image_url?: string | null; author_is_seeded?: boolean; created_at?: string };
 };
 export type CommunityRestriction = {
   id: string; profile_id: string; imposed_by: string; restriction_type: string;

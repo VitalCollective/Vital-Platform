@@ -1,5 +1,7 @@
-import type { PropsWithChildren, ReactNode } from 'react';
+import { useRef, useState, type PropsWithChildren, type ReactNode } from 'react';
 import {
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -14,16 +16,20 @@ import { colors, layout, spacing, typography } from '@/theme/tokens';
 type ScreenProps = PropsWithChildren<{
   scrollProps?: ScrollViewProps;
   footer?: ReactNode;
+  keyboardAware?: boolean;
 }>;
 
-export function Screen({ children, footer, scrollProps }: ScreenProps) {
+export function Screen({ children, footer, scrollProps, keyboardAware = false }: ScreenProps) {
   const { horizontalPadding, isDesktop } = useResponsiveLayout();
+  const container = useRef<View>(null);
+  const [keyboardOffset, setKeyboardOffset] = useState(0);
 
-  return (
+  const content = (
     <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
+        automaticallyAdjustKeyboardInsets={keyboardAware && Platform.OS === 'ios'}
         {...scrollProps}>
         <View
           style={[
@@ -39,6 +45,15 @@ export function Screen({ children, footer, scrollProps }: ScreenProps) {
       {footer}
     </SafeAreaView>
   );
+  if (!keyboardAware || Platform.OS !== 'android') return content;
+  // Measure the shell's actual offset; do not assume a device or header height.
+  // iOS uses ScrollView's native keyboard insets instead, avoiding double adjustment.
+  return <View ref={container} collapsable={false} style={styles.safeArea}
+    onLayout={() => container.current?.measureInWindow((_x, y) => setKeyboardOffset(y))}>
+    <KeyboardAvoidingView behavior="height" keyboardVerticalOffset={keyboardOffset} style={styles.safeArea}>
+      {content}
+    </KeyboardAvoidingView>
+  </View>;
 }
 
 export function ScreenHeader({

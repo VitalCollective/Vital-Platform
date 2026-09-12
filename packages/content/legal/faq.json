@@ -1,0 +1,215 @@
+{
+  "title": "Help & contact",
+  "questions": [
+    {
+      "id": "faq-1",
+      "question": "What is Vital Collective?",
+      "answer": [
+        "Vital Collective is a family activity app built to help people find practical things to do together — including movement, play, family activities, life skills and food ideas — without turning family time into more screen time."
+      ]
+    },
+    {
+      "id": "faq-2",
+      "question": "Who is Vital for?",
+      "answer": [
+        "Vital member accounts are for adults aged 18 and over. Children can take part in Vital activities with an appropriate adult, but do not have their own launch-version member or Community accounts."
+      ]
+    },
+    {
+      "id": "faq-3",
+      "question": "Does my child need an account?",
+      "answer": [
+        "No. The current launch design does not require child accounts or child Community profiles."
+      ]
+    },
+    {
+      "id": "faq-4",
+      "question": "What family information does Vital need?",
+      "answer": [
+        "Only what is useful for the feature you choose to use. Vital may store an optional first name or nickname, relationship, current age in completed years and the date that age was last confirmed. It does not require a child’s date of birth, school, address, surname or precise location for core personalisation."
+      ]
+    },
+    {
+      "id": "faq-5",
+      "question": "Can other members see my family details or email address?",
+      "answer": [
+        "No. Your Community identity is separate from private account/family information. Members may see your display name, optional profile image, optional introduction and the Community content you choose to post."
+      ]
+    },
+    {
+      "id": "faq-6",
+      "question": "How does Vital choose activities for me?",
+      "answer": [
+        "Vital may use the filters and preferences you choose — such as age band, setting, time and activity interests — to make discovery more relevant. These recommendations are not decisions with legal or similarly significant effects."
+      ]
+    },
+    {
+      "id": "faq-7",
+      "question": "Do I need special equipment?",
+      "answer": [
+        "Usually not. Vital is designed around realistic family life. Resources only call out a 'You Will Need' section when an activity genuinely needs substantial or non-obvious equipment."
+      ]
+    },
+    {
+      "id": "faq-8",
+      "question": "Can I print Vital resources?",
+      "answer": [
+        "Yes, where a printable is provided. Member printables are intended for personal/family use and should not be sold or redistributed."
+      ]
+    },
+    {
+      "id": "faq-9",
+      "question": "How does Saved work?",
+      "answer": [
+        "Tap Save on an activity to keep it in your Saved tab. You can reopen it later and remove it from Saved whenever you like."
+      ]
+    },
+    {
+      "id": "faq-10",
+      "question": "What is Community for?",
+      "answer": [
+        "Community is a place to share genuine experiences, ideas, questions and useful tips about family life and Vital activities. It is designed to be useful rather than noisy."
+      ]
+    },
+    {
+      "id": "faq-11",
+      "question": "What are the Community rules?",
+      "answer": [
+        "Be kind, protect privacy, avoid advertising/self-promotion, keep content relevant and family-safe, do not spam/scam/impersonate, and report rule-breaking content instead of starting a pile-on. The full Community Rules are available in the app."
+      ]
+    },
+    {
+      "id": "faq-12",
+      "question": "Can I report a post or member?",
+      "answer": [
+        "Yes. Use the in-app report option on the relevant post, reply or member. Reports are reviewed under Vital’s moderation process."
+      ]
+    },
+    {
+      "id": "faq-13",
+      "question": "Can I block another member?",
+      "answer": [
+        "Yes. Vital provides an in-app blocking control for abusive or unwanted interactions. Blocking is separate from reporting, so report serious rule-breaking as well."
+      ]
+    },
+    {
+      "id": "faq-14",
+      "question": "Are the starter profiles real customers?",
+      "answer": [
+        "No. To help a new Community feel understandable from day one, Vital may use disclosed starter profiles and conversations. They are internally marked as starter content, excluded from genuine engagement metrics and are not customer reviews or testimonials."
+      ]
+    },
+    {
+      "id": "faq-15",
+      "question": "Can I change my Community name or introduction?",
+      "answer": [
+        "Yes. Use Edit profile in the You area. Your email and private family details are not shown as part of your Community identity."
+      ]
+    },
+    {
+      "id": "faq-16",
+      "question": "Can I add a profile photo?",
+      "answer": [
+        "Yes. You can add or change a Community profile photo from your profile settings. If you do not add one, Vital displays your initials instead."
+      ]
+    },
+    {
+      "id": "faq-17",
+      "question": "How does Vital membership work?",
+      "answer": [
+        "Standard Vital membership is intended to cost £9.99 per month or £59.99 per year. The annual plan costs approximately half as much as paying monthly for twelve months. Eligible new subscribers can receive a standard 7-day free trial, and some partner/promotional groups may receive a different discount or longer trial. All applicable terms are shown before purchase. You > Vital membership shows your current plan/status and provides the route to manage it."
+      ]
+    },
+    {
+      "id": "faq-18",
+      "question": "How do I cancel a subscription?",
+      "answer": [
+        "Use You > Vital membership and follow the Apple or Google subscription-management route for the platform that sold your subscription. Cancelling renewal and deleting a Vital account are separate actions, so do both if that is what you intend."
+      ]
+    },
+    {
+      "id": "faq-19",
+      "question": "Can I get a refund?",
+      "answer": [
+        "Refund rights depend on applicable consumer law and the billing platform/payment route used for the purchase. Vital will not remove any statutory rights you have."
+      ]
+    },
+    {
+      "id": "faq-20",
+      "question": "How do I delete my account?",
+      "answer": [
+        "Use the secure account-deletion route in You > Account. Your account/profile, avatar/bio, family information, preferences and Saved data are deleted. Your Community posts/replies are also deleted; a neutral deleted-content marker may remain only where needed to preserve other members’ replies. Limited records may be retained where genuinely required by law, accounting, security, fraud prevention or disputes. Deleting the account does not itself cancel an Apple/Google subscription."
+      ]
+    },
+    {
+      "id": "faq-21",
+      "question": "What happens to my Community posts if I delete my account?",
+      "answer": [
+        "Your Community posts and replies are deleted. If removing a parent item would break a conversation containing replies written by other members, Vital may leave a neutral deleted-content marker with no continuing profile attribution so the remaining conversation still makes sense."
+      ]
+    },
+    {
+      "id": "faq-22",
+      "question": "Does Vital sell my personal information?",
+      "answer": [
+        "No. Vital does not sell member personal information and does not use children’s or family information to build advertising profiles."
+      ]
+    },
+    {
+      "id": "faq-23",
+      "question": "Will Vital send me marketing emails?",
+      "answer": [
+        "Only if you have a lawful marketing relationship with Vital. The free Vital newsletter is a separate optional sign-up and may contain family ideas, product news and occasional offers. Paid membership does not automatically subscribe you. You can unsubscribe at any time."
+      ]
+    },
+    {
+      "id": "faq-24",
+      "question": "What notifications will I receive?",
+      "answer": [
+        "Essential account/security messages may be sent when needed. Optional Community or marketing notifications should be controlled through Preferences where available."
+      ]
+    },
+    {
+      "id": "faq-25",
+      "question": "Is Vital medical, nutritional or professional advice?",
+      "answer": [
+        "No. Vital provides general family activity and practical information. Adults remain responsible for deciding what is suitable for their family, including allergies, medical needs, food safety and physical/environmental risks."
+      ]
+    },
+    {
+      "id": "faq-26",
+      "question": "What if an activity involves a stranger?",
+      "answer": [
+        "Where a child activity involves interviewing or approaching an unfamiliar adult, a parent or guardian should be present."
+      ]
+    },
+    {
+      "id": "faq-27",
+      "question": "How do I suggest an idea?",
+      "answer": [
+        "Use Help & feedback > Suggest an idea, or email info@vitalcollective.co.uk. We genuinely want members to tell us what would make Vital more useful."
+      ]
+    },
+    {
+      "id": "faq-28",
+      "question": "How do I report a technical problem?",
+      "answer": [
+        "Use Help & feedback > Report a problem or email info@vitalcollective.co.uk. Include what you were doing, your device type and app version if possible. Do not send your password."
+      ]
+    },
+    {
+      "id": "faq-29",
+      "question": "Where can I read the Privacy Notice and Terms?",
+      "answer": [
+        "They are available from You > About & legal and will also be published at stable public web addresses for the app stores."
+      ]
+    },
+    {
+      "id": "faq-30",
+      "question": "How do I make a privacy request?",
+      "answer": [
+        "Email info@vitalcollective.co.uk. You can ask about access, correction, deletion and other rights that apply to your information."
+      ]
+    }
+  ]
+}

@@ -1,11 +1,9 @@
-import { profileImageResolver } from '@/lib/profile-images';
 import { requireSupabase } from '@/lib/supabase';
+import { createProfileApi } from './profile-api';
 
-export async function getOwnCommunityProfile(id: string) {
-  const client = requireSupabase();
-  const { data, error } = await client.from('profiles').select('id,display_name,avatar_url').eq('id', id).maybeSingle();
-  if (error) throw error;
-  if (!data) return null;
-  const images = await profileImageResolver(client)([data]);
-  return { id: data.id, displayName: data.display_name, imageUrl: images.get(id) ?? null };
+export function getOwnCommunityProfile(id: string) {
+  return createProfileApi(requireSupabase()).read(id);
+}
+export function updateOwnCommunityProfile(id: string, displayName: string, bio: string) {
+  return createProfileApi(requireSupabase()).update(id, displayName, bio);
 }

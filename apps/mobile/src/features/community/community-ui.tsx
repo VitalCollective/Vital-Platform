@@ -44,13 +44,24 @@ export function CommunityNotice({ message, error = false }: { message: string | 
   if (!message) return null;
   return <Text accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={[s.notice, error && s.error]}>{message}</Text>;
 }
-export function CommunityAuthor({ name, seeded, createdAt, imageUrl }: { name: string; seeded: boolean; createdAt: string; imageUrl?: string | null }) {
-  return <View style={s.author}>
+export function CommunityAuthor({ name, seeded, createdAt, imageUrl, bio }: { name: string; seeded: boolean; createdAt: string; imageUrl?: string | null; bio?: string | null }) {
+  const [expanded, setExpanded] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const author = <View style={s.author}>
     <ProfileAvatar name={name} imageUrl={imageUrl} />
     <View style={s.flex}>
-      <Text style={s.authorName}>{name}</Text>
+      <View style={s.row}><Text style={s.authorName}>{name}</Text>{!!bio && <Ionicons name={expanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.plum} />}</View>
       <Text style={s.meta}>{new Date(createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}{seeded ? ' · Vital starter' : ''}</Text>
     </View>
+  </View>;
+  if (!bio) return author;
+  return <View style={{ gap: spacing.xs }}>
+    <Pressable accessibilityRole="button" accessibilityLabel={`About ${name}`} accessibilityState={{ expanded }} aria-expanded={expanded}
+      onPress={() => setExpanded(value => !value)} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
+      style={{ minHeight: layout.touchTarget, justifyContent: 'center', borderRadius: radii.sm, borderWidth: 2, borderColor: focused ? colors.focus : 'transparent' }}>
+      {author}
+    </Pressable>
+    {expanded && <Text selectable style={s.body}>{bio}</Text>}
   </View>;
 }
 export const s = StyleSheet.create({

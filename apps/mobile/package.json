@@ -45,7 +45,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "node --test tests/errors.test.mjs tests/discover.test.mjs tests/activity-detail.test.mjs tests/community.test.mjs tests/profile-images.test.mjs",
+    "test": "node --test tests/errors.test.mjs tests/discover.test.mjs tests/activity-detail.test.mjs tests/saved-activities.test.mjs tests/account.test.mjs tests/account-content.test.mjs tests/profile.test.mjs tests/community.test.mjs tests/profile-images.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "private": true

@@ -57,7 +57,7 @@ export function CommunityScreenContent({ api, userId, onActivity, refreshKey = 0
   return <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
     <Screen key={postId ?? 'community-feed'} scrollProps={{ keyboardDismissMode: 'on-drag' }}>
       <View style={styles.reading}>
-        {postId ? <CommunityDetail key={postId} api={api} id={postId} userId={userId} access={access}
+        {postId ? <CommunityDetail key={postId} api={api} id={postId} userId={userId} access={access} refreshKey={refreshKey}
           onBack={() => { setPostId(null); refresh(); }} onRules={() => setAbout(true)} onReport={setReport} onActivity={onActivity} /> : <>
           <ScreenHeader eyebrow="Community" title="Made to be useful, not noisy."
             description="Find and share useful family ideas, experiences, questions and encouragement." />
@@ -90,7 +90,7 @@ export function CommunityScreenContent({ api, userId, onActivity, refreshKey = 0
                 <Text style={s.title}>{post.title}</Text>
                 <Text style={s.body}>{post.excerpt}{post.excerpt.length === 320 ? '…' : ''}</Text>
               </Pressable>
-              <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded} />
+              <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} bio={post.author_bio} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded} />
               {post.activity_id && post.activity_title && <CommunityAction label={`Activity: ${post.activity_title}`} icon="link-outline" onPress={() => onActivity(post.activity_id!)} />}
               <View style={s.row}><CommunityAction label={`${post.reply_count} ${post.reply_count === 1 ? 'reply' : 'replies'} · Read conversation`} icon="chatbubble-outline" onPress={() => setPostId(post.id)} />{post.helpful_count > 0 && <Text style={s.meta}>{post.helpful_count} Helpful</Text>}</View>
             </View>)}

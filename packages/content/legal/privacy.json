@@ -1,0 +1,324 @@
+{
+  "title": "Privacy Notice",
+  "lastUpdated": "2026-09-12",
+  "sections": [
+    {
+      "heading": "1. Who we are",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Vital Collective is a family activity and community service operated by Clay Theakston, trading as Vital Collective. For data-protection purposes, Clay Theakston is the controller of personal information described in this notice."
+        },
+        {
+          "type": "paragraph",
+          "text": "Contact: info@vitalcollective.co.uk"
+        },
+        {
+          "type": "paragraph",
+          "text": "Postal address:\nUnit 1, The Breeze Hill, Bangor Road\nBenllech\nAnglesey\nLL74 8TN"
+        },
+        {
+          "type": "paragraph",
+          "text": "Support: info@vitalcollective.co.uk"
+        }
+      ]
+    },
+    {
+      "heading": "2. Who the service is for",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Vital Collective member accounts are intended for adults aged 18 and over. Children may take part in activities with a parent or guardian, but children do not create member accounts or Community profiles."
+        },
+        {
+          "type": "paragraph",
+          "text": "An adult account holder may choose to add limited family information for personalisation: a first name or nickname, relationship, current age in completed years, and the date that age was last confirmed. Vital does not require a child’s date of birth, school, address, surname or precise location for this purpose. Members may be prompted periodically to confirm or update ages."
+        }
+      ]
+    },
+    {
+      "heading": "3. Information we collect",
+      "blocks": [
+        {
+          "type": "bullet",
+          "text": "Account information: name, email address, authentication identifiers and account status."
+        },
+        {
+          "type": "bullet",
+          "text": "Profile information: member display name, optional introduction/bio and optional profile image."
+        },
+        {
+          "type": "bullet",
+          "text": "Family information: optional first name or nickname, relationship, current age in completed years, and an age-confirmation date entered by an adult account holder. Vital does not require a child’s date of birth, school, address, surname or precise location for core personalisation."
+        },
+        {
+          "type": "bullet",
+          "text": "Preferences: age/activity interests, indoor/outdoor or other activity preferences, notification choices and newsletter choices."
+        },
+        {
+          "type": "bullet",
+          "text": "Saved activity information: activities you save or remove from Saved."
+        },
+        {
+          "type": "bullet",
+          "text": "Community information: posts, replies, reactions, reports, moderation records and information you choose to include in Community content."
+        },
+        {
+          "type": "bullet",
+          "text": "Membership information: plan (currently intended as £9.99 monthly or £59.99 annual), trial/offer eligibility, subscription status, renewal status and transaction/receipt identifiers made available by Apple or Google. Payment-card details are handled by the relevant app store rather than by Vital."
+        },
+        {
+          "type": "bullet",
+          "text": "Support and feedback: messages, suggestions, problem reports and related correspondence."
+        },
+        {
+          "type": "bullet",
+          "text": "Technical and security information: app version, device/platform information, timestamps, diagnostic/security logs and similar information necessary to operate and secure the service."
+        },
+        {
+          "type": "bullet",
+          "text": "Marketing records: email address, consent timestamp/source, subscription status, optional first name, and withdrawal/unsubscribe status. Vital does not create a hidden behavioural marketing profile from newsletter activity at launch."
+        }
+      ]
+    },
+    {
+      "heading": "4. Why we use information and our lawful bases",
+      "blocks": [
+        {
+          "type": "definitions",
+          "entries": [
+            {
+              "label": "Create and operate your account; provide activities, Saved and member features",
+              "text": "Contract — processing is necessary to provide the service you ask us to provide."
+            },
+            {
+              "label": "Display and manage your Community profile and contributions",
+              "text": "Contract; and legitimate interests in operating a useful, safe Community."
+            },
+            {
+              "label": "Personalise activity discovery using family age bands and preferences",
+              "text": "Contract and/or legitimate interests in providing relevant functionality requested by the adult member, using data minimisation and privacy safeguards."
+            },
+            {
+              "label": "Moderate Community content, investigate reports, prevent abuse and protect users",
+              "text": "Legitimate interests in safety, service integrity and enforcing our published rules; legal obligation where applicable."
+            },
+            {
+              "label": "Manage subscriptions, receipts and access rights",
+              "text": "Contract; legal obligation for records where applicable."
+            },
+            {
+              "label": "Respond to support, complaints, suggestions and problem reports",
+              "text": "Contract and legitimate interests in providing support and improving the service."
+            },
+            {
+              "label": "Send optional marketing/newsletters",
+              "text": "Consent where required by PECR and UK data-protection law. Marketing consent is separate from accepting these terms or having an account."
+            },
+            {
+              "label": "Send essential service messages, such as security or account notices",
+              "text": "Contract and legitimate interests. These are not marketing messages."
+            },
+            {
+              "label": "Secure the service, detect fraud/abuse, diagnose faults and maintain logs",
+              "text": "Legitimate interests in security, resilience and service improvement."
+            },
+            {
+              "label": "Comply with law, regulators, court orders and establish or defend legal claims",
+              "text": "Legal obligation and/or legitimate interests, as applicable."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "5. Community content and visibility",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Your Community display name, optional profile image, optional introduction, posts and replies are intended to be visible to other Community members. Your account email and private family details are not part of your Community profile."
+        },
+        {
+          "type": "paragraph",
+          "text": "Please do not post information about children or other people that you do not have the right to share. Avoid posting sensitive personal information that is unnecessary for the conversation. Community content may be reviewed or moderated where needed to enforce the Community rules, investigate reports or protect users."
+        }
+      ]
+    },
+    {
+      "heading": "6. Children and family information",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Vital is designed around family life, so we take additional care with information relating to children. We aim to collect the minimum needed for the feature being used, use high-privacy defaults, avoid unnecessary precise identifiers and make adult-facing explanations clear."
+        },
+        {
+          "type": "paragraph",
+          "text": "If we later introduce child accounts, child-directed online features or materially different processing of children’s information, we will complete an updated data-protection impact assessment and update this notice before that processing begins."
+        }
+      ]
+    },
+    {
+      "heading": "7. Subscriptions and payments",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Mobile subscriptions are intended to be purchased and managed through Apple App Store or Google Play. Vital may receive plan, trial/offer eligibility, subscription/renewal status and transaction or receipt identifiers so that the correct access can be provided. Apple or Google processes payment information under its own privacy terms; Vital does not need full payment-card details."
+        }
+      ]
+    },
+    {
+      "heading": "8. Newsletters and notifications",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "The Vital newsletter is a separate, optional service and may be joined before or after becoming a paid member. Where consent is required, subscribers actively opt in; joining Vital membership does not automatically subscribe a person to marketing. The newsletter may contain family ideas, Vital news and occasional offers. Subscribers can withdraw consent at any time. Essential account/security/service messages are separate from marketing."
+        }
+      ]
+    },
+    {
+      "heading": "9. Who we share information with",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "We may share personal information with carefully selected service providers where necessary to operate Vital, including:"
+        },
+        {
+          "type": "bullet",
+          "text": "cloud database, authentication, file-storage and hosting providers;"
+        },
+        {
+          "type": "bullet",
+          "text": "app hosting/build and infrastructure providers;"
+        },
+        {
+          "type": "bullet",
+          "text": "subscription/payment platforms and app stores;"
+        },
+        {
+          "type": "bullet",
+          "text": "email/newsletter and notification providers;"
+        },
+        {
+          "type": "bullet",
+          "text": "privacy-conscious crash/error-diagnostics or security providers, if enabled and disclosed. Vital does not use advertising analytics or cross-app behavioural tracking at launch;"
+        },
+        {
+          "type": "bullet",
+          "text": "professional advisers, insurers, regulators, courts or law-enforcement bodies where necessary and lawful."
+        },
+        {
+          "type": "paragraph",
+          "text": "Processor contracts must contain the protections required by UK data-protection law."
+        }
+      ]
+    },
+    {
+      "heading": "10. International transfers",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Supabase, Apple, Google and future selected service providers may use infrastructure or sub-processors outside the UK. Where a restricted transfer occurs, Vital will rely on an appropriate lawful transfer mechanism and safeguards where required."
+        }
+      ]
+    },
+    {
+      "heading": "11. How long we keep information",
+      "blocks": [
+        {
+          "type": "definitions",
+          "entries": [
+            {
+              "label": "Account/profile/family/preferences/Saved",
+              "text": "For the life of the account, then deleted or anonymised after account deletion, subject to backups and lawful retention needs."
+            },
+            {
+              "label": "Community posts/replies",
+              "text": "While the content/account remains active. On account deletion, posts and replies are deleted. Where deleting a parent item would break replies written by other members, a neutral deleted-content placeholder may remain without profile attribution. Limited separate records may be retained only where necessary for safety, disputes or law."
+            },
+            {
+              "label": "Moderation/report records",
+              "text": "Normally up to 24 months after the matter closes, longer where reasonably necessary for serious safety, legal or repeat-abuse issues."
+            },
+            {
+              "label": "Support/feedback",
+              "text": "Normally up to 24 months after the matter closes, unless a longer period is required for a dispute or legal obligation."
+            },
+            {
+              "label": "Subscription/accounting records",
+              "text": "For the period required by applicable tax/accounting and consumer law; some records may need to be retained for several years."
+            },
+            {
+              "label": "Marketing consent/suppression record",
+              "text": "Consent while active; a minimal suppression record may be retained after opt-out so we do not contact you again."
+            },
+            {
+              "label": "Security/diagnostic logs",
+              "text": "Normally no longer than reasonably necessary for security and troubleshooting."
+            },
+            {
+              "label": "Backups",
+              "text": "Deleted data may remain in protected backups until the normal backup cycle expires."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "heading": "12. Account deletion",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "You will be able to request deletion of your Vital account from within the app. Account/profile/avatar/bio, family information, preferences and Saved data will be deleted. Community posts and replies will also be deleted; where removing a parent item would break the structure of other members’ replies, the deleted item may be replaced by a neutral placeholder with no continuing profile attribution. Limited moderation, fraud, security, accounting or legal records may be retained only where genuinely necessary and lawful. Deleting a Vital account is separate from cancelling an Apple/Google subscription, and the deletion flow will explain this clearly."
+        }
+      ]
+    },
+    {
+      "heading": "13. Security",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "We use technical and organisational measures appropriate to the nature of the information and the risks involved. These include access controls, authentication, restricted administrative permissions, database security controls and supplier due diligence. No online service can guarantee absolute security."
+        },
+        {
+          "type": "paragraph",
+          "text": "Vital does not sell personal information and does not use children’s or family information to build advertising profiles."
+        }
+      ]
+    },
+    {
+      "heading": "14. Your data-protection rights",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Depending on the circumstances and lawful basis, you may have rights to access, correct, erase, restrict or object to our use of your information, and to receive certain information in a portable form. Where processing is based on consent, you may withdraw that consent at any time. You also have the right to complain to the UK Information Commissioner’s Office (ICO)."
+        },
+        {
+          "type": "paragraph",
+          "text": "Your right to object: where we rely on legitimate interests, you may object to that processing. We will consider your objection in accordance with applicable law."
+        },
+        {
+          "type": "paragraph",
+          "text": "To exercise a right, contact info@vitalcollective.co.uk. We may need to verify your identity before acting on a request."
+        }
+      ]
+    },
+    {
+      "heading": "15. Automated decisions and personalisation",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "Vital may use preferences, family age information and activity metadata to rank or recommend activities. The current design is not intended to make solely automated decisions that produce legal or similarly significant effects about members. If that changes, we will update this notice and provide any additional safeguards required by law."
+        }
+      ]
+    },
+    {
+      "heading": "16. Changes to this notice",
+      "blocks": [
+        {
+          "type": "paragraph",
+          "text": "We may update this notice as Vital develops or the law changes. Material changes will be communicated in an appropriate way, and the current version will always show its effective date."
+        }
+      ]
+    }
+  ]
+}
