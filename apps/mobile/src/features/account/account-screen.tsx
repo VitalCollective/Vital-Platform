@@ -8,9 +8,9 @@ import { CommunityAbout } from '@/features/community/community-actions';
 import type { CommunityApi } from '@/features/community/community-api';
 import { CommunityField, CommunityNotice } from '@/features/community/community-ui';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
-import { customerSafeErrorMessage } from '@/lib/errors';
+import { customerSafeErrorMessage, reportTechnicalError } from '@/lib/errors';
 import { getOwnCommunityProfile, updateOwnCommunityProfile } from '@/services/profiles';
-import type { AccountApi } from './account-api';
+import { AccountDeletionError, type AccountApi } from './account-api';
 import { ACCOUNT_PANELS, membershipStatus, profileValidation, type AccountPanel } from './account-model';
 import { MEMBERSHIP_PLANS } from './account-content';
 import { AccountHelp, AccountLegal, SupportContact } from './account-information';
@@ -87,13 +87,48 @@ function CommunityPanel({ community, navigate, openCommunity }: Pick<Props, 'com
     {about && <CommunityAbout api={community} access={state.value ?? null} onClose={() => setAbout(false)} onAccepted={state.reload} />}
   </View>;
 }
+function DeleteAccountPanel({ api, id, navigate, signOut }: Pick<Props, 'api' | 'id' | 'navigate' | 'signOut'>) {
+  const [confirming, setConfirming] = useState(false);
+  const [confirmation, setConfirmation] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  async function removeAccount() {
+    if (busy || confirmation !== 'DELETE') return;
+    setBusy(true); setError(null);
+    try {
+      await api.deleteAccount(id, confirmation);
+      try { await signOut(); }
+      catch (cause) { reportTechnicalError('Clear deleted account session', cause); }
+    } catch (cause) {
+      setError(cause instanceof AccountDeletionError ? cause.message : customerSafeErrorMessage('Delete account', cause, "We couldn't delete your account. Please try again."));
+      setBusy(false);
+    }
+  }
+  return <View style={a.stack}>
+    <Group title="Delete your account">
+      <Text style={a.body}>This permanently removes your Vital account, profile, family information, preferences, Saved items and Community content. It cannot be undone.</Text>
+      <Text style={a.meta}>If another member has replied to one of your Community posts, only a neutral deleted-post marker may remain so their reply is not destroyed. Your original text, name, introduction and profile image will be removed.</Text>
+      <Text style={a.meta}>Deleting your Vital account does not necessarily cancel an App Store or Google Play subscription. Billing is not currently integrated; once it is, subscriptions must also be cancelled through Apple or Google.</Text>
+      <CommunityNotice message={error} error />
+      {!confirming ? <>
+        <Button label="Continue to deletion" variant="danger" onPress={() => { setConfirming(true); setError(null); }} />
+        <Button label="Cancel" variant="secondary" onPress={() => navigate(null)} />
+      </> : <>
+        <Text style={a.body}>Type DELETE below to confirm permanent account deletion.</Text>
+        <CommunityField label="Type DELETE to confirm" value={confirmation} onChangeText={(value) => { setConfirmation(value); setError(null); }}
+          editable={!busy} autoCapitalize="characters" autoCorrect={false} maxLength={6} />
+        <Button label="Delete account permanently" variant="danger" loading={busy} disabled={confirmation !== 'DELETE'}
+          accessibilityHint="Permanently deletes your Vital account and personal data" onPress={() => void removeAccount()} />
+        <Button label="Cancel" variant="secondary" disabled={busy} onPress={() => navigate(null)} />
+      </>}
+    </Group>
+  </View>;
+}
 function InformationPanel({ panel, navigate }: { panel: AccountPanel; navigate: Props['navigate'] }) {
   if (panel === 'about') return <Group title="Vital Collective"><Text style={a.body}>Activities, ideas and resources for you and your family, across Vital Mums, Vital Kids, Vital Together, Vital Life and Vital Food.</Text>
     <Text style={a.meta}>Discover something to try, save it for another day, and share experiences in Community.</Text><Text style={a.meta}>App version {Constants.expoConfig?.version ?? 'unavailable'}</Text></Group>;
   if (panel === 'privacy' || panel === 'terms') return <AccountLegal kind={panel} />;
   if (panel === 'help') return <AccountHelp navigate={navigate} />;
-  if (panel === 'deletion') return <Group title="Account deletion"><Text style={a.body}>Account deletion is unavailable in the app. No deletion request has been made.</Text>
-    <Text style={a.meta}>Signing out does not delete your account or remove your information.</Text><Button label="Request account deletion" disabled variant="danger" onPress={() => {}} /></Group>;
   return <Group title={ACCOUNT_PANELS[panel]}>
     <Text style={a.body}>{panel === 'suggest' ? 'What would make Vital more useful for you and your family? Share an activity idea, a resource you would value, or something you wish was easier.' : panel === 'problem' ? 'Tell us what you were doing, what happened and which device you were using. Please do not include passwords or private family information.' : 'Questions about using Vital or your account belong here.'}</Text>
     <SupportContact kind={panel === 'suggest' ? 'suggest' : panel === 'problem' ? 'problem' : 'help'} />
@@ -120,7 +155,7 @@ export function AccountScreen({ id, email, panel, api, community, navigate, open
   const identity = <><View style={a.row}><ProfileAvatar name={name} imageUrl={profile.value?.imageUrl} size={54} /><View style={a.grow}>
     <Text style={a.title}>{name}</Text>{!panel && <Text style={a.meta}>{email ?? 'Email unavailable'}</Text>}</View></View>
     {panel === 'identity' && <Text style={a.body}>{profile.value?.bio || 'No introduction added.'}</Text>}</>;
-  return <Screen key={panel ?? 'hub'} keyboardAware={panel === 'profile'} scrollProps={{ keyboardDismissMode: 'on-drag' }}>
+  return <Screen key={panel ?? 'hub'} keyboardAware={panel === 'profile' || panel === 'deletion'} scrollProps={{ keyboardDismissMode: 'on-drag' }}>
     {panel && <AccountLink direction="back" label="Back to You" onPress={() => navigate(null)} />}
     <ScreenHeader eyebrow="Your Vital" title={panel ? ACCOUNT_PANELS[panel] : 'You'} description={!panel ? 'Your details, your family, your place in Vital.' : undefined} />
     <View style={a.stack}><CommunityNotice message={notice} />
@@ -141,7 +176,8 @@ export function AccountScreen({ id, email, panel, api, community, navigate, open
           <EditProfile id={id} profile={profile.value} onSaved={saved => { profile.commit(saved); navigate(null); setNotice('Your profile has been saved.'); }} /> :
           <Group title="Your Community identity">{identity}<Text style={a.meta}>This is the name, image and introduction members see beside your conversations.</Text>{link('profile')}<AccountLink label="Open Community" onPress={openCommunity} /></Group> : <><Text style={a.body}>Your profile is unavailable.</Text><Button label="Try again" onPress={profile.reload} /></>)}
       </> : panel === 'family' ? <FamilyPanel api={api} id={id} /> : panel === 'preferences' ? <AccountPreferences api={api} id={id} /> :
-        panel === 'membership' ? <MembershipPanel api={api} id={id} /> : panel === 'community' ? <CommunityPanel community={community} navigate={navigate} openCommunity={openCommunity} /> : <InformationPanel key={panel} panel={panel} navigate={navigate} />}
+        panel === 'membership' ? <MembershipPanel api={api} id={id} /> : panel === 'community' ? <CommunityPanel community={community} navigate={navigate} openCommunity={openCommunity} /> :
+        panel === 'deletion' ? <DeleteAccountPanel api={api} id={id} navigate={navigate} signOut={signOut} /> : <InformationPanel key={panel} panel={panel} navigate={navigate} />}
     </View>
   </Screen>;
 }

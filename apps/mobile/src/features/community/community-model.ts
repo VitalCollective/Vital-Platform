@@ -33,7 +33,7 @@ export type CommunityAccess = {
   isModerator: boolean; rules: CommunityRules | null;
 };
 export type CommunityPost = {
-  id: string; author_id: string; author_name: string; author_is_seeded: boolean;
+  id: string; author_id: string | null; author_name: string; author_is_seeded: boolean;
   author_image_url?: string | null;
   author_bio?: string | null;
   title: string; excerpt: string; post_type: PostType; topic: CommunityTopic | null;
@@ -60,11 +60,17 @@ export type PostDraft = {
   activityId: string | null;
 };
 export type ActivityLinkOption = { id: string; title: string; section: string };
-export type ReportTarget = { type: 'post' | 'comment'; id: string; authorId: string };
+export type ReportTarget = { type: 'post' | 'comment'; id: string; authorId: string; authorSeeded: boolean };
+export type CommunityMember = {
+  id: string; name: string; imageUrl?: string | null; bio?: string | null; seeded: boolean;
+};
+export type BlockedCommunityMember = {
+  profileId: string; displayName: string; imageUrl: string | null; blockedAt: string;
+};
 export type CommunityReport = {
   id: string; target_type: 'post' | 'comment' | 'profile'; target_id: string;
   reason_category: ReportReason; details: string | null; created_at: string; status: string;
-  target?: { author_id: string; body: string; title?: string; moderation_status?: string; author_name?: string; author_bio?: string | null; author_image_url?: string | null; author_is_seeded?: boolean; created_at?: string };
+  target?: { author_id: string | null; body: string; title?: string; moderation_status?: string; author_name?: string; author_bio?: string | null; author_image_url?: string | null; author_is_seeded?: boolean; created_at?: string };
 };
 export type CommunityRestriction = {
   id: string; profile_id: string; imposed_by: string; restriction_type: string;
@@ -89,6 +95,12 @@ export { profileInitials as communityInitials } from '../../lib/profile-images.t
 export function appendCommunityPage<T extends { id: string }>(existing: T[], incoming: T[]): T[] {
   const ids = new Set(existing.map((item) => item.id));
   return [...existing, ...incoming.filter((item) => !ids.has(item.id))];
+}
+export function removeCommunityPageItems<T>(items: T[], shouldRemove: (item: T) => boolean): T[] {
+  return items.filter((item) => !shouldRemove(item));
+}
+export function updateCommunityPageItem<T extends { id: string }>(items: T[], id: string, update: (item: T) => T): T[] {
+  return items.map((item) => item.id === id ? update(item) : item);
 }
 export function participationMessage(access: CommunityAccess | null): string {
   if (access?.restricted) return 'Your community participation is paused. You can still read, report concerns, block members and remove your Helpful reactions.';

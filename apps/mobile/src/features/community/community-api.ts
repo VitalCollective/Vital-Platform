@@ -4,25 +4,27 @@ import { COMMUNITY_PAGE_SIZE, GENERAL_ROOM_ID, validatePostDraft, validateReply 
 import type {
   ActivityLinkOption, CommunityAccess, CommunityFilters, CommunityPage,
   CommunityPost, CommunityPostDetail, CommunityReply, CommunityReport,
-  CommunityRestriction, PostDraft, ReportReason, ReportTarget,
+  BlockedCommunityMember, CommunityRestriction, PostDraft, ReportReason, ReportTarget,
 } from './community-model.ts';
 
 // The authenticated client is injected for integration tests. No administrative
 // key, claimed moderator role or seed provenance ever enters member writes.
 export function createCommunityApi(client: SupabaseClient) {
   const resolveImages = profileImageResolver(client);
-  async function withAuthors<T extends { author_id: string }>(rows: T[]) {
+  async function withAuthors<T extends { author_id: string | null }>(rows: T[]) {
     if (!rows.length) return rows;
     // One bounded directory query + one batched signing call, not per-card reads.
     // Works against the already-applied schema; no new view/RPC columns required.
     try {
-      const { data, error } = await client.from('profiles').select('id,display_name,avatar_url,is_seeded,bio').in('id', [...new Set(rows.map(row => row.author_id))]);
+      const authorIds = [...new Set(rows.map(row => row.author_id).filter((id): id is string => id !== null))];
+      if (!authorIds.length) return rows.map(row => ({ ...row, author_image_url: null }));
+      const { data, error } = await client.from('profiles').select('id,display_name,avatar_url,is_seeded,bio').in('id', authorIds);
       if (error) return rows;
       const profiles = data ?? [];
       const images = await resolveImages(profiles);
       return rows.map(row => {
         const profile = profiles.find(p => p.id === row.author_id);
-        return { ...row, ...(profile ? { author_name: profile.display_name, author_is_seeded: profile.is_seeded, author_bio: profile.bio ?? null } : {}), author_image_url: images.get(row.author_id) ?? null };
+        return { ...row, ...(profile ? { author_name: profile.display_name, author_is_seeded: profile.is_seeded, author_bio: profile.bio ?? null } : {}), author_image_url: row.author_id ? images.get(row.author_id) ?? null : null };
       });
     } catch { return rows; } // Image/directory decoration must not hide content.
   }
@@ -31,6 +33,13 @@ export function createCommunityApi(client: SupabaseClient) {
     if (error) throw error;
     if (!data.session?.user.id) throw new Error('Authentication required');
     return data.session.user.id;
+  }
+  async function ownsBlock(profileId: string): Promise<boolean> {
+    const blockerId = await subject();
+    const { data, error } = await client.from('community_blocks').select('blocked_profile_id')
+      .eq('blocker_id', blockerId).eq('blocked_profile_id', profileId).maybeSingle();
+    if (error) throw error;
+    return data?.blocked_profile_id === profileId;
   }
   return {
     async access(): Promise<CommunityAccess> {
@@ -100,10 +109,31 @@ export function createCommunityApi(client: SupabaseClient) {
       if (error && error.code !== '23505') throw error;
     },
     async block(profileId: string): Promise<void> {
+      const blockerId = await subject();
+      if (blockerId === profileId) throw new Error('You cannot block yourself');
       const { error } = await client.from('community_blocks').upsert({
-        blocker_id: await subject(), blocked_profile_id: profileId,
+        blocker_id: blockerId, blocked_profile_id: profileId,
       }, { onConflict: 'blocker_id,blocked_profile_id', ignoreDuplicates: true });
       if (error) throw error;
+      if (!await ownsBlock(profileId)) throw new Error('Block was not confirmed');
+    },
+    isBlocked(profileId: string): Promise<boolean> {
+      return ownsBlock(profileId);
+    },
+    async blockedMembers(): Promise<BlockedCommunityMember[]> {
+      const { data, error } = await client.rpc('community_blocked_members');
+      if (error) throw error;
+      const rows = (data ?? []) as { profile_id: string; display_name: string; avatar_url: string | null; blocked_at: string }[];
+      const images = await resolveImages(rows.map(row => ({ id: row.profile_id, avatar_url: row.avatar_url })));
+      return rows.map(row => ({ profileId: row.profile_id, displayName: row.display_name,
+        imageUrl: images.get(row.profile_id) ?? null, blockedAt: row.blocked_at }));
+    },
+    async unblock(profileId: string): Promise<void> {
+      const blockerId = await subject();
+      const { data, error } = await client.from('community_blocks').delete()
+        .eq('blocker_id', blockerId).eq('blocked_profile_id', profileId).select('blocked_profile_id');
+      if (error) throw error;
+      if (!data?.some(row => row.blocked_profile_id === profileId)) throw new Error('Block relationship was not found');
     },
     async acceptRules(version: number): Promise<void> {
       const { error } = await client.from('community_rule_acceptances').upsert({

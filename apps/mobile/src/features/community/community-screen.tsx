@@ -8,12 +8,12 @@ import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { customerSafeErrorMessage, withFutureJwtTimingRetry } from '@/lib/errors';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
 import type { CommunityApi } from './community-api';
-import { CommunityAbout, ReportComposer } from './community-actions';
+import { BlockedMembers, CommunityAbout, CommunityMemberActions, ReportComposer } from './community-actions';
 import { CommunityComposer } from './community-composer';
 import { CommunityDetail } from './community-detail';
 import { useCommunityPage } from './community-hooks';
 import { CommunityModeration } from './community-moderation';
-import { COMMUNITY_TOPICS, POST_TYPES, participationMessage, type CommunityAccess, type CommunityOrder, type CommunityTopic, type PostType, type ReportTarget } from './community-model';
+import { COMMUNITY_TOPICS, POST_TYPES, participationMessage, type CommunityAccess, type CommunityMember, type CommunityOrder, type CommunityTopic, type PostType, type ReportTarget } from './community-model';
 import { CommunityAction, CommunityAuthor, CommunityField, CommunityNotice, s } from './community-ui';
 
 // API/navigation injection keeps component fixtures outside app routes and makes
@@ -30,6 +30,8 @@ export function CommunityScreenContent({ api, userId, onActivity, refreshKey = 0
   const [about, setAbout] = useState(false);
   const [moderation, setModeration] = useState(false);
   const [report, setReport] = useState<ReportTarget | null>(null);
+  const [member, setMember] = useState<CommunityMember | null>(null);
+  const [blockedMembers, setBlockedMembers] = useState(false);
   const [access, setAccess] = useState<CommunityAccess | null>(null);
   const [accessError, setAccessError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -51,6 +53,14 @@ export function CommunityScreenContent({ api, userId, onActivity, refreshKey = 0
     return () => { active = false; };
   }, [api, reload, refreshKey]);
   function refresh() { setReload((value) => value + 1); }
+  function blockSucceeded(profileId: string) {
+    setPostId(null);
+    feed.removeWhere((post) => post.author_id === profileId);
+    void feed.refresh();
+  }
+  function replyCreated(id: string) {
+    feed.updateItem(id, (post) => ({ ...post, reply_count: post.reply_count + 1 }));
+  }
   function startPost(type: PostType) { setNotice(null); if (access?.canParticipate) setComposer(type); else setAbout(true); }
   function resetFilters() { setSearch(''); setTopic(null); setPostType(null); setOrder('recent'); }
   const filtering = Boolean(query.trim() || topic || postType);
@@ -58,7 +68,7 @@ export function CommunityScreenContent({ api, userId, onActivity, refreshKey = 0
     <Screen key={postId ?? 'community-feed'} scrollProps={{ keyboardDismissMode: 'on-drag' }}>
       <View style={styles.reading}>
         {postId ? <CommunityDetail key={postId} api={api} id={postId} userId={userId} access={access} refreshKey={refreshKey}
-          onBack={() => { setPostId(null); refresh(); }} onRules={() => setAbout(true)} onReport={setReport} onActivity={onActivity} /> : <>
+          onBack={() => { setPostId(null); refresh(); }} onRules={() => setAbout(true)} onReport={setReport} onMember={setMember} onReplyCreated={replyCreated} onActivity={onActivity} /> : <>
           <ScreenHeader eyebrow="Community" title="Made to be useful, not noisy."
             description="Find and share useful family ideas, experiences, questions and encouragement." />
           <View style={s.stack}>
@@ -90,21 +100,24 @@ export function CommunityScreenContent({ api, userId, onActivity, refreshKey = 0
                 <Text style={s.title}>{post.title}</Text>
                 <Text style={s.body}>{post.excerpt}{post.excerpt.length === 320 ? '…' : ''}</Text>
               </Pressable>
-              <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} bio={post.author_bio} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded} />
+              <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} bio={post.author_bio} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded}
+                onMember={post.author_id && post.author_id !== userId && !post.is_seeded && !post.author_is_seeded ? () => setMember({ id: post.author_id!, name: post.author_name, imageUrl: post.author_image_url, bio: post.author_bio, seeded: false }) : undefined} />
               {post.activity_id && post.activity_title && <CommunityAction label={`Activity: ${post.activity_title}`} icon="link-outline" onPress={() => onActivity(post.activity_id!)} />}
               <View style={s.row}><CommunityAction label={`${post.reply_count} ${post.reply_count === 1 ? 'reply' : 'replies'} · Read conversation`} icon="chatbubble-outline" onPress={() => setPostId(post.id)} />{post.helpful_count > 0 && <Text style={s.meta}>{post.helpful_count} Helpful</Text>}</View>
             </View>)}
             {!!feed.items.length && feed.error && <><CommunityNotice message={feed.error} error /><Button label="Try again" onPress={() => void feed.more()} /></>}
             {feed.hasMore && <Button label="Show more conversations" variant="secondary" loading={feed.loadingMore} onPress={() => void feed.more()} />}
             {!feed.loading && feed.items.length > 0 && !feed.hasMore && <Text style={styles.endNote}>You are up to date with these conversations. Come back when it is useful.</Text>}
-            <View style={s.row}><CommunityAction label="About Community & rules" icon="information-circle-outline" onPress={() => setAbout(true)} /><CommunityAction label="Refresh" icon="refresh-outline" onPress={refresh} />{access?.isModerator && <CommunityAction label="Moderation review" icon="shield-checkmark-outline" onPress={() => setModeration(true)} />}</View>
+            <View style={s.row}><CommunityAction label="About Community & rules" icon="information-circle-outline" onPress={() => setAbout(true)} /><CommunityAction label="Blocked members" icon="ban-outline" onPress={() => setBlockedMembers(true)} /><CommunityAction label="Refresh" icon="refresh-outline" onPress={refresh} />{access?.isModerator && <CommunityAction label="Moderation review" icon="shield-checkmark-outline" onPress={() => setModeration(true)} />}</View>
           </View>
         </>}
       </View>
     </Screen>
     {composer && <CommunityComposer api={api} initialType={composer} onClose={() => setComposer(null)} onCreated={(id) => { setComposer(null); setPostId(id); refresh(); }} />}
     {about && <CommunityAbout api={api} access={access} onClose={() => setAbout(false)} onAccepted={() => { refresh(); setAbout(false); setNotice('Your agreement to the current Community Rules has been saved.'); }} />}
-    {report && <ReportComposer api={api} target={report} onClose={() => setReport(null)} onReported={() => { setReport(null); setPostId(null); setNotice('Thank you. Your concern has been sent to the Vital team.'); }} onBlocked={() => { setReport(null); setPostId(null); refresh(); setNotice('This member is now blocked.'); }} />}
+    {report && <ReportComposer api={api} target={report} onClose={() => setReport(null)} onReported={() => { setReport(null); setPostId(null); setNotice('Thank you. Your concern has been sent to the Vital team.'); }} onBlocked={() => { const profileId = report.authorId; setReport(null); blockSucceeded(profileId); setNotice('This member is now blocked.'); }} />}
+    {member && <CommunityMemberActions api={api} member={member} onClose={() => setMember(null)} onChanged={(blocked) => { const profileId = member.id; setMember(null); if (blocked) blockSucceeded(profileId); else refresh(); setNotice(blocked ? 'This member is now blocked.' : 'This member is no longer blocked.'); }} />}
+    {blockedMembers && <BlockedMembers api={api} onClose={() => setBlockedMembers(false)} onChanged={() => { refresh(); setNotice('This member is no longer blocked.'); }} />}
     {moderation && <CommunityModeration api={api} onClose={() => { setModeration(false); refresh(); }} />}
   </KeyboardAvoidingView>;
 }

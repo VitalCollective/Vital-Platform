@@ -5,12 +5,13 @@ import { StatePanel } from '@/components/vital/state-panel';
 import { customerSafeErrorMessage, withFutureJwtTimingRetry } from '@/lib/errors';
 import type { CommunityApi } from './community-api';
 import { useCommunityPage } from './community-hooks';
-import { participationMessage, POST_TYPES, validateReply, type CommunityAccess, type CommunityPostDetail, type CommunityReply, type ReportTarget } from './community-model';
+import { participationMessage, POST_TYPES, validateReply, type CommunityAccess, type CommunityMember, type CommunityPostDetail, type CommunityReply, type ReportTarget } from './community-model';
 import { CommunityAction, CommunityAuthor, CommunityField, CommunityNotice, s } from './community-ui';
 
-export function CommunityDetail({ api, id, userId, access, onBack, onRules, onReport, onActivity, refreshKey = 0 }: {
+export function CommunityDetail({ api, id, userId, access, onBack, onRules, onReport, onMember, onReplyCreated, onActivity, refreshKey = 0 }: {
   api: CommunityApi; id: string; userId: string; access: CommunityAccess | null; onBack: () => void;
-  onRules: () => void; onReport: (target: ReportTarget) => void; onActivity: (id: string) => void; refreshKey?: number;
+  onRules: () => void; onReport: (target: ReportTarget) => void; onMember: (member: CommunityMember) => void;
+  onReplyCreated: (postId: string) => void; onActivity: (id: string) => void; refreshKey?: number;
 }) {
   const [post, setPost] = useState<CommunityPostDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -50,6 +51,8 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
     if (validation) { setActionError(validation); return; }
     void action(async () => {
       await api.reply(id, body, replyTo ? replyTo.parent_comment_id ?? replyTo.id : null);
+      setPost((current) => current ? { ...current, reply_count: current.reply_count + 1 } : current);
+      onReplyCreated(id);
       setBody(''); setReplyTo(null); setNotice('Your reply has been added to the conversation.'); await replies.refresh(); setPost(await api.post(id));
     });
   }
@@ -59,14 +62,15 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
       <View style={s.card}>
         <Text style={s.eyebrow}>{POST_TYPES.find((type) => type.value === post.post_type)?.noun ?? 'Conversation'}{post.topic ? ` · ${post.topic}` : ''}</Text>
         <Text accessibilityRole="header" style={s.title}>{post.title}</Text>
-        <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} bio={post.author_bio} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded} />
+        <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} bio={post.author_bio} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded}
+          onMember={post.author_id && post.author_id !== userId && !post.is_seeded && !post.author_is_seeded ? () => onMember({ id: post.author_id!, name: post.author_name, imageUrl: post.author_image_url, bio: post.author_bio, seeded: false }) : undefined} />
         <Text selectable style={s.body}>{post.body}</Text>
         {post.activity_id && post.activity_title && <CommunityAction label={`Vital activity: ${post.activity_title}`} icon="link-outline" onPress={() => onActivity(post.activity_id!)} />}
-        <View style={s.row}>
+        {post.author_id && <View style={s.row}>
           <CommunityAction label={`Helpful${post.helpful_count ? ` · ${post.helpful_count}` : ''}`} icon="hand-left-outline" selected={post.viewer_helpful}
             disabled={busy || (!post.viewer_helpful && !access?.canParticipate)} onPress={() => void helpful('post', post)} />
-          {post.author_id !== userId ? <CommunityAction label="Report / block" icon="flag-outline" onPress={() => onReport({ type: 'post', id: post.id, authorId: post.author_id })} /> : !post.locked && !post.pinned && !access?.restricted ? <CommunityAction label="Remove my post" onPress={() => setConfirmRemove({ kind: 'post', id })} /> : null}
-        </View>
+          {post.author_id !== userId ? <CommunityAction label={post.is_seeded || post.author_is_seeded ? 'Report' : 'Report / block'} icon="flag-outline" onPress={() => onReport({ type: 'post', id: post.id, authorId: post.author_id!, authorSeeded: post.is_seeded || post.author_is_seeded })} /> : !post.locked && !post.pinned && !access?.restricted ? <CommunityAction label="Remove my post" onPress={() => setConfirmRemove({ kind: 'post', id })} /> : null}
+        </View>}
       </View>
       <CommunityNotice message={actionError} error />
       <CommunityNotice message={notice} />
@@ -74,14 +78,15 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
       <Text accessibilityRole="header" style={s.title}>Replies</Text>
       {replies.loading ? <Text style={s.meta}>Loading replies…</Text> : !replies.items.length && !replies.error ? <Text style={s.body}>No replies yet. A useful thought or a little encouragement is welcome.</Text> : null}
       {replies.items.map((reply) => <View key={reply.id} style={s.card}>
-        <CommunityAuthor name={reply.author_name} imageUrl={reply.author_image_url} bio={reply.author_bio} createdAt={reply.created_at} seeded={reply.is_seeded} />
+        <CommunityAuthor name={reply.author_name} imageUrl={reply.author_image_url} bio={reply.author_bio} createdAt={reply.created_at} seeded={reply.is_seeded}
+          onMember={reply.author_id !== userId && !reply.is_seeded ? () => onMember({ id: reply.author_id, name: reply.author_name, imageUrl: reply.author_image_url, bio: reply.author_bio, seeded: false }) : undefined} />
         {reply.parent_comment_id && <Text style={s.meta}>In reply to {reply.reply_to_name ?? 'an earlier reply'}</Text>}
         <Text selectable style={s.body}>{reply.body}</Text>
         <View style={s.row}>
           <CommunityAction label={`Helpful${reply.helpful_count ? ` · ${reply.helpful_count}` : ''}`} icon="hand-left-outline" selected={reply.viewer_helpful}
             disabled={busy || (!reply.viewer_helpful && !access?.canParticipate)} onPress={() => void helpful('comment', reply)} />
           {!post.locked && access?.canParticipate && <CommunityAction label="Reply" icon="return-down-forward-outline" onPress={() => { setReplyTo(reply); requestAnimationFrame(() => replyInput.current?.focus()); }} />}
-          {reply.author_id !== userId ? <CommunityAction label="Report / block" icon="flag-outline" onPress={() => onReport({ type: 'comment', id: reply.id, authorId: reply.author_id })} /> : !access?.restricted ? <CommunityAction label="Remove my reply" onPress={() => setConfirmRemove({ kind: 'comment', id: reply.id })} /> : null}
+          {reply.author_id !== userId ? <CommunityAction label={reply.is_seeded ? 'Report' : 'Report / block'} icon="flag-outline" onPress={() => onReport({ type: 'comment', id: reply.id, authorId: reply.author_id, authorSeeded: reply.is_seeded })} /> : !access?.restricted ? <CommunityAction label="Remove my reply" onPress={() => setConfirmRemove({ kind: 'comment', id: reply.id })} /> : null}
         </View>
       </View>)}
       <CommunityNotice message={replies.error} error />

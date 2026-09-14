@@ -30,15 +30,18 @@ replies[0].author_image_url=probeImage;
 replies.push({...replies[0],id:'fixture-reply-absent',author_name:'Initials member',body:'TEST image absent',author_image_url:null});
 replies.push({...replies[0],id:'fixture-reply-broken',author_name:'Broken image member',body:'TEST broken image',author_image_url:brokenImage,is_seeded:true});
 const access = {canParticipate:mode!=='rules'&&mode!=='restricted',restricted:mode==='restricted',acceptedRules:mode!=='rules',isModerator:mode==='moderator',rules:{version:2,title:'Community Rules · QA',content_markdown:'TEST RULES. No advertisements, promotional posts, affiliate spam, repeated self-promotion or commercial solicitation. Respect privacy and keep children safe.'}};
+const blocked = new Set<string>();
 const api: CommunityApi = {
   async access(){return access;},
-  async posts(filters,offset=0){if(mode==='error')throw new Error('TEST backend detail must not reach customer UI');const rows=mode==='empty'?[]:posts.filter(p=>(!filters.topic||p.topic===filters.topic)&&(!filters.postType||p.post_type===filters.postType)&&(!filters.search||p.title.toLowerCase().includes(filters.search.toLowerCase())));return {items:rows.slice(offset,offset+20),hasMore:rows.length>offset+20,nextOffset:offset+20};},
-  async post(id){return posts.find(p=>p.id===id)!;},
-  async replies(id,offset=0){const rows=replies.filter(r=>r.post_id===id);return {items:rows.slice(offset,offset+20),hasMore:rows.length>offset+20,nextOffset:offset+20};},
+  async posts(filters,offset=0){if(mode==='error')throw new Error('TEST backend detail must not reach customer UI');const rows=mode==='empty'?[]:posts.filter(p=>(p.author_id===null||!blocked.has(p.author_id))&&(!filters.topic||p.topic===filters.topic)&&(!filters.postType||p.post_type===filters.postType)&&(!filters.search||p.title.toLowerCase().includes(filters.search.toLowerCase())));return {items:rows.slice(offset,offset+20),hasMore:rows.length>offset+20,nextOffset:offset+20};},
+  async post(id){const post=posts.find(p=>p.id===id&&(p.author_id===null||!blocked.has(p.author_id)));if(!post)throw new Error('Post unavailable');return post;},
+  async replies(id,offset=0){const rows=replies.filter(r=>r.post_id===id&&!blocked.has(r.author_id));return {items:rows.slice(offset,offset+20),hasMore:rows.length>offset+20,nextOffset:offset+20};},
   async createPost(draft){const p={...posts[0],id:'new-fixture',title:draft.title,body:draft.body,excerpt:draft.body,post_type:draft.postType,topic:draft.topic,author_id:'qa-self',author_name:'QA member',is_seeded:false,author_is_seeded:false,activity_id:draft.activityId,activity_title:draft.activityId?'TEST linked Vital activity':null,helpful_count:0,reply_count:0,viewer_helpful:false};posts.unshift(p);return p.id;},
   async reply(id,content,parent){replies.push({...replies[0],id:'new-fixture-reply',post_id:id,body:content,parent_comment_id:parent,author_name:'QA member',author_id:'qa-self'});},
   async helpful(kind,id,remove){const item=kind==='post'?posts.find(p=>p.id===id):replies.find(r=>r.id===id);if(item){item.viewer_helpful=!remove;item.helpful_count+=remove?-1:1;}},
-  async report(){}, async block(){}, async acceptRules(){access.acceptedRules=true;access.canParticipate=!access.restricted;},
+  async report(){}, async block(id){blocked.add(id);}, async isBlocked(id){return blocked.has(id);},
+  async blockedMembers(){return [...blocked].map((id,index)=>({profileId:id,displayName:'Fixture member',imageUrl:probeImage,blockedAt:new Date(2026,0,index+1).toISOString()}));},
+  async unblock(id){blocked.delete(id);}, async acceptRules(){access.acceptedRules=true;access.canParticipate=!access.restricted;},
   async findActivities(){return [{id:'TEST-ACTIVITY',title:'TEST linked Vital activity',section:'Vital Kids'}];},
   async moderate(){},async removeOwn(){},
   async reportQueue(){return {items:[{id:'test-report',target_type:'post',target_id:'fixture-0',reason_category:'spam_scam',details:'TEST report concern',status:'open',created_at:'2026-01-12T00:00:00Z',target:{author_id:'qa-other',author_name:posts[0].author_name,author_image_url:probeImage,author_is_seeded:true,created_at:posts[0].created_at,title:'TEST reported post',body,moderation_status:'visible'}}],hasMore:false,nextOffset:20};},

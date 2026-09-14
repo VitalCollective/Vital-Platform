@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { customerSafeErrorMessage, withFutureJwtTimingRetry } from '@/lib/errors';
-import { appendCommunityPage, type CommunityPage } from './community-model';
+import { appendCommunityPage, removeCommunityPageItems, updateCommunityPageItem, type CommunityPage } from './community-model';
 
 export function useCommunityPage<T extends { id: string }>(load: (offset: number) => Promise<CommunityPage<T>>) {
   const [items, setItems] = useState<T[]>([]);
@@ -32,6 +32,12 @@ export function useCommunityPage<T extends { id: string }>(load: (offset: number
       if (epoch.current === current) { busy.current = false; setLoading(false); setLoadingMore(false); }
     }
   }, [load]);
+  const removeWhere = useCallback((shouldRemove: (item: T) => boolean) => {
+    setItems((existing) => removeCommunityPageItems(existing, shouldRemove));
+  }, []);
+  const updateItem = useCallback((id: string, update: (item: T) => T) => {
+    setItems((existing) => updateCommunityPageItem(existing, id, update));
+  }, []);
   useEffect(() => { void request(false); return () => { epoch.current += 1; busy.current = false; }; }, [request]);
-  return { items, loading, loadingMore, hasMore, error, refresh: () => request(false), more: () => request(true) };
+  return { items, loading, loadingMore, hasMore, error, removeWhere, updateItem, refresh: () => request(false), more: () => request(true) };
 }

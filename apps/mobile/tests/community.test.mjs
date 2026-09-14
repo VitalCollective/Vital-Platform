@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { createCommunityApi } from '../src/features/community/community-api.ts';
-import { appendCommunityPage, communityInitials, participationMessage, validatePostDraft, validateReply } from '../src/features/community/community-model.ts';
+import { appendCommunityPage, communityInitials, participationMessage, removeCommunityPageItems, updateCommunityPageItem, validatePostDraft, validateReply } from '../src/features/community/community-model.ts';
 
 function fakeClient(responses = {}) {
   const calls = [];
@@ -10,7 +11,7 @@ function fakeClient(responses = {}) {
     rpc(name, args) { calls.push({ name, args }); return Promise.resolve(responses[name] ?? { data: { items: [], hasMore: false, nextOffset: 20 }, error: null }); },
     from(table) {
       const call = { table, operations: [] }; calls.push(call);
-      const builder = { then(resolve) { return Promise.resolve(responses[table] ?? { data: { id: 'created-post' }, error: null }).then(resolve); } };
+      const builder = { then(resolve) { const configured=responses[table]; return Promise.resolve(typeof configured==='function'?configured(call):configured ?? { data: { id: 'created-post' }, error: null }).then(resolve); } };
       for (const method of ['select', 'insert', 'update', 'upsert', 'delete', 'eq', 'in', 'order', 'range', 'limit', 'ilike', 'single', 'maybeSingle']) builder[method] = (...args) => { call.operations.push({ method, args }); return builder; };
       return builder;
     },
@@ -47,9 +48,45 @@ test('Helpful uses existing upsert; removal remains a DELETE scoped to the curre
 });
 test('reports use existing spam category without a participation gate and repeated open reports are accepted', async () => {
   const { api,calls } = fakeClient({ community_reports: { error:{ code:'23505' },data:null } });
-  await api.report({type:'post',id:'p',authorId:'someone'},'spam_scam','Promotional concern');
+  await api.report({type:'post',id:'p',authorId:'someone',authorSeeded:false},'spam_scam','Promotional concern');
   assert.equal(calls[0].operations[0].args[0].reason_category,'spam_scam');
   assert.equal(calls.length,1);
+});
+test('block, status, private list and unblock use only the signed-in member direction', async () => {
+  const response = call => call.operations.some(op=>op.method==='delete')
+    ? {data:[{blocked_profile_id:'member-b'}],error:null}
+    : {data:{blocked_profile_id:'member-b'},error:null};
+  const {api,calls}=fakeClient({community_blocks:response,community_blocked_members:{data:[{profile_id:'member-b',display_name:'Member B',avatar_url:null,blocked_at:'2026-09-13T12:00:00Z'}],error:null}});
+  await api.block('member-b');
+  assert.equal(calls[0].table,'community_blocks');
+  assert.deepEqual(calls[0].operations.find(op=>op.method==='upsert').args[0],{blocker_id:'current-member',blocked_profile_id:'member-b'});
+  assert.equal(await api.isBlocked('member-b'),true);
+  assert.deepEqual(await api.blockedMembers(),[{profileId:'member-b',displayName:'Member B',imageUrl:null,blockedAt:'2026-09-13T12:00:00Z'}]);
+  await api.unblock('member-b');
+  const removal=calls.find(call=>call.table==='community_blocks'&&call.operations.some(op=>op.method==='delete'));
+  assert.ok(removal.operations.some(op=>op.method==='eq'&&op.args[0]==='blocker_id'&&op.args[1]==='current-member'));
+  assert.ok(removal.operations.some(op=>op.method==='eq'&&op.args[0]==='blocked_profile_id'&&op.args[1]==='member-b'));
+});
+test('the client rejects self-block and cannot report a block as saved without server acknowledgement', async () => {
+  const self=fakeClient();
+  await assert.rejects(()=>self.api.block('current-member'),/cannot block yourself/); assert.equal(self.calls.length,0);
+  const missing=fakeClient({community_blocks:{data:null,error:null}});
+  await assert.rejects(()=>missing.api.block('member-b'),/not confirmed/);
+});
+test('successful blocking can immediately evict the blocked author from the current feed', () => {
+  const feed=[{id:'1',author_id:'blocked-member'},{id:'2',author_id:'visible-member'}];
+  assert.deepEqual(removeCommunityPageItems(feed,item=>item.author_id==='blocked-member'),[{id:'2',author_id:'visible-member'}]);
+  assert.equal(feed.length,2,'feed invalidation does not mutate the existing page');
+});
+test('a successful reply immediately increments only its cached conversation summary', () => {
+  const feed=[{id:'replied-to',reply_count:0},{id:'other',reply_count:4}];
+  const updated=updateCommunityPageItem(feed,'replied-to',post=>({...post,reply_count:post.reply_count+1}));
+  assert.deepEqual(updated,[{id:'replied-to',reply_count:1},{id:'other',reply_count:4}]);
+  assert.equal(feed[0].reply_count,0,'the authoritative page remains independently replaceable on refresh');
+  const detail=readFileSync(new URL('../src/features/community/community-detail.tsx',import.meta.url),'utf8');
+  const screen=readFileSync(new URL('../src/features/community/community-screen.tsx',import.meta.url),'utf8');
+  assert.match(detail,/await api\.reply[\s\S]*onReplyCreated\(id\)[\s\S]*await replies\.refresh\(\)[\s\S]*setPost\(await api\.post\(id\)\)/);
+  assert.match(screen,/feed\.updateItem\(id,[\s\S]*reply_count: post\.reply_count \+ 1/);
 });
 test('page append de-duplicates and initials/participation notices are safe for long names', () => {
   assert.deepEqual(appendCommunityPage([{id:'1'}],[{id:'1'},{id:'2'}]),[{id:'1'},{id:'2'}]);

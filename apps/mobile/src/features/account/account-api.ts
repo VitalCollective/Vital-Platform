@@ -1,6 +1,25 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { ActivityPreferences, Family, Membership, NotificationPreferences } from './account-model.ts';
 
+export class AccountDeletionError extends Error {
+  constructor(message: string) { super(message); this.name = 'AccountDeletionError'; }
+}
+
+async function deletionError(cause: unknown): Promise<AccountDeletionError> {
+  let code: unknown;
+  const context = typeof cause === 'object' && cause !== null && 'context' in cause
+    ? (cause as { context?: Response }).context : undefined;
+  try { code = context ? (await context.clone().json() as { code?: unknown }).code : undefined; }
+  catch { code = undefined; }
+  if (code === 'recent_auth_required') {
+    return new AccountDeletionError('For security, sign out and sign in again, then return here to delete your account.');
+  }
+  if (code === 'account_role_requires_review') {
+    return new AccountDeletionError('This account has Community responsibilities that must be transferred safely. Please contact Vital support.');
+  }
+  return new AccountDeletionError("We couldn't delete your account. Nothing has been reported as successfully deleted. Please try again.");
+}
+
 export function createAccountApi(client: SupabaseClient) {
   async function member(id: string) {
     const { data, error } = await client.auth.getSession();
@@ -52,6 +71,13 @@ export function createAccountApi(client: SupabaseClient) {
     saveNewsletter: (id: string, subscribed: boolean) => update('newsletter_preferences', id, {
       subscribed, ...(subscribed ? { subscribed_at: new Date().toISOString(), unsubscribed_at: null } : { unsubscribed_at: new Date().toISOString() }),
     }),
+    async deleteAccount(id: string, confirmation: string): Promise<void> {
+      await member(id);
+      if (confirmation !== 'DELETE') throw new AccountDeletionError('Type DELETE to confirm account deletion.');
+      const { data, error } = await client.functions.invoke('delete-account', { body: { confirmation } });
+      if (error) throw await deletionError(error);
+      if (data?.deleted !== true) throw new AccountDeletionError("We couldn't confirm that your account was deleted. Please try again.");
+    },
   };
 }
 export type AccountApi = ReturnType<typeof createAccountApi>;
