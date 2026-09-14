@@ -1,5 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { ActivityPreferences, Family, Membership, NotificationPreferences } from './account-model.ts';
+import { familyMemberValidation, type ActivityPreferences, type Family, type FamilyMember, type FamilyMemberInput, type Membership, type NotificationPreferences } from './account-model.ts';
+
+const FAMILY_MEMBER_FIELDS = 'id,family_id,display_name,relationship,age_years,age_confirmed_at';
 
 export class AccountDeletionError extends Error {
   constructor(message: string) { super(message); this.name = 'AccountDeletionError'; }
@@ -37,14 +39,50 @@ export function createAccountApi(client: SupabaseClient) {
     const { error } = await client.from(table).update(values).eq('profile_id', id).select('profile_id').single();
     if (error) throw error; // Missing rows are errors, not a pretended successful save.
   }
+  function familyValues(input: FamilyMemberInput) {
+    const invalid = familyMemberValidation(input.displayName, input.relationship, String(input.ageYears));
+    if (invalid) throw new Error(invalid);
+    return { display_name: input.displayName.trim() || null, relationship: input.relationship, age_years: input.ageYears };
+  }
+  async function familyContainer(id: string): Promise<string> {
+    const existing = await client.from('families').select('id').eq('owner_id', id).maybeSingle();
+    if (existing.error) throw existing.error;
+    if (existing.data?.id) return existing.data.id;
+    const created = await client.from('families').insert({ owner_id: id }).select('id').single();
+    if (created.error) throw created.error;
+    return created.data.id;
+  }
   return {
     async families(id: string): Promise<Family[]> {
       await member(id);
       const { data, error } = await client.from('families')
-        .select('id,name,members:family_members(id,display_name,relationship,age_band,age_years,interests)')
-        .eq('owner_id', id).eq('members.active', true).order('created_at');
+        .select(`id,name,members:family_members(${FAMILY_MEMBER_FIELDS})`)
+        .eq('owner_id', id).order('created_at');
       if (error) throw error;
       return (data ?? []) as unknown as Family[];
+    },
+    async addFamilyMember(id: string, input: FamilyMemberInput): Promise<FamilyMember> {
+      await member(id);
+      const values = familyValues(input);
+      const familyId = await familyContainer(id);
+      const { data, error } = await client.from('family_members').insert({ family_id: familyId, ...values })
+        .select(FAMILY_MEMBER_FIELDS).single();
+      if (error) throw error;
+      return data as FamilyMember;
+    },
+    async updateFamilyMember(id: string, memberId: string, input: FamilyMemberInput): Promise<FamilyMember> {
+      await member(id);
+      if (!memberId) throw new Error('Family member is required');
+      const { data, error } = await client.from('family_members').update(familyValues(input)).eq('id', memberId)
+        .select(FAMILY_MEMBER_FIELDS).single();
+      if (error) throw error;
+      return data as FamilyMember;
+    },
+    async removeFamilyMember(id: string, memberId: string): Promise<void> {
+      await member(id);
+      if (!memberId) throw new Error('Family member is required');
+      const { error } = await client.from('family_members').delete().eq('id', memberId).select('id').single();
+      if (error) throw error;
     },
     async preferences(id: string) {
       const [activities, notifications, newsletter] = await Promise.all([

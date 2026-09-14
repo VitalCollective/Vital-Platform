@@ -15,6 +15,8 @@
     "expo-font": "~57.0.1",
     "expo-glass-effect": "~57.0.1",
     "expo-image": "~57.0.3",
+    "expo-image-manipulator": "~57.0.17",
+    "expo-image-picker": "~57.0.17",
     "expo-linking": "~57.0.8",
     "expo-router": "~57.0.17",
     "expo-splash-screen": "~57.0.8",
@@ -45,7 +47,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "node --test tests/errors.test.mjs tests/discover.test.mjs tests/activity-detail.test.mjs tests/saved-activities.test.mjs tests/account.test.mjs tests/account-content.test.mjs tests/account-deletion.test.mjs tests/profile.test.mjs tests/community.test.mjs tests/profile-images.test.mjs",
+    "test": "node --test tests/errors.test.mjs tests/discover.test.mjs tests/activity-detail.test.mjs tests/saved-activities.test.mjs tests/account.test.mjs tests/account-content.test.mjs tests/account-deletion.test.mjs tests/family.test.mjs tests/profile.test.mjs tests/profile-photo.test.mjs tests/community.test.mjs tests/profile-images.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "private": true

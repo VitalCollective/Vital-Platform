@@ -18,7 +18,7 @@ const mode = new URLSearchParams(window.location.search).get('state');
 let failed = false;
 const rows: Record<string, unknown> = {
   profiles: { id: 'qa-member', display_name: 'QA Member', bio: mode === 'empty' ? null : 'A local preview introduction.', avatar_url: null },
-  families: mode === 'empty' ? [] : [{ id: 'qa-family', name: 'QA Family', members: [{ id: 'qa-child', display_name: 'QA Child', relationship: 'Child', age_band: '5–7', age_years: null, interests: ['Drawing'] }] }],
+  families: mode === 'empty' ? [] : [{ id: 'qa-family', name: 'QA Family', members: [{ id: 'qa-child', family_id: 'qa-family', display_name: 'QA Child', relationship: 'Child', age_years: 7, age_confirmed_at: '2026-09-14T12:00:00Z' }] }],
   user_preferences: { preferred_sections: ['Vital Kids'], interests: ['Walking'] },
   notification_preferences: Object.fromEntries(Object.keys(NOTIFICATION_LABELS).map(key => [key, true])),
   newsletter_preferences: { subscribed: true },

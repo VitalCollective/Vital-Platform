@@ -13,20 +13,25 @@ import { getOwnCommunityProfile, updateOwnCommunityProfile } from '@/services/pr
 import { AccountDeletionError, type AccountApi } from './account-api';
 import { ACCOUNT_PANELS, membershipStatus, profileValidation, type AccountPanel } from './account-model';
 import { MEMBERSHIP_PLANS } from './account-content';
+import { AccountFamily } from './account-family';
 import { AccountHelp, AccountLegal, SupportContact } from './account-information';
 import { AccountPreferences } from './account-preferences';
+import { AccountProfilePhoto } from './account-profile-photo';
 import { a, AccountLink, AccountLoadState, Group, useAccountLoad } from './account-ui';
 
 type Profile = NonNullable<Awaited<ReturnType<typeof getOwnCommunityProfile>>>;
 type Props = { id: string; email?: string; panel: AccountPanel | null; api: AccountApi; community: CommunityApi; navigate: (panel: AccountPanel | null) => void; openCommunity: () => void; signOut: () => Promise<void> };
 
-function EditProfile({ id, profile, onSaved }: { id: string; profile: Profile; onSaved: (profile: Profile) => void }) {
+function EditProfile({ id, profile, onSaved, onPhotoChanged }: {
+  id: string; profile: Profile; onSaved: (profile: Profile) => void; onPhotoChanged: (profile: Profile) => void;
+}) {
   const [name, setName] = useState(profile.displayName);
   const [bio, setBio] = useState(profile.bio ?? '');
   const [busy, setBusy] = useState(false);
+  const [photoBusy, setPhotoBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function save() {
-    if (busy) return;
+    if (busy || photoBusy) return;
     const invalid = profileValidation(name, bio); setError(invalid); if (invalid) return;
     setBusy(true);
     try { const saved = await updateOwnCommunityProfile(id, name, bio); Keyboard.dismiss(); onSaved(saved); }
@@ -35,24 +40,11 @@ function EditProfile({ id, profile, onSaved }: { id: string; profile: Profile; o
   }
   return <Group title="How members see you">
     <Text style={a.meta}>Your name, photo and introduction are visible in Community. Your email and family details are not part of your Community profile.</Text>
-    <CommunityField label="Member name" value={name} onChangeText={setName} maxLength={80} editable={!busy} autoComplete="name" />
-    <CommunityField label="A short introduction · optional" value={bio} onChangeText={setBio} maxLength={500} multiline editable={!busy} />
-    <CommunityNotice message={error} error /><Button label="Save profile" loading={busy} onPress={() => void save()} />
+    <AccountProfilePhoto id={id} profile={profile} disabled={busy} onBusyChange={setPhotoBusy} onChanged={onPhotoChanged} />
+    <CommunityField label="Member name" value={name} onChangeText={setName} maxLength={80} editable={!busy && !photoBusy} autoComplete="name" />
+    <CommunityField label="A short introduction · optional" value={bio} onChangeText={setBio} maxLength={500} multiline editable={!busy && !photoBusy} />
+    <CommunityNotice message={error} error /><Button label="Save profile" loading={busy} disabled={photoBusy} onPress={() => void save()} />
   </Group>;
-}
-function FamilyPanel({ api, id }: Pick<Props, 'api' | 'id'>) {
-  const state = useAccountLoad(useCallback(() => api.families(id), [api, id]));
-  return <View style={a.stack}><AccountLoadState state={state} />{!state.loading && !state.error && <>
-    <Text style={a.body}>A place for the people you share Vital with, their age bands and interests.</Text>
-    {state.value?.length ? state.value.map(family => <Group key={family.id} title={family.name}>
-      {family.members.length ? family.members.map(member => <View key={member.id} style={a.rule}>
-        <Text style={a.label}>{member.display_name}</Text>
-        <Text style={a.meta}>{[member.relationship, member.age_band ? `Age ${member.age_band}` : member.age_years !== null ? `Age ${member.age_years}` : null].filter(Boolean).join(' · ') || 'No age details recorded'}</Text>
-        {!!member.interests.length && <Text style={a.meta}>{member.interests.join(' · ')}</Text>}
-      </View>) : <Text style={a.meta}>No family members recorded.</Text>}
-    </Group>) : <Group title="Your family details"><Text style={a.body}>No family members recorded.</Text><Text style={a.meta}>Children’s age bands and shared interests belong here, separate from your public Community identity.</Text></Group>}
-    <Text style={a.meta}>Family editing is unavailable in the app.</Text><Button label="Edit family" variant="secondary" disabled onPress={() => {}} />
-  </>}</View>;
 }
 function MembershipPanel({ api, id }: Pick<Props, 'api' | 'id'>) {
   const state = useAccountLoad(useCallback(() => api.memberships(id), [api, id]));
@@ -155,14 +147,14 @@ export function AccountScreen({ id, email, panel, api, community, navigate, open
   const identity = <><View style={a.row}><ProfileAvatar name={name} imageUrl={profile.value?.imageUrl} size={54} /><View style={a.grow}>
     <Text style={a.title}>{name}</Text>{!panel && <Text style={a.meta}>{email ?? 'Email unavailable'}</Text>}</View></View>
     {panel === 'identity' && <Text style={a.body}>{profile.value?.bio || 'No introduction added.'}</Text>}</>;
-  return <Screen key={panel ?? 'hub'} keyboardAware={panel === 'profile' || panel === 'deletion'} scrollProps={{ keyboardDismissMode: 'on-drag' }}>
+  return <Screen key={panel ?? 'hub'} keyboardAware={panel === 'profile' || panel === 'family' || panel === 'deletion'} scrollProps={{ keyboardDismissMode: 'on-drag' }}>
     {panel && <AccountLink direction="back" label="Back to You" onPress={() => navigate(null)} />}
     <ScreenHeader eyebrow="Your Vital" title={panel ? ACCOUNT_PANELS[panel] : 'You'} description={!panel ? 'Your details, your family, your place in Vital.' : undefined} />
     <View style={a.stack}><CommunityNotice message={notice} />
       {!panel ? <>
         <Group title="Profile"><AccountLoadState state={profile} />{!profile.loading && !profile.error && identity}{link('profile')}{link('identity')}</Group>
         <View style={a.grid}><View style={[a.column, isTablet && a.wideColumn]}>
-          <Group title="Your family">{link('family', 'Family members & age bands', 'Keep your family details in one place.')}</Group>
+          <Group title="Your family">{link('family', 'Family members & ages', 'Keep your private family details in one place.')}</Group>
           <Group title="Preferences">{link('preferences', 'Activities, notifications & Vital news')}</Group>
           <Group title="Vital membership">{link('membership', 'Your plan & membership')}</Group>
           <Group title="Community">{link('identity')}{link('community', 'Rules, starter conversations & reporting')}</Group>
@@ -173,9 +165,11 @@ export function AccountScreen({ id, email, panel, api, community, navigate, open
         </View></View>
       </> : panel === 'profile' || panel === 'identity' ? <>
         <AccountLoadState state={profile} />{!profile.loading && !profile.error && (profile.value ? panel === 'profile' ?
-          <EditProfile id={id} profile={profile.value} onSaved={saved => { profile.commit(saved); navigate(null); setNotice('Your profile has been saved.'); }} /> :
+          <EditProfile id={id} profile={profile.value}
+            onSaved={saved => { profile.commit(saved); navigate(null); setNotice('Your profile has been saved.'); }}
+            onPhotoChanged={profile.commit} /> :
           <Group title="Your Community identity">{identity}<Text style={a.meta}>This is the name, image and introduction members see beside your conversations.</Text>{link('profile')}<AccountLink label="Open Community" onPress={openCommunity} /></Group> : <><Text style={a.body}>Your profile is unavailable.</Text><Button label="Try again" onPress={profile.reload} /></>)}
-      </> : panel === 'family' ? <FamilyPanel api={api} id={id} /> : panel === 'preferences' ? <AccountPreferences api={api} id={id} /> :
+      </> : panel === 'family' ? <AccountFamily api={api} id={id} /> : panel === 'preferences' ? <AccountPreferences api={api} id={id} /> :
         panel === 'membership' ? <MembershipPanel api={api} id={id} /> : panel === 'community' ? <CommunityPanel community={community} navigate={navigate} openCommunity={openCommunity} /> :
         panel === 'deletion' ? <DeleteAccountPanel api={api} id={id} navigate={navigate} signOut={signOut} /> : <InformationPanel key={panel} panel={panel} navigate={navigate} />}
     </View>

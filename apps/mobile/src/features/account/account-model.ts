@@ -23,7 +23,26 @@ export const NOTIFICATION_LABELS = {
 } as const;
 export type NotificationPreferences = Record<keyof typeof NOTIFICATION_LABELS, boolean>;
 export type ActivityPreferences = { preferred_sections: string[]; interests: string[] };
-export type Family = { id: string; name: string; members: { id: string; display_name: string; relationship: string | null; age_band: string | null; age_years: number | null; interests: string[] }[] };
+export const FAMILY_RELATIONSHIPS = ['Child', 'Partner', 'Parent', 'Grandparent', 'Other'] as const;
+export type FamilyRelationship = typeof FAMILY_RELATIONSHIPS[number];
+export type FamilyMember = {
+  id: string; family_id: string; display_name: string | null;
+  relationship: FamilyRelationship; age_years: number; age_confirmed_at: string;
+};
+export type FamilyMemberInput = { displayName: string; relationship: FamilyRelationship; ageYears: number };
+export type Family = { id: string; name: string; members: FamilyMember[] };
+export function parseFamilyAge(value: string): number | null {
+  const age = value.trim();
+  if (!/^(0|[1-9]\d{0,2})$/.test(age)) return null;
+  const years = Number(age);
+  return years <= 120 ? years : null;
+}
+export function familyMemberValidation(name: string, relationship: string, age: string): string | null {
+  if (name.trim().length > 60) return 'Keep the name or nickname to 60 characters or fewer.';
+  if (!(FAMILY_RELATIONSHIPS as readonly string[]).includes(relationship)) return 'Choose a relationship.';
+  if (parseFamilyAge(age) === null) return 'Enter the current age as a whole number from 0 to 120.';
+  return null;
+}
 export type Membership = { status: string; started_at: string | null; expires_at: string | null; auto_renewing: boolean | null };
 export function membershipStatus(value: string): string {
   return ({ trial: 'Trial', active: 'Active', grace_period: 'Payment needs attention', expired: 'Expired', cancelled: 'Cancelled' } as Record<string, string>)[value] ?? 'Status unavailable';

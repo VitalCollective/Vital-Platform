@@ -16,7 +16,7 @@ await db.exec(`create role anon; create role authenticated; create role service_
   create table storage.buckets(id text primary key,name text,public boolean,file_size_limit bigint,allowed_mime_types text[]);
   create table storage.objects(id uuid primary key default gen_random_uuid(),bucket_id text references storage.buckets(id),name text,metadata jsonb,unique(bucket_id,name));
   alter table storage.objects enable row level security; grant all on storage.objects to authenticated,service_role; grant select on storage.objects to anon;`);
-for(const name of ['20260823204450_initial_vital_schema.sql','20260826085303_community_and_moderation.sql','20260910120000_community_v1.sql','20260910180000_community_profile_images.sql','20260913120000_complete_community_member_blocking.sql','20260913180000_secure_account_deletion.sql']) {
+for(const name of ['20260823204450_initial_vital_schema.sql','20260826085303_community_and_moderation.sql','20260910120000_community_v1.sql','20260910180000_community_profile_images.sql','20260913120000_complete_community_member_blocking.sql','20260913180000_secure_account_deletion.sql','20260914120000_family_member_editing.sql']) {
   await db.exec(await readFile(new URL(`../../supabase/migrations/${name}`,import.meta.url),'utf8'));
 }
 const id=n=>`60000000-0000-4000-8000-${String(n).padStart(12,'0')}`;
@@ -32,7 +32,7 @@ await db.query("insert into public.profiles(id,display_name,is_seeded,seed_key) 
 await db.query("insert into public.admin_roles(profile_id,role) values($1,'moderator')",[moderator]);
 await db.query("insert into public.activities(id,type,section,title,status) values('DELETE-TEST','activity','Vital Life','Deletion test activity','published')");
 const family=(await row("insert into public.families(owner_id,name) values($1,'Private family') returning id",[member])).id;
-await db.query("insert into public.family_members(family_id,display_name) values($1,'Private child')",[family]);
+await db.query("insert into public.family_members(family_id,display_name,relationship,age_years) values($1,'Private child','Child',7)",[family]);
 await db.query("insert into public.saved_activities(profile_id,activity_id,list_type) values($1,'DELETE-TEST','try_later')",[member]);
 await db.query("insert into public.activity_completions(profile_id,activity_id,note) values($1,'DELETE-TEST','private note')",[member]);
 await db.query("insert into public.activity_ratings(profile_id,activity_id,rating,comment) values($1,'DELETE-TEST','loved','private rating')",[member]);

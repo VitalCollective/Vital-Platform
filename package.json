@@ -14,6 +14,7 @@
     "community:test:blocks": "node --test scripts/community/blocks.test.mjs",
     "account-deletion:test": "node --test apps/mobile/tests/account-deletion.test.mjs",
     "account-deletion:test:db": "node --test scripts/community/account-deletion.test.mjs",
+    "family:test:db": "node --test scripts/account/family-members.test.mjs",
     "content:import:build": "tsc -p scripts/import-content/tsconfig.build.json",
     "content:import": "npm run content:import:build --silent && node scripts/import-content/.build/src/cli.js",
     "content:import:dry-run": "npm run content:import -- --dry-run",

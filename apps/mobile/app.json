@@ -39,6 +39,14 @@
         {
           "backgroundColor": "#FDF5E7"
         }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Allow Vital Collective to choose a profile photo from your library.",
+          "cameraPermission": false,
+          "microphonePermission": false
+        }
       ]
     ],
     "experiments": {

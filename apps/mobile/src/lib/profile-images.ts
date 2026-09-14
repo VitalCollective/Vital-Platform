@@ -1,6 +1,7 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
 export const PROFILE_IMAGE_BUCKET = 'profile-images';
+export const PROFILE_IMAGE_MAX_BYTES = 524_288;
 const pathPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\/[a-z0-9][a-z0-9-]{0,79}\.(?:jpg|jpeg|png|webp)$/;
 export type ImageProfile = { id: string; avatar_url: string | null };
 
@@ -11,6 +12,9 @@ export function profileImagePath(reference: string | null | undefined, profileId
   const path = reference.slice(PROFILE_IMAGE_BUCKET.length + 1);
   return pathPattern.test(path) && path.split('/')[0] === profileId ? path : null;
 }
+export function profileImageReference(path: string): string {
+  return `${PROFILE_IMAGE_BUCKET}/${path}`;
+}
 export function profileInitials(name: string): string {
   return name.trim().split(/\s+/u).slice(0, 2).map(part => Array.from(part)[0] ?? '').join('').toUpperCase() || 'V';
 }
@@ -20,7 +24,7 @@ export function avatarImageVisible(uri: string | null | undefined, failedUri: st
 
 export function createProfileImageResolver(client: SupabaseClient) {
   const cache = new Map<string, { url: string | null; expires: number }>();
-  return async (profiles: ImageProfile[], now = Date.now()): Promise<Map<string, string | null>> => {
+  const resolve = async (profiles: ImageProfile[], now = Date.now()): Promise<Map<string, string | null>> => {
     const paths = new Map(profiles.map(p => [p.id, profileImagePath(p.avatar_url, p.id)]));
     const missing = [...new Set([...paths.values()].filter((path): path is string => Boolean(path)))].filter(path => (cache.get(path)?.expires ?? 0) <= now);
     if (missing.length) {
@@ -38,10 +42,15 @@ export function createProfileImageResolver(client: SupabaseClient) {
     }
     return new Map([...paths].map(([id, path]) => [id, path ? cache.get(path)?.url ?? null : null]));
   };
+  resolve.invalidate = (path?: string | null) => { if (path) cache.delete(path); else cache.clear(); };
+  return resolve;
 }
 const resolvers = new WeakMap<SupabaseClient, ReturnType<typeof createProfileImageResolver>>();
 export function profileImageResolver(client: SupabaseClient) {
   let resolver = resolvers.get(client);
   if (!resolver) { resolver = createProfileImageResolver(client); resolvers.set(client, resolver); }
   return resolver;
+}
+export function invalidateProfileImageCache(client: SupabaseClient, path?: string | null): void {
+  profileImageResolver(client).invalidate(path);
 }

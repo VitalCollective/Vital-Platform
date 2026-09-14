@@ -49,14 +49,14 @@ function fixture({ user = 'member-a', response = [], status = 200 } = {}) {
   client.auth.getSession = async () => ({ data: { session: user ? { user: { id: user } } : null }, error: null });
   return { api: createAccountApi(client), calls };
 }
-test('family reads are owner-scoped and only request active private family fields', async () => {
+test('family reads are owner-scoped and request only privacy-minimised family fields', async () => {
   const { api, calls } = fixture(); await api.families('member-a');
   const url = calls[0].url;
   assert.equal(url.pathname, '/rest/v1/families');
   assert.equal(url.searchParams.get('owner_id'), 'eq.member-a');
-  assert.equal(url.searchParams.get('members.active'), 'eq.true');
   assert.match(url.searchParams.get('select'), /members:family_members/);
-  assert.doesNotMatch(url.searchParams.get('select'), /\*|auth|email/);
+  assert.match(url.searchParams.get('select'), /age_confirmed_at/);
+  assert.doesNotMatch(url.searchParams.get('select'), /\*|auth|email|age_band|interests|active/);
 });
 test('preferences use three existing self-owned tables; missing defaults are not invented', async () => {
   const { api, calls } = fixture({ response: null });

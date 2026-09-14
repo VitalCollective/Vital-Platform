@@ -60,7 +60,7 @@ test('all You child panels share a leading back chevron; profile opts into nativ
   const layout = readFileSync(new URL('../src/components/vital/screen.tsx', import.meta.url), 'utf8');
   assert.match(screen, /panel && <AccountLink direction="back" label="Back to You"/);
   assert.match(ui, /direction === 'back' && <Ionicons name="chevron-back"/);
-  assert.match(screen, /keyboardAware=\{panel === 'profile' \|\| panel === 'deletion'\}/);
+  assert.match(screen, /keyboardAware=\{panel === 'profile' \|\| panel === 'family' \|\| panel === 'deletion'\}/);
   assert.match(layout, /automaticallyAdjustKeyboardInsets=\{keyboardAware && Platform.OS === 'ios'\}/);
   assert.match(layout, /measureInWindow/);
   assert.match(layout, /behavior="height" keyboardVerticalOffset=\{keyboardOffset\}/);

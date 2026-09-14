@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { avatarImageVisible, createProfileImageResolver, profileImagePath, profileInitials } from '../src/lib/profile-images.ts';
+import { avatarImageVisible, createProfileImageResolver, invalidateProfileImageCache, profileImagePath, profileImageResolver, profileInitials } from '../src/lib/profile-images.ts';
 import { createCommunityApi } from '../src/features/community/community-api.ts';
 import { STARTER_DISCLOSURE } from '../src/features/community/community-model.ts';
 
@@ -60,6 +60,16 @@ test('image cache remains bounded rather than retaining an unbounded community d
   for(let offset=0;offset<ids.length;offset+=20)await resolve(ids.slice(offset,offset+20).map(id=>profile(id)),0);
   const before=client.calls.length;
   await resolve([profile(ids[0])],1);assert.equal(client.calls.length,before+1);
+});
+
+test('a confirmed profile-photo change invalidates the shared signed-URL cache used by Community',async()=>{
+  const client=storageClient(),reference=profile(real).avatar_url;
+  const resolve=profileImageResolver(client);
+  const first=(await resolve([{id:real,avatar_url:reference}],0)).get(real);
+  invalidateProfileImageCache(client,profileImagePath(reference,real));
+  const second=(await resolve([{id:real,avatar_url:reference}],1)).get(real);
+  assert.equal(client.calls.length,2);
+  assert.equal(first,second); // The fixture URL is stable; the second signing call is the cache-refresh guarantee.
 });
 
 function apiFixture(directoryError=false) {
