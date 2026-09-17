@@ -3,7 +3,7 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { createAccountApi } from '../src/features/account/account-api.ts';
-import { ACCOUNT_PANELS, accountPanel, profileValidation, interestValues, membershipStatus, supportUrl, NOTIFICATION_LABELS } from '../src/features/account/account-model.ts';
+import { ACCOUNT_PANELS, accountPanel, profileValidation, interestValues, supportUrl, NOTIFICATION_LABELS } from '../src/features/account/account-model.ts';
 import { SUPPORT_EMAIL } from '../src/features/account/account-content.ts';
 
 test('all account destinations round-trip; invalid and repeated route parameters return to the hub', () => {
@@ -33,10 +33,6 @@ test('approved support destination; email composition safely encodes member text
   assert.equal(supportUrl('help@example.com?bcc=other@example.com', 'Hello'), null);
   assert.equal(supportUrl('help@example.com', 'Ideas & feedback', 'A\nB'), 'mailto:help@example.com?subject=Ideas%20%26%20feedback&body=A%0AB');
 });
-test('membership labels do not expose unknown provider values or invent a free plan', () => {
-  assert.equal(membershipStatus('active'), 'Active');
-  assert.equal(membershipStatus('internal-secret'), 'Status unavailable');
-});
 function fixture({ user = 'member-a', response = [], status = 200 } = {}) {
   const calls = [];
   const client = createClient('https://account-test.invalid', 'public-test-key', {
@@ -64,11 +60,9 @@ test('preferences use three existing self-owned tables; missing defaults are not
   assert.deepEqual(calls.map(c => c.url.pathname.split('/').pop()).sort(), ['newsletter_preferences', 'notification_preferences', 'user_preferences']);
   assert.ok(calls.every(c => c.url.searchParams.get('profile_id') === 'eq.member-a'));
 });
-test('membership reads only own entitlements, without exposing billing identifiers', async () => {
-  const { api, calls } = fixture(); await api.memberships('member-a');
-  assert.equal(calls[0].url.pathname, '/rest/v1/subscription_entitlements');
-  assert.equal(calls[0].url.searchParams.get('profile_id'), 'eq.member-a');
-  assert.doesNotMatch(calls[0].url.searchParams.get('select'), /product_id|provider|\*/);
+test('account API does not read provider entitlement rows directly', () => {
+  const source = readFileSync(new URL('../src/features/account/account-api.ts', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /subscription_entitlements|\.memberships\(/);
 });
 test('preference writes are scoped updates, allowlist fields and cannot create rows', async () => {
   const { api, calls } = fixture({ response: { profile_id: 'member-a' } });
@@ -90,7 +84,7 @@ test('missing-row and genuine backend failures reject rather than reporting a sa
 });
 for (const user of [null, 'member-b']) test(`missing/changed session ${user} cannot read or update another member`, async () => {
   const { api, calls } = fixture({ user });
-  for (const operation of [() => api.families('member-a'), () => api.preferences('member-a'), () => api.memberships('member-a'), () => api.saveNewsletter('member-a', true)]) {
+  for (const operation of [() => api.families('member-a'), () => api.preferences('member-a'), () => api.saveNewsletter('member-a', true)]) {
     await assert.rejects(operation, /session changed/);
   }
   assert.equal(calls.length, 0);

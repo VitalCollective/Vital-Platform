@@ -17,6 +17,7 @@ import { Button } from '@/components/vital/button';
 import { FilterChip } from '@/components/vital/filter-chip';
 import { Screen, ScreenHeader } from '@/components/vital/screen';
 import { StatePanel } from '@/components/vital/state-panel';
+import { activityDetailHref } from '@/features/activities/activity-navigation';
 import { useDiscoverActivities } from '@/features/activities/activity-hooks';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
@@ -323,12 +324,7 @@ export default function DiscoverScreen() {
                 <ActivityCard
                   activity={activity}
                   variant="catalogue"
-                  onPress={() =>
-                    router.push({
-                      pathname: '/activity/[id]',
-                      params: { id: activity.id },
-                    })
-                  }
+                  onPress={() => router.push(activityDetailHref(activity.id))}
                 />
               </View>
             ))}

@@ -5,12 +5,16 @@ import {
   fetchDiscoverActivities,
   fetchIdeasForToday,
 } from '@/services/activities';
+import { fetchSectionActivities } from '@/features/activities/section-activities-api';
 import { customerSafeErrorMessage } from '@/lib/errors';
+import { requireSupabase } from '@/lib/supabase';
 import type {
   ActivitySummary,
   ActivityWithResources,
+  AgeFilter,
   DiscoverFilters,
   DiscoverResult,
+  VitalSection,
 } from '@/types/content';
 
 type AsyncState<T> = {
@@ -89,6 +93,47 @@ export function useDiscoverActivities(filters: DiscoverFilters) {
       }
     }
   }, [age, duration, environment, limit, search, section]);
+
+  useEffect(() => {
+    void load();
+    return () => {
+      requestId.current += 1;
+    };
+  }, [load]);
+
+  return { ...state, retry: load };
+}
+
+export function useSectionActivities(section: VitalSection, age: AgeFilter) {
+  const requestId = useRef(0);
+  const [state, setState] = useState<AsyncState<DiscoverResult>>({
+    data: null,
+    error: null,
+    isLoading: true,
+  });
+
+  const load = useCallback(async () => {
+    const currentRequestId = ++requestId.current;
+    setState((current) => ({ ...current, isLoading: true, error: null }));
+    try {
+      const data = await fetchSectionActivities(requireSupabase(), section, age);
+      if (currentRequestId === requestId.current) {
+        setState({ data, error: null, isLoading: false });
+      }
+    } catch (error) {
+      if (currentRequestId === requestId.current) {
+        setState({
+          data: null,
+          error: customerSafeErrorMessage(
+            `Unable to load ${section} activities`,
+            error,
+            "We couldn't load these activities just now.",
+          ),
+          isLoading: false,
+        });
+      }
+    }
+  }, [age, section]);
 
   useEffect(() => {
     void load();

@@ -18,18 +18,24 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { StatePanel } from '@/components/vital/state-panel';
 import { AuthProvider } from '@/features/auth/auth-provider';
 import { useAuth } from '@/features/auth/auth-context';
+import { BillingProvider } from '@/features/billing/billing-provider';
+import { useBilling } from '@/features/billing/billing-context';
+import { MembershipWelcomeModal } from '@/features/billing/membership-welcome-modal';
 import { colors, spacing, typography } from '@/theme/tokens';
 
 void SplashScreen.preventAutoHideAsync();
 
 function RootNavigator() {
   const { configurationError, isLoading, isPasswordRecovery, session } = useAuth();
+  const { hasAccess, isResolving: isMembershipResolving } = useBilling();
+  const isPreparing = isLoading
+    || Boolean(session && !isPasswordRecovery && isMembershipResolving);
 
   useEffect(() => {
-    if (!isLoading) void SplashScreen.hideAsync();
-  }, [isLoading]);
+    if (!isPreparing) void SplashScreen.hideAsync();
+  }, [isPreparing]);
 
-  if (isLoading) {
+  if (isPreparing) {
     return (
       <View style={styles.centered}>
         <Text style={styles.brand}>Vital Collective</Text>
@@ -58,7 +64,10 @@ function RootNavigator() {
       <Stack.Protected guard={!session || isPasswordRecovery}>
         <Stack.Screen name="reset-password" options={{ headerShown: false }} />
       </Stack.Protected>
-      <Stack.Protected guard={Boolean(session) && !isPasswordRecovery}>
+      <Stack.Protected guard={Boolean(session) && !isPasswordRecovery && !hasAccess}>
+        <Stack.Screen name="membership" options={{ headerShown: false }} />
+      </Stack.Protected>
+      <Stack.Protected guard={Boolean(session) && !isPasswordRecovery && hasAccess}>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
         <Stack.Screen
           name="activity/[id]"
@@ -89,8 +98,11 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <AuthProvider>
-        <RootNavigator />
-        <StatusBar style="dark" />
+        <BillingProvider>
+          <RootNavigator />
+          <MembershipWelcomeModal />
+          <StatusBar style="dark" />
+        </BillingProvider>
       </AuthProvider>
     </SafeAreaProvider>
   );

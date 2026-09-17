@@ -13,6 +13,14 @@ EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 
 Obtain the project URL and **publishable** key from the Supabase Dashboard project API settings. `EXPO_PUBLIC_` values are compiled into the client bundle, so they must never contain a service-role or secret key. Real `.env` files are ignored by Git; `.env.example` contains placeholders only.
 
+The RevenueCat subscription foundation and SDK 57 development-build profile are
+prepared. Test Store purchases use one public `test_...` SDK key on iOS and
+Android and are hard-gated to development runtimes; preview and production
+profiles keep purchases disabled. Put the local key and development switch in
+the ignored `apps/mobile/.env.local` file as documented in
+[`docs/billing/README.md`](../../docs/billing/README.md). Never put RevenueCat's
+secret REST key or webhook secrets in an `EXPO_PUBLIC_` variable.
+
 The app shows a clear configuration screen when either variable is missing. Supabase Auth uses persisted sessions, token refresh, and auth state listeners. Native sessions use Expo SQLite-backed `localStorage`; web sessions use the browser's persistent `localStorage`. Email/password account creation passes the display name to the existing new-user database trigger. When email confirmation is enabled, the form tells the member to confirm before signing in.
 
 Password recovery uses Supabase Auth's standard recovery email, recovery session, and `updateUser({ password })` flow. The reset callback is `/reset-password`; the app generates its full platform URL at runtime with Expo Linking and removes recovery credentials from the browser address bar after processing them.

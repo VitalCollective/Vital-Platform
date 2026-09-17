@@ -1,8 +1,8 @@
-import { SectionPlaceholder } from '@/components/vital/section-placeholder';
+import { SectionActivityCatalogue } from '@/components/vital/section-activity-catalogue';
 
 export default function VitalFoodScreen() {
   return (
-    <SectionPlaceholder
+    <SectionActivityCatalogue
       title="Vital Food"
       sentence="Calm, approachable ways to cook, taste and learn together will live here."
     />

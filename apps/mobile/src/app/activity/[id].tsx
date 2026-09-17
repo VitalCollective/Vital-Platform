@@ -7,6 +7,7 @@ import { Button } from '@/components/vital/button';
 import { DetailSection, DetailText } from '@/components/vital/detail-section';
 import { Screen, ScreenHeader } from '@/components/vital/screen';
 import { StatePanel } from '@/components/vital/state-panel';
+import { activityIdFromRouteParam } from '@/features/activities/activity-navigation';
 import { useActivity } from '@/features/activities/activity-hooks';
 import { ActivitySaveControl } from '@/features/saved/activity-save-control';
 import { customerSafeErrorMessage } from '@/lib/errors';
@@ -40,7 +41,7 @@ function settingLabel(activity: ActivityDetail): string | null {
 
 export default function ActivityDetailScreen() {
   const params = useLocalSearchParams<{ id?: string | string[] }>();
-  const activityId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const activityId = activityIdFromRouteParam(params.id);
   const result = useActivity(activityId);
   const [openingResourceId, setOpeningResourceId] = useState<string | null>(null);
   const [resourceError, setResourceError] = useState<string | null>(null);

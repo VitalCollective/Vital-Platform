@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { familyMemberValidation, type ActivityPreferences, type Family, type FamilyMember, type FamilyMemberInput, type Membership, type NotificationPreferences } from './account-model.ts';
+import { familyMemberValidation, type ActivityPreferences, type Family, type FamilyMember, type FamilyMemberInput, type NotificationPreferences } from './account-model.ts';
 
 const FAMILY_MEMBER_FIELDS = 'id,family_id,display_name,relationship,age_years,age_confirmed_at';
 
@@ -91,13 +91,6 @@ export function createAccountApi(client: SupabaseClient) {
         one<{ subscribed: boolean }>('newsletter_preferences', 'subscribed', id),
       ]);
       return { activities, notifications, newsletter };
-    },
-    async memberships(id: string): Promise<Membership[]> {
-      await member(id);
-      const { data, error } = await client.from('subscription_entitlements').select('status,started_at,expires_at,auto_renewing')
-        .eq('profile_id', id).order('created_at', { ascending: false });
-      if (error) throw error;
-      return (data ?? []) as Membership[];
     },
     saveActivities: (id: string, value: ActivityPreferences) => update('user_preferences', id, {
       preferred_sections: value.preferred_sections, interests: value.interests,

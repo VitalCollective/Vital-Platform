@@ -385,6 +385,14 @@ deno_version = 2
 [functions.delete-account]
 verify_jwt = true
 
+# RevenueCat authenticates this public webhook endpoint with its configured
+# Authorization header and HMAC signature; it does not send a Supabase JWT.
+[functions.revenuecat-webhook]
+verify_jwt = false
+
+[functions.reconcile-membership]
+verify_jwt = true
+
 # [edge_runtime.secrets]
 # secret_key = "env(SECRET_VALUE)"
 

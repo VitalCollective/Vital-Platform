@@ -43,10 +43,6 @@ export function familyMemberValidation(name: string, relationship: string, age: 
   if (parseFamilyAge(age) === null) return 'Enter the current age as a whole number from 0 to 120.';
   return null;
 }
-export type Membership = { status: string; started_at: string | null; expires_at: string | null; auto_renewing: boolean | null };
-export function membershipStatus(value: string): string {
-  return ({ trial: 'Trial', active: 'Active', grace_period: 'Payment needs attention', expired: 'Expired', cancelled: 'Cancelled' } as Record<string, string>)[value] ?? 'Status unavailable';
-}
 export function supportUrl(email: string | null, subject: string, body = ''): string | null {
   if (!email || !/^[^\s@?&#]+@[^\s@?&#]+\.[^\s@?&#]+$/.test(email)) return null;
   return `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;

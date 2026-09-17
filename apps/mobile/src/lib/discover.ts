@@ -17,6 +17,11 @@ type SearchableActivity = {
   collection_labels?: string[];
 };
 
+type SectionCatalogueActivity = SearchableActivity & {
+  age_min?: string | null;
+  age_max?: string | null;
+};
+
 export type DiscoverSearchIntent =
   | 'indoor'
   | 'outdoor'
@@ -314,6 +319,54 @@ export function interleaveActivityPools<T>(pools: readonly (readonly T[])[]): T[
   }
 
   return result;
+}
+
+function stableStringHash(value: string): number {
+  let hash = 2_166_136_261;
+  for (let index = 0; index < value.length; index += 1) {
+    hash ^= value.charCodeAt(index);
+    hash = Math.imul(hash, 16_777_619);
+  }
+  return hash >>> 0;
+}
+
+function sectionCatalogueLane(activity: SectionCatalogueActivity): string {
+  const age = `${activity.age_min ?? 'any'}-${activity.age_max ?? 'any'}`;
+  const environment = activity.indoor
+    ? activity.outdoor
+      ? 'both'
+      : 'indoor'
+    : activity.outdoor
+      ? 'outdoor'
+      : 'neutral';
+  return `${age}:${environment}`;
+}
+
+export function orderSectionCatalogueActivities<T extends SectionCatalogueActivity>(
+  activities: readonly T[],
+): T[] {
+  const pools = new Map<string, T[]>();
+
+  for (const activity of activities) {
+    const lane = sectionCatalogueLane(activity);
+    const pool = pools.get(lane) ?? [];
+    pool.push(activity);
+    pools.set(lane, pool);
+  }
+
+  const orderedPools = [...pools.entries()]
+    .sort(([left], [right]) => {
+      const difference = stableStringHash(left) - stableStringHash(right);
+      return difference !== 0 ? difference : left.localeCompare(right);
+    })
+    .map(([, pool]) =>
+      pool.sort((left, right) => {
+        const difference = stableStringHash(left.id) - stableStringHash(right.id);
+        return difference !== 0 ? difference : left.id.localeCompare(right.id);
+      }),
+    );
+
+  return interleaveActivityPools(orderedPools);
 }
 
 export function normalizeDiscoverSearch(search: string): string {

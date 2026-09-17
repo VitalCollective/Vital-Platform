@@ -8,9 +8,14 @@
     "scheme": "vital",
     "userInterfaceStyle": "light",
     "ios": {
-      "icon": "./assets/expo.icon"
+      "icon": "./assets/expo.icon",
+      "bundleIdentifier": "uk.co.vitalcollective.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
+      "package": "uk.co.vitalcollective.app",
       "adaptiveIcon": {
         "backgroundColor": "#FDF5E7",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -25,6 +30,7 @@
       "favicon": "./assets/images/favicon.png"
     },
     "plugins": [
+      "expo-dev-client",
       [
         "expo-router",
         {
@@ -37,7 +43,8 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#FDF5E7"
+          "backgroundColor": "#FDF5E7",
+          "image": "./assets/images/splash-icon.png"
         }
       ],
       [
@@ -52,6 +59,12 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "83bf7f7c-7c44-456b-ad07-c3cbc1fd1295"
+      }
+    },
+    "owner": "claytheakston"
   }
 }
