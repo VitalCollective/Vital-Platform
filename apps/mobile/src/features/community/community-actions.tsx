@@ -93,11 +93,12 @@ export function CommunityMemberActions({ api, member, onClose, onChanged }: {
   </CommunityModal>;
 }
 
-export function BlockedMembers({ api, onClose, onChanged }: { api: CommunityApi; onClose: () => void; onChanged: () => void }) {
+export function BlockedMembersContent({ api, onChanged, onBusyChange }: { api: CommunityApi; onChanged: () => void; onBusyChange?: (busy: boolean) => void }) {
   const [members, setMembers] = useState<BlockedCommunityMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useEffect(() => { onBusyChange?.(busy !== null); }, [busy, onBusyChange]);
   async function load() {
     setLoading(true); setError(null);
     try { setMembers(await api.blockedMembers()); }
@@ -112,13 +113,20 @@ export function BlockedMembers({ api, onClose, onChanged }: { api: CommunityApi;
     catch (cause) { setError(customerSafeErrorMessage('Unblock Community member', cause, "We couldn't unblock this member. Please try again.")); }
     finally { setBusy(null); }
   }
-  return <CommunityModal title="Blocked members" busy={busy !== null} onClose={onClose}>
+  return <>
     <Text style={s.body}>People you block cannot see your normal Community profile, posts or replies, and you cannot see theirs. You cannot reply or mark each other’s content Helpful.</Text>
     <CommunityNotice message={error} error />
     {loading ? <Text style={s.meta}>Loading blocked members…</Text> : !members.length ? <Text style={s.meta}>You have not blocked any members.</Text> : members.map(member => <View key={member.profileId} style={s.card}>
       <View style={s.author}><ProfileAvatar name={member.displayName} imageUrl={member.imageUrl} /><View style={s.flex}><Text style={s.authorName}>{member.displayName}</Text><Text style={s.meta}>Blocked {new Date(member.blockedAt).toLocaleDateString()}</Text></View></View>
       <Button label="Unblock member" variant="secondary" loading={busy === member.profileId} disabled={busy !== null && busy !== member.profileId} onPress={() => void unblock(member)} />
     </View>)}
+  </>;
+}
+
+export function BlockedMembers({ api, onClose, onChanged }: { api: CommunityApi; onClose: () => void; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  return <CommunityModal title="Blocked members" busy={busy} onClose={onClose}>
+    <BlockedMembersContent api={api} onChanged={onChanged} onBusyChange={setBusy} />
   </CommunityModal>;
 }
 

@@ -13,7 +13,7 @@ export function searchFaqs(query: string) {
 }
 export const SUPPORT_EMAIL = 'info@vitalcollective.co.uk';
 export const SUPPORT_SUBJECTS = {
-  help: 'Vital Collective support', suggest: 'Vital Collective suggestion', problem: 'Vital Collective problem report',
+  help: 'Vital Collective support', problem: 'Vital Collective problem report',
 } as const;
 // Display offers only. Store product identifiers, eligibility and transactions
 // must come from the billing integration; these are not purchasable products.

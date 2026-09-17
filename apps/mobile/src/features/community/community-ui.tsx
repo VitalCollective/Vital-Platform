@@ -44,11 +44,11 @@ export function CommunityNotice({ message, error = false }: { message: string | 
   if (!message) return null;
   return <Text accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={[s.notice, error && s.error]}>{message}</Text>;
 }
-export function CommunityAuthor({ name, seeded, createdAt, imageUrl, bio, onMember }: { name: string; seeded: boolean; createdAt: string; imageUrl?: string | null; bio?: string | null; onMember?: () => void }) {
+export function CommunityAuthor({ name, seeded, createdAt, imageUrl, bio, onMember, deleted = false }: { name: string; seeded: boolean; createdAt: string; imageUrl?: string | null; bio?: string | null; onMember?: () => void; deleted?: boolean }) {
   const [expanded, setExpanded] = useState(false);
   const [focused, setFocused] = useState(false);
   const author = <View style={s.author}>
-    <ProfileAvatar name={name} imageUrl={imageUrl} />
+    <ProfileAvatar name={name} imageUrl={imageUrl} deleted={deleted} />
     <View style={s.flex}>
       <View style={s.row}><Text style={s.authorName}>{name}</Text>{(!!bio || onMember) && <Ionicons name={onMember ? 'chevron-forward' : expanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.plum} />}</View>
       <Text style={s.meta}>{new Date(createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}{seeded ? ' · Vital starter' : ''}</Text>

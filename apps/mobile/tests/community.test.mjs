@@ -93,3 +93,11 @@ test('page append de-duplicates and initials/participation notices are safe for 
   assert.equal(communityInitials('A Very Long Name'),'AV');
   assert.match(participationMessage({restricted:true}),/report concerns/);
 });
+test('deleted Community posts use the neutral deleted-profile icon instead of initials', () => {
+  const avatar = readFileSync(new URL('../src/components/vital/profile-avatar.tsx', import.meta.url), 'utf8');
+  const feed = readFileSync(new URL('../src/features/community/community-screen.tsx', import.meta.url), 'utf8');
+  const detail = readFileSync(new URL('../src/features/community/community-detail.tsx', import.meta.url), 'utf8');
+  assert.match(avatar, /deleted \? <Ionicons testID="profile-avatar-deleted" name="person-outline"/);
+  assert.match(feed, /deleted=\{!post\.author_id\}/);
+  assert.match(detail, /deleted=\{!post\.author_id\}/);
+});

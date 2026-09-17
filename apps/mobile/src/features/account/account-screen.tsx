@@ -5,14 +5,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/vital/button';
 import { ProfileAvatar } from '@/components/vital/profile-avatar';
 import { Screen, ScreenHeader } from '@/components/vital/screen';
-import { CommunityAbout } from '@/features/community/community-actions';
+import { BlockedMembersContent, CommunityAbout } from '@/features/community/community-actions';
 import type { CommunityApi } from '@/features/community/community-api';
 import { CommunityField, CommunityNotice } from '@/features/community/community-ui';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { customerSafeErrorMessage, reportTechnicalError } from '@/lib/errors';
 import { getOwnCommunityProfile, updateOwnCommunityProfile } from '@/services/profiles';
 import { AccountDeletionError, type AccountApi } from './account-api';
-import { ACCOUNT_PANELS, profileValidation, type AccountPanel } from './account-model';
+import { ACCOUNT_PANELS, accountParentPanel, profileValidation, type AccountPanel } from './account-model';
 import { MEMBERSHIP_PLANS } from './account-content';
 import { useBilling } from '@/features/billing/billing-context';
 import { formatMembershipDate, membershipHeading } from '@/features/billing/billing-model';
@@ -20,6 +20,7 @@ import { AccountFamily } from './account-family';
 import { AccountHelp, AccountLegal, SupportContact } from './account-information';
 import { AccountPreferences } from './account-preferences';
 import { AccountProfilePhoto } from './account-profile-photo';
+import { ActivitySubmissionForm, FeedbackSubmissionForm } from './account-submissions';
 import { a, AccountLink, AccountLoadState, Group, useAccountLoad } from './account-ui';
 import { colors } from '@/theme/tokens';
 
@@ -111,6 +112,13 @@ function CommunityPanel({ community, navigate, openCommunity }: Pick<Props, 'com
     {about && <CommunityAbout api={community} access={state.value ?? null} onClose={() => setAbout(false)} onAccepted={state.reload} />}
   </View>;
 }
+function PrivacySafetyPanel({ navigate }: Pick<Props, 'navigate'>) {
+  return <View style={a.stack}>
+    <Group title="Community privacy"><AccountLink label="Blocked members" detail="Review or unblock people you have blocked in Community." onPress={() => navigate('blocked')} /></Group>
+    <Group title="Your privacy"><Text style={a.body}>Your family information stays private to your account. Your Community profile contains only the name, image and introduction you choose to share.</Text>
+      <AccountLink label="Privacy Policy" onPress={() => navigate('privacy')} /></Group>
+  </View>;
+}
 function DeleteAccountPanel({ api, id, navigate, signOut }: Pick<Props, 'api' | 'id' | 'navigate' | 'signOut'>) {
   const billing = useBilling();
   const [confirming, setConfirming] = useState(false);
@@ -163,8 +171,8 @@ function InformationPanel({ panel, navigate }: { panel: AccountPanel; navigate: 
   if (panel === 'privacy' || panel === 'terms') return <AccountLegal kind={panel} />;
   if (panel === 'help') return <AccountHelp navigate={navigate} />;
   return <Group title={ACCOUNT_PANELS[panel]}>
-    <Text style={a.body}>{panel === 'suggest' ? 'What would make Vital more useful for you and your family? Share an activity idea, a resource you would value, or something you wish was easier.' : panel === 'problem' ? 'Tell us what you were doing, what happened and which device you were using. Please do not include passwords or private family information.' : 'Questions about using Vital or your account belong here.'}</Text>
-    <SupportContact kind={panel === 'suggest' ? 'suggest' : panel === 'problem' ? 'problem' : 'help'} />
+    <Text style={a.body}>{panel === 'problem' ? 'Tell us what you were doing, what happened and which device you were using. Please do not include passwords or private family information.' : 'Questions about using Vital or your account belong here.'}</Text>
+    <SupportContact kind={panel === 'problem' ? 'problem' : 'help'} />
   </Group>;
 }
 
@@ -176,6 +184,7 @@ export function AccountScreen({ id, email, panel, api, community, navigate, open
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
   const name = profile.value?.displayName ?? 'Vital Member';
+  const parentPanel = panel ? accountParentPanel(panel) : null;
   async function leave() {
     if (busy) return;
     setBusy(true); setError(null);
@@ -188,8 +197,8 @@ export function AccountScreen({ id, email, panel, api, community, navigate, open
   const identity = <><View style={a.row}><ProfileAvatar name={name} imageUrl={profile.value?.imageUrl} size={54} /><View style={a.grow}>
     <Text style={a.title}>{name}</Text>{!panel && <Text style={a.meta}>{email ?? 'Email unavailable'}</Text>}</View></View>
     {panel === 'identity' && <Text style={a.body}>{profile.value?.bio || 'No introduction added.'}</Text>}</>;
-  return <Screen key={panel ?? 'hub'} keyboardAware={panel === 'profile' || panel === 'family' || panel === 'deletion'} scrollProps={{ keyboardDismissMode: 'on-drag' }}>
-    {panel && <AccountLink direction="back" label="Back to You" onPress={() => navigate(null)} />}
+  return <Screen key={panel ?? 'hub'} keyboardAware={panel === 'profile' || panel === 'family' || panel === 'suggest' || panel === 'feedback' || panel === 'deletion'} scrollProps={{ keyboardDismissMode: 'on-drag' }}>
+    {panel && <AccountLink direction="back" label={parentPanel ? `Back to ${ACCOUNT_PANELS[parentPanel]}` : 'Back to You'} onPress={() => navigate(parentPanel)} />}
     <ScreenHeader eyebrow="Your Vital" title={panel ? ACCOUNT_PANELS[panel] : 'You'} description={!panel ? 'Your details, your family, your place in Vital.' : undefined} />
     <View style={a.stack}><CommunityNotice message={notice} />
       {!panel ? <>
@@ -199,8 +208,9 @@ export function AccountScreen({ id, email, panel, api, community, navigate, open
           <Group title="Preferences">{link('preferences', 'Activities, notifications & Vital news')}</Group>
           <Group title="Vital membership">{link('membership', 'Your plan & membership')}</Group>
           <Group title="Community">{link('identity')}{link('community', 'Rules, starter conversations & reporting')}</Group>
+          <Group title="Privacy & safety">{link('privacySafety', 'Privacy & safety', 'Manage Community blocks and review how your information is used.')}</Group>
         </View><View style={[a.column, isTablet && a.wideColumn]}>
-          <Group title="Help & feedback">{link('suggest', 'Suggest an idea', 'What would you love Vital to help with?')}{link('help')}{link('problem')}</Group>
+          <Group title="Help & feedback">{link('suggest', 'Suggest an activity', 'Share something your family genuinely enjoys.')}{link('feedback', 'Send feedback', 'Comments, suggestions or product feedback.')}{link('help')}{link('problem')}</Group>
           <Group title="About & legal">{link('about')}{link('privacy')}{link('terms')}<Text style={a.meta}>Version {Constants.expoConfig?.version ?? 'unavailable'}</Text></Group>
           <Group title="Account"><CommunityNotice message={error} error /><Button label="Sign out" icon="log-out-outline" variant="secondary" loading={busy} onPress={() => void leave()} />{link('deletion')}</Group>
         </View></View>
@@ -212,12 +222,14 @@ export function AccountScreen({ id, email, panel, api, community, navigate, open
           <Group title="Your Community identity">{identity}<Text style={a.meta}>This is the name, image and introduction members see beside your conversations.</Text>{link('profile')}<AccountLink label="Open Community" onPress={openCommunity} /></Group> : <><Text style={a.body}>Your profile is unavailable.</Text><Button label="Try again" onPress={profile.reload} /></>)}
       </> : panel === 'family' ? <AccountFamily api={api} id={id} /> : panel === 'preferences' ? <AccountPreferences api={api} id={id} /> :
         panel === 'membership' ? <MembershipPanel /> : panel === 'community' ? <CommunityPanel community={community} navigate={navigate} openCommunity={openCommunity} /> :
+        panel === 'privacySafety' ? <PrivacySafetyPanel navigate={navigate} /> : panel === 'blocked' ? <Group title="Blocked members"><BlockedMembersContent api={community} onChanged={() => setNotice('This member is no longer blocked.')} /></Group> :
+        panel === 'suggest' ? <ActivitySubmissionForm api={api} id={id} /> : panel === 'feedback' ? <FeedbackSubmissionForm api={api} id={id} /> :
         panel === 'deletion' ? <DeleteAccountPanel api={api} id={id} navigate={navigate} signOut={signOut} /> : <InformationPanel key={panel} panel={panel} navigate={navigate} />}
     </View>
   </Screen>;
 }
 
-const PAYWALL_PANELS = new Set<AccountPanel>(['membership', 'help', 'suggest', 'problem', 'privacy', 'terms', 'deletion']);
+const PAYWALL_PANELS = new Set<AccountPanel>(['membership', 'help', 'suggest', 'feedback', 'problem', 'privacy', 'terms', 'deletion']);
 export function MembershipAccessScreen({ id, email, panel, api, navigate, signOut }: Pick<Props, 'id' | 'email' | 'panel' | 'api' | 'navigate' | 'signOut'>) {
   const destination = panel && PAYWALL_PANELS.has(panel) ? panel : 'membership';
   const [busy, setBusy] = useState(false);
@@ -231,7 +243,7 @@ export function MembershipAccessScreen({ id, email, panel, api, navigate, signOu
   }
   const link = (next: AccountPanel, label: string = ACCOUNT_PANELS[next]) =>
     <AccountLink label={label} onPress={() => navigate(next)} />;
-  return <Screen key={destination} keyboardAware={destination === 'deletion'}>
+  return <Screen key={destination} keyboardAware={destination === 'suggest' || destination === 'feedback' || destination === 'deletion'}>
     {destination !== 'membership' && <AccountLink direction="back" label="Back to membership" onPress={() => navigate('membership')} />}
     <ScreenHeader eyebrow="Your Vital" title={ACCOUNT_PANELS[destination]}
       description={destination === 'membership' ? `Signed in as ${email ?? 'a Vital member'}` : undefined} />
@@ -243,6 +255,8 @@ export function MembershipAccessScreen({ id, email, panel, api, navigate, signOu
           <Button label="Sign out" icon="log-out-outline" variant="secondary" loading={busy} onPress={() => void leave()} />
         </Group>
       </> : destination === 'deletion' ? <DeleteAccountPanel api={api} id={id} navigate={navigate} signOut={signOut} />
+        : destination === 'suggest' ? <ActivitySubmissionForm api={api} id={id} />
+        : destination === 'feedback' ? <FeedbackSubmissionForm api={api} id={id} />
         : <InformationPanel panel={destination} navigate={navigate} />}
     </View>
   </Screen>;

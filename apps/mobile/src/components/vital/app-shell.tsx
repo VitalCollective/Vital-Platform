@@ -125,11 +125,13 @@ function UtilityLink({
   icon,
   label,
   showLabel = false,
+  onNavigate,
 }: {
   href: ShellPath;
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   showLabel?: boolean;
+  onNavigate?: () => void;
 }) {
   const pathname = usePathname();
   const active = pathIsActive(pathname, href);
@@ -141,6 +143,7 @@ function UtilityLink({
         accessibilityLabel={label}
         accessibilityRole="link"
         accessibilityState={{ selected: active }}
+        onPress={onNavigate}
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
         style={({ pressed }) => [
@@ -225,8 +228,8 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
           </View>
 
           <View style={styles.menuUtilities}>
-            <UtilityLink href="/discover" icon="search-outline" label="Find something" showLabel />
-            <UtilityLink href="/you" icon="person-outline" label="Your account" showLabel />
+            <UtilityLink href="/discover" icon="search-outline" label="Find something" showLabel onNavigate={onClose} />
+            <UtilityLink href="/you" icon="person-outline" label="Your account" showLabel onNavigate={onClose} />
           </View>
         </View>
       </View>

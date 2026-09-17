@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { familyMemberValidation, type ActivityPreferences, type Family, type FamilyMember, type FamilyMemberInput, type NotificationPreferences } from './account-model.ts';
+import { activitySubmissionValidation, familyMemberValidation, feedbackSubmissionValidation, type ActivityPreferences, type ActivitySubmission, type Family, type FamilyMember, type FamilyMemberInput, type FeedbackSubmission, type NotificationPreferences } from './account-model.ts';
 
 const FAMILY_MEMBER_FIELDS = 'id,family_id,display_name,relationship,age_years,age_confirmed_at';
 
@@ -102,6 +102,28 @@ export function createAccountApi(client: SupabaseClient) {
     saveNewsletter: (id: string, subscribed: boolean) => update('newsletter_preferences', id, {
       subscribed, ...(subscribed ? { subscribed_at: new Date().toISOString(), unsubscribed_at: null } : { unsubscribed_at: new Date().toISOString() }),
     }),
+    async submitFeedback(id: string, input: FeedbackSubmission): Promise<void> {
+      await member(id);
+      const invalid = feedbackSubmissionValidation(input);
+      if (invalid) throw new Error(invalid);
+      const { error } = await client.from('member_submissions').insert({
+        submission_type: 'feedback', feedback_kind: input.type,
+        subject: input.subject.trim() || null, message: input.message.trim(),
+      });
+      if (error) throw error;
+    },
+    async submitActivity(id: string, input: ActivitySubmission): Promise<void> {
+      await member(id);
+      const invalid = activitySubmissionValidation(input);
+      if (invalid) throw new Error(invalid);
+      const { error } = await client.from('member_submissions').insert({
+        submission_type: 'activity', activity_name: input.name.trim(),
+        vital_section: input.section, suitable_age: input.suitableAge.trim() || null,
+        description: input.description.trim(), equipment_notes: input.equipmentNotes.trim() || null,
+        rights_confirmed: true,
+      });
+      if (error) throw error;
+    },
     async deleteAccount(id: string, confirmation: string): Promise<void> {
       await member(id);
       if (confirmation !== 'DELETE') throw new AccountDeletionError('Type DELETE to confirm account deletion.');

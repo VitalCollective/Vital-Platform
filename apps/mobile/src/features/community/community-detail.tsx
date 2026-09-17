@@ -62,7 +62,7 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
       <View style={s.card}>
         <Text style={s.eyebrow}>{POST_TYPES.find((type) => type.value === post.post_type)?.noun ?? 'Conversation'}{post.topic ? ` · ${post.topic}` : ''}</Text>
         <Text accessibilityRole="header" style={s.title}>{post.title}</Text>
-        <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} bio={post.author_bio} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded}
+        <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} bio={post.author_bio} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded} deleted={!post.author_id}
           onMember={post.author_id && post.author_id !== userId && !post.is_seeded && !post.author_is_seeded ? () => onMember({ id: post.author_id!, name: post.author_name, imageUrl: post.author_image_url, bio: post.author_bio, seeded: false }) : undefined} />
         <Text selectable style={s.body}>{post.body}</Text>
         {post.activity_id && post.activity_title && <CommunityAction label={`Vital activity: ${post.activity_title}`} icon="link-outline" onPress={() => onActivity(post.activity_id!)} />}

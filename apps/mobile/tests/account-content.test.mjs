@@ -40,7 +40,7 @@ test('all 30 approved FAQs are searchable by question and answer, case-insensiti
 });
 
 test('contact actions use approved email subjects and store plans remain display-only', () => {
-  assert.deepEqual(SUPPORT_SUBJECTS, { help: 'Vital Collective support', suggest: 'Vital Collective suggestion', problem: 'Vital Collective problem report' });
+  assert.deepEqual(SUPPORT_SUBJECTS, { help: 'Vital Collective support', problem: 'Vital Collective problem report' });
   for (const subject of Object.values(SUPPORT_SUBJECTS)) {
     const url = new URL(supportUrl(SUPPORT_EMAIL, subject));
     assert.equal(url.protocol, 'mailto:'); assert.equal(url.pathname, SUPPORT_EMAIL);
@@ -50,17 +50,36 @@ test('contact actions use approved email subjects and store plans remain display
   const terms = JSON.stringify(TERMS);
   for (const value of ['£9.99', '£59.99', '7-day', 'Apple', 'Google']) assert.ok(terms.includes(value));
   const screen = readFileSync(new URL('../src/features/account/account-screen.tsx', import.meta.url), 'utf8');
-  assert.match(screen, /label="Choose a plan" disabled/);
-  assert.match(screen, /label="Manage membership" disabled/);
+  assert.match(screen, /const purchaseReady = billing\.providerAvailable && billing\.purchasesEnabled/);
+  assert.match(screen, /onPress=\{\(\) => void billing\.purchase\(plan\.id\)\}/);
+  assert.match(screen, /label="Restore Purchases"/);
+  assert.match(screen, /label="Manage Subscription"/);
+});
+
+test('activity submissions and general feedback are separate, with friendly reward terms', () => {
+  const screen = readFileSync(new URL('../src/features/account/account-screen.tsx', import.meta.url), 'utf8');
+  const forms = readFileSync(new URL('../src/features/account/account-submissions.tsx', import.meta.url), 'utf8');
+  assert.match(screen, /panel === 'suggest' \? <ActivitySubmissionForm/);
+  assert.match(screen, /panel === 'feedback' \? <FeedbackSubmissionForm/);
+  assert.doesNotMatch(forms, /Linking|mailto:/);
+  for (const wording of ['my own, or I have the right to submit', 'edit, adapt and publish', 'Duplicate or already-known activities may not qualify', 'accepts and publishes the activity', 'no cash alternative', 'subscription platform']) assert.ok(forms.includes(wording));
+});
+
+test('every mobile drawer destination closes the menu after selection', () => {
+  const shell = readFileSync(new URL('../src/components/vital/app-shell.tsx', import.meta.url), 'utf8');
+  assert.match(shell, /<NavigationLink key=\{item\.href\} item=\{item\} menu onNavigate=\{onClose\}/);
+  assert.match(shell, /href="\/discover"[\s\S]*onNavigate=\{onClose\}/);
+  assert.match(shell, /href="\/you"[\s\S]*onNavigate=\{onClose\}/);
+  assert.match(shell, /accessibilityState=\{\{ selected: active \}\}[\s\S]*onPress=\{onNavigate\}/);
 });
 
 test('all You child panels share a leading back chevron; profile opts into native keyboard handling', () => {
   const screen = readFileSync(new URL('../src/features/account/account-screen.tsx', import.meta.url), 'utf8');
   const ui = readFileSync(new URL('../src/features/account/account-ui.tsx', import.meta.url), 'utf8');
   const layout = readFileSync(new URL('../src/components/vital/screen.tsx', import.meta.url), 'utf8');
-  assert.match(screen, /panel && <AccountLink direction="back" label="Back to You"/);
+  assert.match(screen, /label=\{parentPanel \? `Back to \$\{ACCOUNT_PANELS\[parentPanel\]\}` : 'Back to You'\}/);
   assert.match(ui, /direction === 'back' && <Ionicons name="chevron-back"/);
-  assert.match(screen, /keyboardAware=\{panel === 'profile' \|\| panel === 'family' \|\| panel === 'deletion'\}/);
+  assert.match(screen, /keyboardAware=\{panel === 'profile'[\s\S]*panel === 'suggest'[\s\S]*panel === 'feedback'[\s\S]*panel === 'deletion'\}/);
   assert.match(layout, /automaticallyAdjustKeyboardInsets=\{keyboardAware && Platform.OS === 'ios'\}/);
   assert.match(layout, /measureInWindow/);
   assert.match(layout, /behavior="height" keyboardVerticalOffset=\{keyboardOffset\}/);

@@ -36,7 +36,7 @@ export function SupportContact({ kind }: { kind: keyof typeof SUPPORT_SUBJECTS }
     <Text selectable style={a.body}>{SUPPORT_EMAIL}</Text>
     <Text style={a.meta}>Your email app will open so you can review your message before sending. Please avoid passwords or unnecessary sensitive information.</Text>
     <CommunityNotice message={error} error />
-    <Button label={kind === 'suggest' ? 'Suggest an idea' : kind === 'problem' ? 'Report a problem' : 'Contact Vital'} icon="mail-outline" onPress={() => void compose()} />
+    <Button label={kind === 'problem' ? 'Report a problem' : 'Contact Vital'} icon="mail-outline" onPress={() => void compose()} />
   </View>;
 }
 export function AccountHelp({ navigate }: { navigate: (panel: AccountPanel) => void }) {
@@ -46,7 +46,8 @@ export function AccountHelp({ navigate }: { navigate: (panel: AccountPanel) => v
   const questions = searchFaqs(search);
   return <View style={a.stack}>
     <Group title="Talk to Vital"><SupportContact kind="help" />
-      <AccountLink label="Suggest an idea" onPress={() => navigate('suggest')} />
+      <AccountLink label="Suggest an activity" onPress={() => navigate('suggest')} />
+      <AccountLink label="Send feedback" onPress={() => navigate('feedback')} />
       <AccountLink label="Report a problem" onPress={() => navigate('problem')} /></Group>
     <CommunityField label="Search help" placeholder="Try membership, Saved or privacy" value={search} onChangeText={setSearch} autoCapitalize="none" returnKeyType="search" />
     {!questions.length && <Text accessibilityLiveRegion="polite" style={a.body}>No matching questions. Try another word, or contact Vital above.</Text>}

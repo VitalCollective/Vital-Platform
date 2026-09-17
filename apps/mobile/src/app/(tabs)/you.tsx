@@ -3,7 +3,7 @@ import { BackHandler, Platform } from 'react-native';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { useAuth } from '@/features/auth/auth-context';
 import { createAccountApi } from '@/features/account/account-api';
-import { accountPanel } from '@/features/account/account-model';
+import { accountPanel, accountParentPanel } from '@/features/account/account-model';
 import { AccountScreen } from '@/features/account/account-screen';
 import { requireSupabase } from '@/lib/supabase';
 import { communityApi } from '@/services/community';
@@ -17,7 +17,7 @@ export default function YouScreen() {
   const community = useMemo(() => communityApi(), []);
   useFocusEffect(useCallback(() => {
     if (!panel || Platform.OS !== 'android') return;
-    const subscription = BackHandler.addEventListener('hardwareBackPress', () => { router.setParams({ panel: '' }); return true; });
+    const subscription = BackHandler.addEventListener('hardwareBackPress', () => { router.setParams({ panel: accountParentPanel(panel) ?? '' }); return true; });
     return () => subscription.remove();
   }, [panel, router]));
   if (!user) return null;

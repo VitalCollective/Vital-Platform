@@ -100,7 +100,7 @@ export function CommunityScreenContent({ api, userId, onActivity, refreshKey = 0
                 <Text style={s.title}>{post.title}</Text>
                 <Text style={s.body}>{post.excerpt}{post.excerpt.length === 320 ? '…' : ''}</Text>
               </Pressable>
-              <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} bio={post.author_bio} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded}
+              <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} bio={post.author_bio} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded} deleted={!post.author_id}
                 onMember={post.author_id && post.author_id !== userId && !post.is_seeded && !post.author_is_seeded ? () => setMember({ id: post.author_id!, name: post.author_name, imageUrl: post.author_image_url, bio: post.author_bio, seeded: false }) : undefined} />
               {post.activity_id && post.activity_title && <CommunityAction label={`Activity: ${post.activity_title}`} icon="link-outline" onPress={() => onActivity(post.activity_id!)} />}
               <View style={s.row}><CommunityAction label={`${post.reply_count} ${post.reply_count === 1 ? 'reply' : 'replies'} · Read conversation`} icon="chatbubble-outline" onPress={() => setPostId(post.id)} />{post.helpful_count > 0 && <Text style={s.meta}>{post.helpful_count} Helpful</Text>}</View>

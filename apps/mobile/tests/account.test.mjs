@@ -3,17 +3,24 @@ import test from 'node:test';
 import { readFileSync } from 'node:fs';
 import { createClient } from '@supabase/supabase-js';
 import { createAccountApi } from '../src/features/account/account-api.ts';
-import { ACCOUNT_PANELS, accountPanel, profileValidation, interestValues, supportUrl, NOTIFICATION_LABELS } from '../src/features/account/account-model.ts';
+import { ACCOUNT_PANELS, accountPanel, accountParentPanel, profileValidation, interestValues, supportUrl, NOTIFICATION_LABELS } from '../src/features/account/account-model.ts';
 import { SUPPORT_EMAIL } from '../src/features/account/account-content.ts';
 
 test('all account destinations round-trip; invalid and repeated route parameters return to the hub', () => {
   for (const key of Object.keys(ACCOUNT_PANELS)) assert.equal(accountPanel(key), key);
   for (const value of [undefined, '', 'constructor', '__proto__', 'payment', ['profile', 'deletion']]) assert.equal(accountPanel(value), null);
 });
+test('Blocked members is nested under Privacy & safety while other panels return to You', () => {
+  assert.equal(accountParentPanel('blocked'), 'privacySafety');
+  assert.equal(accountParentPanel('feedback'), null);
+  const screen = readFileSync(new URL('../src/features/account/account-screen.tsx', import.meta.url), 'utf8');
+  assert.match(screen, /Group title="Privacy & safety"[\s\S]*link\('privacySafety'/);
+  assert.match(screen, /panel === 'blocked'[\s\S]*<BlockedMembersContent api=\{community\}/);
+});
 test('You preserves tab routing and registers hardware back only on Android', () => {
   const route = readFileSync(new URL('../src/app/(tabs)/you.tsx', import.meta.url), 'utf8');
   assert.match(route, /if \(!panel \|\| Platform\.OS !== 'android'\) return;/);
-  assert.match(route, /router\.setParams\(\{ panel: '' \}\)/);
+  assert.match(route, /accountParentPanel\(panel\) \?\? ''/);
   assert.match(route, /key=\{user\.id\}/);
   assert.match(route, /signOut=\{signOut\}/);
 });

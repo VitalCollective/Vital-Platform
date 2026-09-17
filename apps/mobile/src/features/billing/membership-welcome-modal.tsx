@@ -41,7 +41,7 @@ export function MembershipWelcomeModal() {
 
   function sendFeedback() {
     dismiss();
-    router.push({ pathname: '/you', params: { panel: 'suggest' } });
+    router.push({ pathname: '/you', params: { panel: 'feedback' } });
   }
 
   return <Modal
