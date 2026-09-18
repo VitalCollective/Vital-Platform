@@ -73,6 +73,6 @@ test('You deletion UI is deliberate, typed, subscription-aware and signs out onl
   assert.match(screen,/Continue to deletion/); assert.match(screen,/Type DELETE to confirm/);
   assert.match(screen,/Delete account permanently/); assert.match(screen,/confirmation !== 'DELETE'/);
   assert.match(screen,/Deleting your Vital account does not cancel your App Store or Google Play subscription\./);
-  assert.match(screen,/billingAcknowledged/); assert.match(screen,/Manage Subscription/);
+  assert.match(screen,/billingAcknowledged/); assert.match(screen,/Manage subscription/);
   assert.match(screen,/await api\.deleteAccount\(id, confirmation\);[\s\S]*await signOut\(\)/);
 });

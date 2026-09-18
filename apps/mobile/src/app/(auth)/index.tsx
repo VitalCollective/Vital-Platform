@@ -77,21 +77,21 @@ export default function AuthScreen() {
 
   return (
     <AuthShell
-      title={isSignIn ? 'Welcome back' : 'Join the collective'}
+      title={isSignIn ? 'Welcome back' : 'Join Vital Collective'}
       intro={
         isSignIn
           ? 'Sign in to return to thoughtful ideas for family life.'
-          : 'Create an account to save ideas and make Vital your own.'
+          : 'Create your account, then choose the Vital membership that suits you.'
       }>
       {mode === 'sign-up' ? (
         <AuthField
-          label="Display name"
+          label="Member name"
           autoCapitalize="words"
           autoComplete="name"
           textContentType="name"
           value={displayName}
           onChangeText={setDisplayName}
-          placeholder="How should we greet you?"
+          placeholder="What should we call you?"
         />
       ) : null}
 
@@ -157,7 +157,7 @@ export default function AuthScreen() {
         <Text style={styles.switchText}>
           {isSignIn
             ? 'New to Vital? Create an account'
-            : 'Already a member? Sign in'}
+            : 'Already have an account? Sign in'}
         </Text>
       </Pressable>
     </AuthShell>

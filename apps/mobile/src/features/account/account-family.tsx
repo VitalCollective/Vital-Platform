@@ -51,7 +51,7 @@ function FamilyMemberEditor({ api, accountId, member, onCancel, onSaved }: {
       onPress={() => { setRelationship(value); setError(null); }} />)}</View>
     <CommunityField label="Current age in whole years" value={age} onChangeText={(value) => { setAge(value); setError(null); }}
       editable={!busy} maxLength={3} keyboardType="number-pad" inputMode="numeric" autoCorrect={false} />
-    <Text style={a.meta}>We store the age you enter, not a date of birth. The confirmation date is recorded so Vital can ask you to check it again later.</Text>
+    <Text style={a.meta}>We save only the age you enter — never a date of birth.</Text>
     <CommunityNotice message={error} error />
     <Button label={member ? 'Save changes' : 'Add family member'} loading={busy} onPress={() => void save()} />
     <Button label="Cancel" variant="secondary" disabled={busy} onPress={onCancel} />
@@ -91,7 +91,7 @@ export function AccountFamily({ api, id }: { api: AccountApi; id: string }) {
   return <View style={a.stack}>
     <AccountLoadState state={state} />
     {!state.loading && !state.error && <>
-      <Text style={a.body}>Private family details help prepare Vital to suggest age-appropriate ideas later. They are never part of your Community profile.</Text>
+      <Text style={a.body}>Keep private family details together when choosing age-appropriate ideas. They are never part of your Community profile.</Text>
       <CommunityNotice message={notice} />
       {editing && <FamilyMemberEditor key={editing === 'new' ? 'new' : editing.id} api={api} accountId={id}
         member={editing === 'new' ? null : editing} onCancel={() => setEditing(null)} onSaved={saveLocal} />}
@@ -107,7 +107,7 @@ export function AccountFamily({ api, id }: { api: AccountApi; id: string }) {
           <Text style={a.meta}>{member.relationship} · Age {member.age_years}</Text>
           <View style={a.wrap}><CommunityAction label={`Edit ${memberName(member)}`} icon="pencil-outline" onPress={() => { setEditing(member); setRemoving(null); setNotice(null); }} />
             <CommunityAction label={`Remove ${memberName(member)}`} icon="trash-outline" onPress={() => { setRemoving(member); setEditing(null); setNotice(null); setRemoveError(null); }} /></View>
-        </View>) : <><Text style={a.body}>No family members added yet.</Text><Text style={a.meta}>Add only the people whose age and relationship will help tailor family activity ideas.</Text></>}
+        </View>) : <><Text style={a.body}>No family members added yet.</Text><Text style={a.meta}>Family details are optional. Add only the people whose age and relationship are useful when choosing activities.</Text></>}
         {!editing && !removing && <Button label="Add a family member" onPress={() => { setEditing('new'); setNotice(null); }} />}
       </Group>
     </>}

@@ -33,7 +33,7 @@ export function useAccountLoad<T>(load: () => Promise<T>) {
 }
 export function AccountLoadState({ state }: { state: { error: string | null; loading: boolean; reload: () => void } }) {
   return state.loading ? <StatePanel kind="loading" title="Loading your details" message="One moment." /> : state.error ?
-    <StatePanel kind="error" title={state.error} message="Please try again." onRetry={state.reload} /> : null;
+    <StatePanel kind="error" title="Your details are unavailable" message={state.error} onRetry={state.reload} /> : null;
 }
 export function Group({ title, children }: PropsWithChildren<{ title: string }>) {
   return <View style={a.group}><Text accessibilityRole="header" style={a.title}>{title}</Text>{children}</View>;

@@ -59,6 +59,10 @@ function MembershipPanel() {
       : billing.membership.periodEndsAt,
   );
   const purchaseReady = billing.providerAvailable && billing.purchasesEnabled;
+  const showDevelopmentFallbackPlans = billing.plans.length === 0 && billing.purchasesEnabled;
+  const displayedPlans = billing.plans.length
+    ? billing.plans
+    : showDevelopmentFallbackPlans ? MEMBERSHIP_PLANS : [];
   return <View style={a.stack}><Group title={membershipHeading(billing.membership)}>
     {billing.isResolving ? <Text style={a.body}>Checking your membership…</Text> : <>
       {billing.state === 'trial_active' && endDate && <Text style={a.body}>Your trial ends on {endDate}. It will renew at the store price unless you cancel beforehand.</Text>}
@@ -67,16 +71,15 @@ function MembershipPanel() {
       {billing.state === 'grace_period' && <Text style={a.body}>Your store reported a payment problem, but your Vital access continues{endDate ? ` during the grace period until ${endDate}` : ' during the current grace period'}.</Text>}
       {billing.state === 'billing_issue' && <Text style={a.body}>Your store says the payment issue is no longer within a valid grace period. Update your payment method to restore access.</Text>}
       {['expired', 'refunded', 'revoked'].includes(billing.state) && <Text style={a.body}>Choose a membership or restore an eligible store purchase to return to Vital.</Text>}
-      {['no_entitlement', 'trial_available'].includes(billing.state) && <Text style={a.body}>Vital has no free tier. Start a membership to access activities, resources, Saved and Community.</Text>}
+      {['no_entitlement', 'trial_available'].includes(billing.state) && <Text style={a.body}>Choose a Vital membership to access activities, resources, Saved and Community.</Text>}
       {billing.state === 'restoring' && <Text accessibilityLiveRegion="polite" style={a.body}>Checking your store purchases…</Text>}
       {billing.state === 'provider_unavailable' && <Text style={a.body}>We couldn’t confirm your membership just now. Your account, support and legal options remain available.</Text>}
-      {billing.membership.environment === 'sandbox' && <Text style={a.meta}>Sandbox membership · no production charge</Text>}
       {billing.error && <CommunityNotice message={billing.error} error />}
       {billing.error && <Button label="Try again" variant="secondary" onPress={() => void billing.refresh()} />}
     </>}
   </Group>
     <Group title="Vital membership plans">
-      {(billing.plans.length ? billing.plans : MEMBERSHIP_PLANS).map(plan => <View key={plan.id} style={a.rule}>
+      {displayedPlans.map(plan => <View key={plan.id} style={a.rule}>
         <Text style={a.label}>{plan.title}</Text><Text style={a.title}>{plan.price} <Text style={a.meta}>{plan.interval}</Text></Text>
         {'trialDescription' in plan && plan.trialDescription && <Text style={a.meta}>{plan.trialDescription}</Text>}
         {'packageIdentifier' in plan && !billing.hasAccess && <Button
@@ -87,14 +90,14 @@ function MembershipPanel() {
           accessibilityHint="Opens the Apple or Google purchase confirmation"
           onPress={() => void billing.purchase(plan.id)} />}
       </View>)}
-      <Text style={a.body}>The standard introductory trial is 7 days and converts to paid membership unless cancelled through Apple or Google before it ends.</Text>
-      {!billing.providerAvailable && !billing.error && <Text style={a.meta}>Store products are not configured in this build. The prices above are the expected UK launch prices; no payment or trial can start.</Text>}
-      {!billing.providerAvailable && billing.error && <Text style={a.meta}>Store products and subscription management are temporarily unavailable.</Text>}
-      {billing.providerAvailable && billing.plans.length === 0 && <Text style={a.meta}>The RevenueCat default offering has no available monthly or annual store products in this build.</Text>}
-      {billing.providerAvailable && !billing.purchasesEnabled && <Text style={a.meta}>Store products are connected for development, but purchases remain deliberately disabled in this build.</Text>}
-      <Button label="Restore Purchases" variant="secondary" disabled={!billing.providerAvailable || Boolean(billing.busyAction)}
+      {displayedPlans.length > 0 && <Text style={a.body}>The standard introductory trial is 7 days and converts to paid membership unless cancelled through Apple or Google before it ends.</Text>}
+      {showDevelopmentFallbackPlans && <Text style={a.meta}>Development-only fallback prices are shown for testing. No payment or trial can start until store products load.</Text>}
+      {billing.plans.length === 0 && !showDevelopmentFallbackPlans && <Text style={a.meta}>Membership plans are temporarily unavailable. Please try again.</Text>}
+      {billing.plans.length === 0 && !billing.error && <Button label="Try again" variant="secondary" onPress={() => void billing.refresh()} />}
+      {billing.plans.length > 0 && !billing.purchasesEnabled && <Text style={a.meta}>Membership purchases are unavailable in this version of Vital.</Text>}
+      <Button label="Restore purchases" variant="secondary" disabled={!billing.providerAvailable || Boolean(billing.busyAction)}
         loading={billing.busyAction === 'restore'} onPress={() => void billing.restore()} />
-      {billing.managementUrl && <Button label="Manage Subscription" variant="secondary"
+      {billing.managementUrl && <Button label="Manage subscription" variant="secondary"
         onPress={() => void Linking.openURL(billing.managementUrl!)} />}
     </Group>
   </View>;
@@ -144,7 +147,7 @@ function DeleteAccountPanel({ api, id, navigate, signOut }: Pick<Props, 'api' | 
       <Text style={a.body}>This permanently removes your Vital account, profile, family information, preferences, Saved items and Community content. It cannot be undone.</Text>
       <Text style={a.meta}>If another member has replied to one of your Community posts, only a neutral deleted-post marker may remain so their reply is not destroyed. Your original text, name, introduction and profile image will be removed.</Text>
       <Text style={a.meta}>Deleting your Vital account does not cancel your App Store or Google Play subscription.</Text>
-      {billing.managementUrl && <Button label="Manage Subscription" variant="secondary" onPress={() => void Linking.openURL(billing.managementUrl!)} />}
+      {billing.managementUrl && <Button label="Manage subscription" variant="secondary" onPress={() => void Linking.openURL(billing.managementUrl!)} />}
       <CommunityNotice message={error} error />
       {!confirming ? <>
         <Button label="Continue to deletion" variant="danger" onPress={() => { setConfirming(true); setError(null); }} />
@@ -197,7 +200,7 @@ export function AccountScreen({ id, email, panel, api, community, navigate, open
   const identity = <><View style={a.row}><ProfileAvatar name={name} imageUrl={profile.value?.imageUrl} size={54} /><View style={a.grow}>
     <Text style={a.title}>{name}</Text>{!panel && <Text style={a.meta}>{email ?? 'Email unavailable'}</Text>}</View></View>
     {panel === 'identity' && <Text style={a.body}>{profile.value?.bio || 'No introduction added.'}</Text>}</>;
-  return <Screen key={panel ?? 'hub'} keyboardAware={panel === 'profile' || panel === 'family' || panel === 'suggest' || panel === 'feedback' || panel === 'deletion'} scrollProps={{ keyboardDismissMode: 'on-drag' }}>
+  return <Screen key={panel ?? 'hub'} keyboardAware={panel === 'profile' || panel === 'family' || panel === 'suggest' || panel === 'feedback' || panel === 'problem' || panel === 'deletion'} scrollProps={{ keyboardDismissMode: 'on-drag' }}>
     {panel && <AccountLink direction="back" label={parentPanel ? `Back to ${ACCOUNT_PANELS[parentPanel]}` : 'Back to You'} onPress={() => navigate(parentPanel)} />}
     <ScreenHeader eyebrow="Your Vital" title={panel ? ACCOUNT_PANELS[panel] : 'You'} description={!panel ? 'Your details, your family, your place in Vital.' : undefined} />
     <View style={a.stack}><CommunityNotice message={notice} />
@@ -206,7 +209,7 @@ export function AccountScreen({ id, email, panel, api, community, navigate, open
         <View style={a.grid}><View style={[a.column, isTablet && a.wideColumn]}>
           <Group title="Your family">{link('family', 'Family members & ages', 'Keep your private family details in one place.')}</Group>
           <Group title="Preferences">{link('preferences', 'Activities, notifications & Vital news')}</Group>
-          <Group title="Vital membership">{link('membership', 'Your plan & membership')}</Group>
+          <Group title="Vital membership">{link('membership', 'Manage Vital membership')}</Group>
           <Group title="Community">{link('identity')}{link('community', 'Rules, starter conversations & reporting')}</Group>
           <Group title="Privacy & safety">{link('privacySafety', 'Privacy & safety', 'Manage Community blocks and review how your information is used.')}</Group>
         </View><View style={[a.column, isTablet && a.wideColumn]}>
@@ -224,6 +227,7 @@ export function AccountScreen({ id, email, panel, api, community, navigate, open
         panel === 'membership' ? <MembershipPanel /> : panel === 'community' ? <CommunityPanel community={community} navigate={navigate} openCommunity={openCommunity} /> :
         panel === 'privacySafety' ? <PrivacySafetyPanel navigate={navigate} /> : panel === 'blocked' ? <Group title="Blocked members"><BlockedMembersContent api={community} onChanged={() => setNotice('This member is no longer blocked.')} /></Group> :
         panel === 'suggest' ? <ActivitySubmissionForm api={api} id={id} /> : panel === 'feedback' ? <FeedbackSubmissionForm api={api} id={id} /> :
+        panel === 'problem' ? <FeedbackSubmissionForm api={api} id={id} initialType="bug" /> :
         panel === 'deletion' ? <DeleteAccountPanel api={api} id={id} navigate={navigate} signOut={signOut} /> : <InformationPanel key={panel} panel={panel} navigate={navigate} />}
     </View>
   </Screen>;
@@ -243,7 +247,7 @@ export function MembershipAccessScreen({ id, email, panel, api, navigate, signOu
   }
   const link = (next: AccountPanel, label: string = ACCOUNT_PANELS[next]) =>
     <AccountLink label={label} onPress={() => navigate(next)} />;
-  return <Screen key={destination} keyboardAware={destination === 'suggest' || destination === 'feedback' || destination === 'deletion'}>
+  return <Screen key={destination} keyboardAware={destination === 'suggest' || destination === 'feedback' || destination === 'problem' || destination === 'deletion'}>
     {destination !== 'membership' && <AccountLink direction="back" label="Back to membership" onPress={() => navigate('membership')} />}
     <ScreenHeader eyebrow="Your Vital" title={ACCOUNT_PANELS[destination]}
       description={destination === 'membership' ? `Signed in as ${email ?? 'a Vital member'}` : undefined} />
@@ -257,6 +261,7 @@ export function MembershipAccessScreen({ id, email, panel, api, navigate, signOu
       </> : destination === 'deletion' ? <DeleteAccountPanel api={api} id={id} navigate={navigate} signOut={signOut} />
         : destination === 'suggest' ? <ActivitySubmissionForm api={api} id={id} />
         : destination === 'feedback' ? <FeedbackSubmissionForm api={api} id={id} />
+        : destination === 'problem' ? <FeedbackSubmissionForm api={api} id={id} initialType="bug" />
         : <InformationPanel panel={destination} navigate={navigate} />}
     </View>
   </Screen>;

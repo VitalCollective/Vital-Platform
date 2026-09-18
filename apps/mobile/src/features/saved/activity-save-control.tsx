@@ -40,7 +40,7 @@ export function ActivitySaveButton({ state, onToggle, onRetry }: {
           variant={state.saved ? 'primary' : 'secondary'}
           loading={busy}
           disabled={state.saved === null || Boolean(state.error)}
-          accessibilityHint={state.saved ? 'Remove this activity from your favourites' : 'Save this activity to your favourites'}
+          accessibilityHint={state.saved ? 'Remove this activity from Saved' : 'Add this activity to Saved'}
           onPress={onToggle}
         />
       </View>

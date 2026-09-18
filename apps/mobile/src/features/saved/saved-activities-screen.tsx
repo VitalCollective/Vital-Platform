@@ -36,7 +36,7 @@ export function SavedActivitiesScreen({ profileId }: { profileId: string }) {
       {state.error ? (
         <StatePanel kind="error" title="Your saved ideas are unavailable" message={state.error} onRetry={refresh} />
       ) : state.isLoading && state.activities === null ? (
-        <StatePanel kind="loading" title="Gathering your saved ideas" message="Bringing your favourites together." />
+        <StatePanel kind="loading" title="Gathering your saved ideas" message="Bringing your saved activities together." />
       ) : activities.length ? (
         <>
           <View style={[styles.cards, isTablet && styles.cardsTablet]}>

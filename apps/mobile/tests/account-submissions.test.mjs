@@ -56,10 +56,16 @@ test('missing or changed sessions cannot submit', async () => {
 
 test('native forms keep success in Vital and clearly state submissions are private', () => {
   const forms = readFileSync(new URL('../src/features/account/account-submissions.tsx', import.meta.url), 'utf8');
+  const screen = readFileSync(new URL('../src/features/account/account-screen.tsx', import.meta.url), 'utf8');
   assert.match(forms, /FEEDBACK_TYPES\.map/);
+  assert.match(forms, /initialType = 'comment'/);
+  assert.match(forms, /useState<FeedbackType>\(initialType\)/);
   assert.match(forms, /label="Submit feedback"/);
   assert.match(forms, /label="Submit activity"/);
   assert.match(forms, /sent privately to the Vital team/);
   assert.match(forms, /not posted in Community/);
   assert.doesNotMatch(forms, /Linking|mailto:/);
+  assert.match(screen, /panel === 'problem' \? <FeedbackSubmissionForm api=\{api\} id=\{id\} initialType="bug"/);
+  assert.match(screen, /destination === 'problem' \? <FeedbackSubmissionForm api=\{api\} id=\{id\} initialType="bug"/);
+  assert.match(screen, /keyboardAware=\{panel === 'profile'[\s\S]*panel === 'problem'/);
 });

@@ -73,4 +73,5 @@ test('Family UI exposes compact add/edit/remove controls, typed fields, privacy 
   assert.match(source, /FAMILY_RELATIONSHIPS\.map/); assert.match(source, /Add a family member/);
   assert.match(source, /Save changes/); assert.match(source, /Remove family member/); assert.match(source, /Keep family member/);
   assert.match(source, /never part of your Community profile/); assert.match(source, /does not affect your Vital account or anyone else/);
+  assert.doesNotMatch(source, /date of birth\.[\s\S]*confirmation date|suggest age-appropriate ideas later/);
 });

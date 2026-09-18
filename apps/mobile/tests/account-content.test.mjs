@@ -51,9 +51,13 @@ test('contact actions use approved email subjects and store plans remain display
   for (const value of ['£9.99', '£59.99', '7-day', 'Apple', 'Google']) assert.ok(terms.includes(value));
   const screen = readFileSync(new URL('../src/features/account/account-screen.tsx', import.meta.url), 'utf8');
   assert.match(screen, /const purchaseReady = billing\.providerAvailable && billing\.purchasesEnabled/);
+  assert.match(screen, /showDevelopmentFallbackPlans = billing\.plans\.length === 0 && billing\.purchasesEnabled/);
+  assert.match(screen, /showDevelopmentFallbackPlans \? MEMBERSHIP_PLANS : \[\]/);
+  assert.match(screen, /Membership plans are temporarily unavailable\. Please try again\./);
   assert.match(screen, /onPress=\{\(\) => void billing\.purchase\(plan\.id\)\}/);
-  assert.match(screen, /label="Restore Purchases"/);
-  assert.match(screen, /label="Manage Subscription"/);
+  assert.match(screen, /label="Restore purchases"/);
+  assert.match(screen, /label="Manage subscription"/);
+  assert.doesNotMatch(screen, /RevenueCat|Sandbox membership|configured for development|not configured in this build/);
 });
 
 test('activity submissions and general feedback are separate, with friendly reward terms', () => {
@@ -71,6 +75,15 @@ test('every mobile drawer destination closes the menu after selection', () => {
   assert.match(shell, /href="\/discover"[\s\S]*onNavigate=\{onClose\}/);
   assert.match(shell, /href="\/you"[\s\S]*onNavigate=\{onClose\}/);
   assert.match(shell, /accessibilityState=\{\{ selected: active \}\}[\s\S]*onPress=\{onNavigate\}/);
+});
+
+test('sign-up copy uses launch terminology and describes the membership step accurately', () => {
+  const auth = readFileSync(new URL('../src/app/(auth)/index.tsx', import.meta.url), 'utf8');
+  assert.match(auth, /Join Vital Collective/);
+  assert.match(auth, /label="Member name"/);
+  assert.match(auth, /choose the Vital membership that suits you/);
+  assert.match(auth, /Already have an account\? Sign in/);
+  assert.doesNotMatch(auth, /Join the collective|Create an account to save ideas|label="Display name"|Already a member\? Sign in|Your member name may be shown/);
 });
 
 test('all You child panels share a leading back chevron; profile opts into native keyboard handling', () => {

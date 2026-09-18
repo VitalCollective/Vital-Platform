@@ -17,8 +17,8 @@ import {
 } from './account-model';
 import { a, Group } from './account-ui';
 
-export function FeedbackSubmissionForm({ api, id }: { api: AccountApi; id: string }) {
-  const [type, setType] = useState<FeedbackType>('comment');
+export function FeedbackSubmissionForm({ api, id, initialType = 'comment' }: { api: AccountApi; id: string; initialType?: FeedbackType }) {
+  const [type, setType] = useState<FeedbackType>(initialType);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -85,7 +85,8 @@ export function ActivitySubmissionForm({ api, id }: { api: AccountApi; id: strin
     <CommunityField label="Suitable age · optional" value={suitableAge} onChangeText={(value) => { setSuitableAge(value); changed(); }} maxLength={80} editable={!busy} placeholder="For example, age 5–8 or all ages" />
     <CommunityField label="Description or instructions" value={description} onChangeText={(value) => { setDescription(value); changed(); }} multiline maxLength={10000} editable={!busy} placeholder="How does your family do this activity?" />
     <CommunityField label="Equipment or notes · optional" value={equipmentNotes} onChangeText={(value) => { setEquipmentNotes(value); changed(); }} multiline maxLength={2000} editable={!busy} />
-    <Text style={a.meta}>If we accept it, Vital may edit, adapt and publish it clearly for other families. Duplicate or already-known activities may not qualify. The reward applies only when Vital accepts and publishes the activity, has no cash alternative, and will be fulfilled using the membership options supported by your subscription platform.</Text>
+    <Text style={a.meta}>If we accept it, Vital may edit, adapt and publish it clearly for other families. Duplicate or already-known activities may not qualify.</Text>
+    <Text style={a.meta}>The reward applies only when Vital accepts and publishes the activity, has no cash alternative, and will be fulfilled using the membership options supported by your subscription platform.</Text>
     <Pressable accessibilityRole="checkbox" accessibilityState={{ checked: rightsConfirmed }} disabled={busy}
       onPress={() => { setRightsConfirmed(value => !value); changed(); }} style={({ pressed }) => [a.link, { opacity: busy ? 0.5 : pressed ? 0.7 : 1 }]}>
       <Ionicons name={rightsConfirmed ? 'checkbox' : 'square-outline'} size={24} color={colors.plum} />
