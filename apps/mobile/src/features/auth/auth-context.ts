@@ -13,6 +13,7 @@ export type AuthContextValue = {
   isPasswordRecovery: boolean;
   isPasswordRecoveryLinkLoading: boolean;
   passwordRecoveryError: string | null;
+  revalidateSession: () => Promise<Session | null>;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (
     email: string,

@@ -3,6 +3,7 @@ import { Text, TextInput, View } from 'react-native';
 import { Button } from '@/components/vital/button';
 import { StatePanel } from '@/components/vital/state-panel';
 import { customerSafeErrorMessage, withFutureJwtTimingRetry } from '@/lib/errors';
+import { withRequestTimeout } from '@/lib/request-lifecycle';
 import type { CommunityApi } from './community-api';
 import { useCommunityPage } from './community-hooks';
 import { participationMessage, POST_TYPES, validateReply, type CommunityAccess, type CommunityMember, type CommunityPostDetail, type CommunityReply, type ReportTarget } from './community-model';
@@ -28,7 +29,7 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
   const replies = useCommunityPage(loadReplies);
   useEffect(() => {
     let active = true; setLoading(true); setError(null);
-    withFutureJwtTimingRetry(() => api.post(id)).then((data) => { if (active) setPost(data); }).catch((cause) => {
+    withRequestTimeout(withFutureJwtTimingRetry(() => api.post(id))).then((data) => { if (active) setPost(data); }).catch((cause) => {
       if (active) setError(customerSafeErrorMessage('Community post', cause, "We couldn't open this conversation. It may no longer be available."));
     }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };

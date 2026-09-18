@@ -2,6 +2,8 @@ import { useCallback, useEffect, useMemo, useRef, useState, type PropsWithChildr
 import { AppState } from 'react-native';
 import { useAuth } from '@/features/auth/auth-context';
 import { customerSafeErrorMessage, reportTechnicalError } from '@/lib/errors';
+import { withRequestTimeout } from '@/lib/request-lifecycle';
+import { sessionStorage } from '@/lib/session-storage';
 import { supabase } from '@/lib/supabase';
 import { createBillingApi } from './billing-api';
 import { billingConfig } from './billing-config';
@@ -23,6 +25,11 @@ import {
   restoreRevenueCatPurchases,
   type RevenueCatPresentation,
 } from './revenuecat-client';
+import {
+  clearVerifiedMembershipCache,
+  readVerifiedMembershipCache,
+  writeVerifiedMembershipCache,
+} from './verified-membership-cache';
 
 const EMPTY_PRESENTATION: RevenueCatPresentation = { available: false, plans: [], managementUrl: null };
 
@@ -32,7 +39,7 @@ function purchaseWasCancelled(cause: unknown): boolean {
 }
 
 export function BillingProvider({ children }: PropsWithChildren) {
-  const { user, isLoading: authLoading, isPasswordRecovery } = useAuth();
+  const { user, isLoading: authLoading, isPasswordRecovery, revalidateSession } = useAuth();
   const api = useMemo(() => supabase ? createBillingApi(supabase) : null, []);
   const [membership, setMembership] = useState(EMPTY_MEMBERSHIP);
   const [presentation, setPresentation] = useState(EMPTY_PRESENTATION);
@@ -52,8 +59,8 @@ export function BillingProvider({ children }: PropsWithChildren) {
     const request = ++generation.current;
     setIsResolving(true); setServerUnavailable(false); setProviderUnavailable(false); setError(null);
     const [serverResult, providerResult] = await Promise.allSettled([
-      api ? api.membership(id) : Promise.reject(new Error('Supabase is not configured')),
-      refreshProvider ? prepareRevenueCat(id) : Promise.resolve(null),
+      withRequestTimeout(api ? api.membership(id) : Promise.reject(new Error('Supabase is not configured'))),
+      refreshProvider ? withRequestTimeout(prepareRevenueCat(id)) : Promise.resolve(null),
     ]);
     if (request !== generation.current) return;
     const provider = providerResult.status === 'fulfilled' ? providerResult.value : null;
@@ -67,8 +74,8 @@ export function BillingProvider({ children }: PropsWithChildren) {
     let next = serverResult.status === 'fulfilled' ? serverResult.value : null;
     if (reconcile && api && (!refreshProvider || provider?.available)) {
       try {
-        await api.reconcile(id);
-        next = await api.membership(id);
+        await withRequestTimeout(api.reconcile(id));
+        next = await withRequestTimeout(api.membership(id));
       } catch (cause) {
         reportTechnicalError('Reconcile RevenueCat membership', cause);
       }
@@ -76,6 +83,7 @@ export function BillingProvider({ children }: PropsWithChildren) {
     if (request !== generation.current) return;
     if (next) {
       verified.current = { userId: id, membership: next };
+      writeVerifiedMembershipCache(id, next, sessionStorage);
       setMembership(next);
     } else {
       const cached = verified.current?.userId === id ? verified.current.membership : null;
@@ -97,10 +105,13 @@ export function BillingProvider({ children }: PropsWithChildren) {
       setMembership(EMPTY_MEMBERSHIP); setPresentation(EMPTY_PRESENTATION);
       setResolvedUserId(null);
       setServerUnavailable(false); setProviderUnavailable(false); setIsResolving(false);
+      if (!authLoading && !user) clearVerifiedMembershipCache(sessionStorage);
       return;
     }
+    const cached = readVerifiedMembershipCache(user.id, Date.now(), sessionStorage);
+    verified.current = cached ? { userId: user.id, membership: cached } : null;
     setResolvedUserId(null);
-    setMembership(EMPTY_MEMBERSHIP); setPresentation(EMPTY_PRESENTATION);
+    setMembership(cached ?? EMPTY_MEMBERSHIP); setPresentation(EMPTY_PRESENTATION);
     void load(user.id);
   }, [authLoading, isPasswordRecovery, load, user?.id]);
 
@@ -110,10 +121,18 @@ export function BillingProvider({ children }: PropsWithChildren) {
     const subscription = AppState.addEventListener('change', (nextState) => {
       const shouldRefresh = returnedToForeground(previousState, nextState);
       previousState = nextState;
-      if (shouldRefresh) void load(user.id);
+      if (shouldRefresh) void (async () => {
+        setIsResolving(true);
+        try {
+          await revalidateSession();
+        } catch (cause) {
+          reportTechnicalError('Refresh Supabase session on foreground', cause);
+        }
+        await load(user.id);
+      })();
     });
     return () => subscription.remove();
-  }, [authLoading, isPasswordRecovery, load, user?.id]);
+  }, [authLoading, isPasswordRecovery, load, revalidateSession, user?.id]);
 
   useEffect(() => {
     if (!user || isPasswordRecovery || resolvedUserId !== user.id

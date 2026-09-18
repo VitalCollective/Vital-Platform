@@ -8,6 +8,7 @@ import {
 import { fetchSectionActivities } from '@/features/activities/section-activities-api';
 import { customerSafeErrorMessage } from '@/lib/errors';
 import { requireSupabase } from '@/lib/supabase';
+import { withRequestTimeout } from '@/lib/request-lifecycle';
 import type {
   ActivitySummary,
   ActivityWithResources,
@@ -33,7 +34,7 @@ export function useIdeasForToday() {
   const load = useCallback(async () => {
     setState((current) => ({ ...current, isLoading: true, error: null }));
     try {
-      const data = await fetchIdeasForToday();
+      const data = await withRequestTimeout(fetchIdeasForToday());
       setState({ data, error: null, isLoading: false });
     } catch (error) {
       setState({
@@ -68,14 +69,14 @@ export function useDiscoverActivities(filters: DiscoverFilters) {
     const currentRequestId = ++requestId.current;
     setState((current) => ({ ...current, isLoading: true, error: null }));
     try {
-      const data = await fetchDiscoverActivities({
+      const data = await withRequestTimeout(fetchDiscoverActivities({
         environment,
         age,
         duration,
         limit,
         search,
         section,
-      });
+      }));
       if (currentRequestId === requestId.current) {
         setState({ data, error: null, isLoading: false });
       }
@@ -116,7 +117,9 @@ export function useSectionActivities(section: VitalSection, age: AgeFilter) {
     const currentRequestId = ++requestId.current;
     setState((current) => ({ ...current, isLoading: true, error: null }));
     try {
-      const data = await fetchSectionActivities(requireSupabase(), section, age);
+      const data = await withRequestTimeout(
+        fetchSectionActivities(requireSupabase(), section, age),
+      );
       if (currentRequestId === requestId.current) {
         setState({ data, error: null, isLoading: false });
       }
@@ -162,7 +165,7 @@ export function useActivity(activityId: string | undefined) {
 
     setState((current) => ({ ...current, isLoading: true, error: null }));
     try {
-      const data = await fetchActivityWithResources(activityId);
+      const data = await withRequestTimeout(fetchActivityWithResources(activityId));
       if (currentRequestId === requestId.current) {
         setState({ data, error: null, isLoading: false });
       }

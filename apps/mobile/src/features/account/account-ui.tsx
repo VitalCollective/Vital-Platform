@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect } from 'expo-router';
 import { StatePanel } from '@/components/vital/state-panel';
 import { customerSafeErrorMessage } from '@/lib/errors';
+import { withRequestTimeout } from '@/lib/request-lifecycle';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
 
 export function useAccountLoad<T>(load: () => Promise<T>) {
@@ -17,7 +18,7 @@ export function useAccountLoad<T>(load: () => Promise<T>) {
     const request = ++generation.current;
     const current = () => active && request === generation.current;
     setLoading(true); setError(null);
-    void load().then(data => { if (current()) setValue(data); }).catch(cause => {
+    void withRequestTimeout(load()).then(data => { if (current()) setValue(data); }).catch(cause => {
       if (current()) setError(customerSafeErrorMessage('Load account information', cause, "We couldn't load this just now."));
     }).finally(() => { if (current()) setLoading(false); });
     return () => { active = false; };

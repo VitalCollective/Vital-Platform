@@ -1,4 +1,5 @@
 import { customerSafeErrorMessage } from '../../lib/errors.ts';
+import { withRequestTimeout } from '../../lib/request-lifecycle.ts';
 import type { ActivitySummary } from '../../types/content.ts';
 import type { SavedActivitiesApi } from './activity-saves-api.ts';
 
@@ -27,7 +28,7 @@ export function createSavedActivitiesController(api: Pick<SavedActivitiesApi, 'l
       const current = ++request;
       update({ ...state, isLoading: true, error: null });
       try {
-        const activities = await api.list(profileId);
+        const activities = await withRequestTimeout(api.list(profileId));
         if (current === request) update({ activities, isLoading: false, error: null, visibleCount: 20 });
       } catch (error) {
         if (current === request) update({ ...state, isLoading: false,

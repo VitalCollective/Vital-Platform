@@ -11,8 +11,11 @@ import type { Session } from '@supabase/supabase-js';
 import * as Linking from 'expo-linking';
 
 import { AuthContext, type SignUpResult } from '@/features/auth/auth-context';
+import { isDefinitiveAuthSessionError } from '@/features/auth/auth-session';
 import { parsePasswordRecoveryUrl } from '@/features/auth/password-recovery';
 import { mobileConfig } from '@/lib/config';
+import { reportTechnicalError } from '@/lib/errors';
+import { withRequestTimeout } from '@/lib/request-lifecycle';
 import { supabase } from '@/lib/supabase';
 
 const invalidRecoveryLinkMessage =
@@ -64,6 +67,23 @@ export function AuthProvider({ children }: PropsWithChildren) {
     setIsPasswordRecoveryLinkLoading(false);
     setPasswordRecoveryError(null);
   }, []);
+
+  const revalidateSession = useCallback(async () => {
+    if (!supabase) return null;
+    const { data, error } = await withRequestTimeout(supabase.auth.getSession());
+    if (error) {
+      if (isDefinitiveAuthSessionError(error)) {
+        setSession(null);
+        clearPasswordRecovery();
+        void supabase.auth.signOut({ scope: 'local' }).catch((cause) =>
+          reportTechnicalError('Clear invalid Supabase session', cause),
+        );
+      }
+      throw error;
+    }
+    setSession(data.session);
+    return data.session;
+  }, [clearPasswordRecovery]);
 
   useEffect(() => {
     if (!supabase) {
@@ -156,38 +176,46 @@ export function AuthProvider({ children }: PropsWithChildren) {
 
     void (async () => {
       try {
-        const { data, error } = await client.auth.getSession();
+        const { data, error } = await withRequestTimeout(client.auth.getSession());
         if (!isMounted) return;
         if (error) console.warn('Unable to restore Supabase session:', error.message);
 
         let verifiedSession: Session | null = null;
 
         if (!error && data.session) {
-          const { data: userData, error: userError } = await client.auth.getUser();
+          try {
+            const { data: userData, error: userError } = await withRequestTimeout(
+              client.auth.getUser(),
+            );
 
-          if (
-            !userError &&
-            userData.user &&
-            userData.user.id === data.session.user.id
-          ) {
-            verifiedSession = { ...data.session, user: userData.user };
-          } else {
-            const { error: signOutError } = await client.auth.signOut({
-              scope: 'local',
-            });
-            if (signOutError) {
-              console.warn(
-                'Unable to clear an invalid stored Supabase session:',
-                signOutError.message,
+            if (!userError && userData.user?.id === data.session.user.id) {
+              verifiedSession = { ...data.session, user: userData.user };
+            } else if (!userError || isDefinitiveAuthSessionError(userError)) {
+              const { error: signOutError } = await withRequestTimeout(
+                client.auth.signOut({ scope: 'local' }),
               );
+              if (signOutError) {
+                console.warn(
+                  'Unable to clear an invalid stored Supabase session:',
+                  signOutError.message,
+                );
+              }
+            } else {
+              verifiedSession = data.session;
+              reportTechnicalError('Validate restored Supabase session', userError);
             }
+          } catch (validationError) {
+            // A temporary network failure must not erase a locally restored session.
+            // The membership gate still resolves before protected content can render.
+            verifiedSession = data.session;
+            reportTechnicalError('Validate restored Supabase session', validationError);
           }
         }
 
         if (!isMounted) return;
         setSession(verifiedSession);
 
-        const initialUrl = await Linking.getInitialURL();
+        const initialUrl = await withRequestTimeout(Linking.getInitialURL());
         if (initialUrl) await handlePasswordRecoveryUrl(initialUrl);
       } catch (initializationError) {
         if (isMounted) {
@@ -238,6 +266,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       isPasswordRecovery,
       isPasswordRecoveryLinkLoading,
       passwordRecoveryError,
+      revalidateSession,
       async signIn(email: string, password: string) {
         if (!supabase) throw new Error(mobileConfig.error ?? 'Supabase is not configured.');
 
@@ -311,6 +340,7 @@ export function AuthProvider({ children }: PropsWithChildren) {
       isPasswordRecovery,
       isPasswordRecoveryLinkLoading,
       passwordRecoveryError,
+      revalidateSession,
       session,
     ],
   );

@@ -50,7 +50,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "billing:test": "node --test tests/billing.test.mjs tests/membership-welcome.test.mjs tests/revenuecat-webhook.test.mjs tests/account.test.mjs tests/account-deletion.test.mjs",
-    "test": "node --test tests/errors.test.mjs tests/discover.test.mjs tests/activity-detail.test.mjs tests/saved-activities.test.mjs tests/account.test.mjs tests/account-content.test.mjs tests/account-deletion.test.mjs tests/family.test.mjs tests/profile.test.mjs tests/profile-photo.test.mjs tests/community.test.mjs tests/profile-images.test.mjs",
+    "test": "node --test tests/errors.test.mjs tests/lifecycle.test.mjs tests/discover.test.mjs tests/activity-detail.test.mjs tests/saved-activities.test.mjs tests/account.test.mjs tests/account-content.test.mjs tests/account-deletion.test.mjs tests/family.test.mjs tests/profile.test.mjs tests/profile-photo.test.mjs tests/community.test.mjs tests/profile-images.test.mjs",
     "typecheck": "tsc --noEmit"
   },
   "private": true

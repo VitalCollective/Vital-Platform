@@ -6,6 +6,7 @@ import { Screen, ScreenHeader } from '@/components/vital/screen';
 import { StatePanel } from '@/components/vital/state-panel';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { customerSafeErrorMessage, withFutureJwtTimingRetry } from '@/lib/errors';
+import { withRequestTimeout } from '@/lib/request-lifecycle';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
 import type { CommunityApi } from './community-api';
 import { BlockedMembers, CommunityAbout, CommunityMemberActions, ReportComposer } from './community-actions';
@@ -47,7 +48,7 @@ export function CommunityScreenContent({ api, userId, onActivity, refreshKey = 0
   }, [postId]);
   useEffect(() => {
     let active = true; setAccessError(null);
-    withFutureJwtTimingRetry(() => api.access()).then((data) => { if (active) setAccess(data); }).catch((cause) => {
+    withRequestTimeout(withFutureJwtTimingRetry(() => api.access())).then((data) => { if (active) setAccess(data); }).catch((cause) => {
       if (active) { setAccess(null); setAccessError(customerSafeErrorMessage('Community access', cause, "We couldn't check community access just now. Please try refreshing.")); }
     });
     return () => { active = false; };
