@@ -11,10 +11,15 @@ test('canonical member documents retain all numbered sections and substantive Pr
       assert.ok(section.heading.startsWith(`${i + 1}. `));
       assert.ok(section.blocks.length);
     });
-    assert.equal(document.lastUpdated, '2026-09-12');
     const text = JSON.stringify(document);
     for (const value of ['Clay Theakston', 'Unit 1, The Breeze Hill, Bangor Road', 'Benllech', 'Anglesey', 'LL74 8TN', SUPPORT_EMAIL]) assert.ok(text.includes(value));
   }
+  assert.equal(PRIVACY.lastUpdated, '2026-09-18');
+  assert.equal(TERMS.lastUpdated, '2026-09-12');
+  const privacyText = JSON.stringify(PRIVACY);
+  assert.match(privacyText, /display name[\s\S]*visible to other Community members/i);
+  assert.match(privacyText, /private messages, activity suggestions[\s\S]*not visible to other members/i);
+  assert.match(privacyText, /permanently delete[\s\S]*private member submissions[\s\S]*does not cancel an Apple App Store or Google Play subscription/i);
   const tables = PRIVACY.sections.flatMap(section => section.blocks.filter(block => block.type === 'definitions'));
   assert.deepEqual(tables.map(table => table.entries.length), [10, 8]);
 });

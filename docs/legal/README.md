@@ -12,12 +12,12 @@ are neither included here nor imported into the application.
 | `Vital_Collective_Terms_of_Use_WORKING_DRAFT_v3.docx` | `packages/content/legal/terms.json` — 21 sections |
 | `Vital_Collective_FAQ_WORKING_DRAFT_v3.docx` | `packages/content/legal/faq.json` — 30 questions |
 
-These JSON files are the single member-facing sources for mobile and eventual
-public web pages. Mobile's `account-content.ts` imports them; `account-information.tsx`
+These JSON files are the single member-facing sources for mobile and public legal
+pages. Mobile's `account-content.ts` imports them; `account-information.tsx`
 renders native headings, selectable text, bullets and expandable FAQs. No Markdown
-engine, duplicate in-component policies or document download is needed. A website
-can consume the same JSON, or mechanically render it to HTML. No public URL is
-invented or deployed by this pass.
+engine, duplicate in-component policies or document download is needed. The
+public-site builder mechanically renders the canonical Privacy JSON to
+`apps/mobile/public/privacy/index.html`.
 
 ## Extraction boundaries
 
@@ -37,16 +37,22 @@ written legal advice. Only the following internal material is excluded:
   suggestion answer because the approved email-composer route is now connected.
 
 No governance pack, DPIA, ROPA, breach procedure, processor template or launch
-checklist is bundled or presented. `Last updated: 12 September 2026` identifies
-this member-content preparation date, not a claimed date of external legal review
-or a subscription commencement date.
+checklist is bundled or presented. Terms retain their 12 September 2026 preparation
+date. The Privacy Notice was updated on 18 September 2026 only to reflect shipped
+private submissions, secure account deletion and the public deletion-request route.
 
 ## Support and commercial presentation
 
-All three support actions open the user's email composer for
-`info@vitalcollective.co.uk`, with separate support/suggestion/problem-report
-subjects. Opening the composer does not send mail or create a support ticket.
-If no composer can be opened, the address remains visible for manual use.
+Send feedback, Report a problem and Suggest an activity use private authenticated
+member submissions. They are not Community content and ordinary members cannot
+read submissions. `info@vitalcollective.co.uk` remains the external contact route,
+including for a deletion request when a member cannot access the app.
+
+`scripts/public-site/build.mjs` produces the crawlable static routes
+`/delete-account/` and `/privacy/`, plus robots and sitemap files. The deletion
+page does not call the deletion Edge Function or introduce an unauthenticated
+backend; it directs signed-in members to the secure app flow and offers a
+pre-addressed email request for members who cannot sign in.
 
 The membership screen displays the approved £9.99/month and £59.99/year offers,
 standard 7-day trial and cancellation/conversion terms, and possible partner

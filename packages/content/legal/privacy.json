@@ -1,6 +1,6 @@
 {
   "title": "Privacy Notice",
-  "lastUpdated": "2026-09-12",
+  "lastUpdated": "2026-09-18",
   "sections": [
     {
       "heading": "1. Who we are",
@@ -69,7 +69,7 @@
         },
         {
           "type": "bullet",
-          "text": "Support and feedback: messages, suggestions, problem reports and related correspondence."
+          "text": "Support and feedback: private messages, activity suggestions, problem reports and related correspondence submitted directly to Vital. These submissions are not Community posts and are not visible to other members."
         },
         {
           "type": "bullet",
@@ -268,7 +268,7 @@
       "blocks": [
         {
           "type": "paragraph",
-          "text": "You will be able to request deletion of your Vital account from within the app. Account/profile/avatar/bio, family information, preferences and Saved data will be deleted. Community posts and replies will also be deleted; where removing a parent item would break the structure of other members’ replies, the deleted item may be replaced by a neutral placeholder with no continuing profile attribution. Limited moderation, fraud, security, accounting or legal records may be retained only where genuinely necessary and lawful. Deleting a Vital account is separate from cancelling an Apple/Google subscription, and the deletion flow will explain this clearly."
+          "text": "You can permanently delete your Vital account from within the app. If you cannot access the app, contact info@vitalcollective.co.uk to request deletion; we may need to verify your identity before acting. Account/profile/avatar/bio, family information, preferences, Saved data and private member submissions will be deleted. Community posts and replies will also be deleted; where removing a parent item would break the structure of other members’ replies, the deleted item may be replaced by a neutral placeholder with no continuing profile attribution. Limited moderation, fraud, security, accounting or legal records may be retained only where genuinely necessary and lawful. Deleting a Vital account does not cancel an Apple App Store or Google Play subscription, which must be managed separately through the relevant store."
         }
       ]
     },
