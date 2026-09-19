@@ -16,8 +16,8 @@ These JSON files are the single member-facing sources for mobile and public lega
 pages. Mobile's `account-content.ts` imports them; `account-information.tsx`
 renders native headings, selectable text, bullets and expandable FAQs. No Markdown
 engine, duplicate in-component policies or document download is needed. The
-public-site builder mechanically renders the canonical Privacy JSON to
-`apps/mobile/public/privacy/index.html`.
+dedicated public-site builder in `apps/web` mechanically renders the canonical
+Privacy, Terms and FAQ JSON into its production static output.
 
 ## Extraction boundaries
 
@@ -48,11 +48,12 @@ member submissions. They are not Community content and ordinary members cannot
 read submissions. `info@vitalcollective.co.uk` remains the external contact route,
 including for a deletion request when a member cannot access the app.
 
-`scripts/public-site/build.mjs` produces the crawlable static routes
-`/delete-account/` and `/privacy/`, plus robots and sitemap files. The deletion
-page does not call the deletion Edge Function or introduce an unauthenticated
-backend; it directs signed-in members to the secure app flow and offers a
-pre-addressed email request for members who cannot sign in.
+`apps/web/scripts/build.mjs` produces the crawlable public legal and support
+routes, including `/delete-account/`, `/privacy/` and `/terms/`, plus robots and
+sitemap files. The deletion page does not call the deletion Edge Function or
+introduce an unauthenticated backend; it directs signed-in members to the secure
+app flow and offers a pre-addressed email request for members who cannot sign in.
+The public website remains separate from the Expo mobile application.
 
 The membership screen displays the approved £9.99/month and £59.99/year offers,
 standard 7-day trial and cancellation/conversion terms, and possible partner

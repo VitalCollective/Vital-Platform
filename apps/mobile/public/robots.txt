@@ -1,3 +1,0 @@
-User-agent: *
-Allow: /
-Sitemap: https://vitalcollective.co.uk/sitemap.xml
