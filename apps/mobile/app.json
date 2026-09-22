@@ -10,6 +10,7 @@
     "ios": {
       "icon": "./assets/brand/vital-mark.png",
       "bundleIdentifier": "uk.co.vitalcollective.app",
+      "supportsTablet": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

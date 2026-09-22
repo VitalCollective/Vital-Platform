@@ -12,6 +12,14 @@
         "EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED": "true"
       }
     },
+    "ios-sandbox": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "environment": "preview",
+      "env": {
+        "EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED": "true"
+      }
+    },
     "preview": {
       "distribution": "internal",
       "environment": "preview",
