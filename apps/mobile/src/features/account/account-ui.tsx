@@ -5,6 +5,7 @@ import { useFocusEffect } from 'expo-router';
 import { StatePanel } from '@/components/vital/state-panel';
 import { customerSafeErrorMessage } from '@/lib/errors';
 import { withRequestTimeout } from '@/lib/request-lifecycle';
+import { useLanguage } from '@/features/localization/language-context';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
 
 export function useAccountLoad<T>(load: () => Promise<T>) {
@@ -36,15 +37,17 @@ export function AccountLoadState({ state }: { state: { error: string | null; loa
     <StatePanel kind="error" title="Your details are unavailable" message={state.error} onRetry={state.reload} /> : null;
 }
 export function Group({ title, children }: PropsWithChildren<{ title: string }>) {
-  return <View style={a.group}><Text accessibilityRole="header" style={a.title}>{title}</Text>{children}</View>;
+  const { t } = useLanguage();
+  return <View style={a.group}><Text accessibilityRole="header" style={a.title}>{t(title)}</Text>{children}</View>;
 }
 export function AccountLink({ label, detail, onPress, direction = 'forward' }: { label: string; detail?: string; onPress: () => void; direction?: 'forward' | 'back' }) {
+  const { t } = useLanguage();
   const [focused, setFocused] = useState(false);
-  return <Pressable accessibilityRole="button" accessibilityLabel={label} onPress={onPress}
+  return <Pressable accessibilityRole="button" accessibilityLabel={t(label)} onPress={onPress}
     onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
     style={({ pressed }) => [a.link, direction === 'back' && { alignSelf: 'flex-start' }, focused && a.focused, pressed && { backgroundColor: colors.brandSoft }]}>
     {direction === 'back' && <Ionicons name="chevron-back" size={18} color={colors.plum} />}
-    <View style={direction === 'forward' ? a.grow : undefined}><Text style={a.label}>{label}</Text>{detail && <Text style={a.meta}>{detail}</Text>}</View>
+    <View style={direction === 'forward' ? a.grow : undefined}><Text style={a.label}>{t(label)}</Text>{detail && <Text style={a.meta}>{t(detail)}</Text>}</View>
     {direction === 'forward' && <Ionicons name="chevron-forward" size={18} color={colors.plum} />}
   </Pressable>;
 }

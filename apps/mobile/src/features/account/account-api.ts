@@ -1,5 +1,5 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
-import { activitySubmissionValidation, familyMemberValidation, feedbackSubmissionValidation, type ActivityPreferences, type ActivitySubmission, type Family, type FamilyMember, type FamilyMemberInput, type FeedbackSubmission, type NotificationPreferences } from './account-model.ts';
+import { activitySubmissionValidation, familyMemberValidation, feedbackSubmissionValidation, type ActivityPreferences, type ActivitySubmission, type Family, type FamilyMember, type FamilyMemberInput, type FeedbackSubmission, type LanguagePreference, type NotificationPreferences } from './account-model.ts';
 
 const FAMILY_MEMBER_FIELDS = 'id,family_id,display_name,relationship,age_years,age_confirmed_at';
 
@@ -85,16 +85,22 @@ export function createAccountApi(client: SupabaseClient) {
       if (error) throw error;
     },
     async preferences(id: string) {
-      const [activities, notifications, newsletter] = await Promise.all([
-        one<ActivityPreferences>('user_preferences', 'preferred_sections,interests', id),
+      const [preferenceRow, notifications, newsletter] = await Promise.all([
+        one<ActivityPreferences & { language_code: LanguagePreference | null }>('user_preferences', 'preferred_sections,interests,language_code', id),
         one<NotificationPreferences>('notification_preferences', 'community_replies,planned_activity_reminders,recommendations,editorial_updates,product_updates', id),
         one<{ subscribed: boolean }>('newsletter_preferences', 'subscribed', id),
       ]);
-      return { activities, notifications, newsletter };
+      return {
+        activities: preferenceRow ? { preferred_sections: preferenceRow.preferred_sections, interests: preferenceRow.interests } : null,
+        language: preferenceRow?.language_code ?? null,
+        notifications,
+        newsletter,
+      };
     },
     saveActivities: (id: string, value: ActivityPreferences) => update('user_preferences', id, {
       preferred_sections: value.preferred_sections, interests: value.interests,
     }),
+    saveLanguage: (id: string, language_code: LanguagePreference) => update('user_preferences', id, { language_code }),
     saveNotifications: (id: string, value: NotificationPreferences) => update('notification_preferences', id, {
       community_replies: value.community_replies, planned_activity_reminders: value.planned_activity_reminders,
       recommendations: value.recommendations, editorial_updates: value.editorial_updates, product_updates: value.product_updates,

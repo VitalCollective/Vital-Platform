@@ -1,7 +1,9 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 
-import { withFutureJwtTimingRetry } from '../../lib/errors.ts';
+import { reportTechnicalError, withFutureJwtTimingRetry } from '../../lib/errors.ts';
 import type { ActivitySummary } from '../../types/content.ts';
+import { ACTIVITY_TRANSLATION_FIELDS, applyActivityTranslations, type ActivityTranslation } from '../localization/content-localization.ts';
+import type { AppLanguage } from '../localization/localization-model.ts';
 
 export type ActivitySavesApi = {
   read: (profileId: string, activityId: string) => Promise<boolean>;
@@ -23,7 +25,7 @@ export const ACTIVITY_SAVE_LIST = 'favourite';
 // detail must not read the old row while its previous save is still committing.
 const writesByClient = new WeakMap<SupabaseClient, Map<string, Promise<void>>>();
 
-export function createActivitySavesApi(client: SupabaseClient): SavedActivitiesApi {
+export function createActivitySavesApi(client: SupabaseClient, language: AppLanguage = 'en'): SavedActivitiesApi {
   const writes = writesByClient.get(client) ?? new Map<string, Promise<void>>();
   writesByClient.set(client, writes);
   const keyFor = (profileId: string, activityId: string) => JSON.stringify([profileId, activityId]);
@@ -61,7 +63,16 @@ export function createActivitySavesApi(client: SupabaseClient): SavedActivitiesA
           if (rows.length < SAVED_PAGE_SIZE) break;
         }
         await requireCurrentMember(profileId);
-        return [...activities.values()];
+        const result = [...activities.values()];
+        if (language !== 'cy' || !result.length) return result;
+        const translations = await client.from('activity_translations')
+          .select(`activity_id,locale,${ACTIVITY_TRANSLATION_FIELDS.join(',')},tags,collection_labels`)
+          .eq('locale', 'cy').in('activity_id', result.map(({ id }) => id));
+        if (translations.error) {
+          reportTechnicalError('Load localized Saved fields; using canonical English fallback', translations.error);
+          return result;
+        }
+        return applyActivityTranslations(result, (translations.data ?? []) as unknown as ActivityTranslation[]);
       });
     },
     async read(profileId, activityId) {

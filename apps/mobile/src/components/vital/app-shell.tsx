@@ -12,6 +12,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { colors, layout, radii, spacing, typography } from '@/theme/tokens';
+import { useLanguage } from '@/features/localization/language-context';
 
 type ShellPath =
   | '/'
@@ -45,11 +46,12 @@ function pathIsActive(pathname: string, href: ShellPath) {
 
 function BrandLockup() {
   const [focused, setFocused] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <Link href="/" asChild>
       <Pressable
-        accessibilityLabel="Vital Collective home"
+        accessibilityLabel={t('Vital Collective home')}
         accessibilityRole="link"
         onFocus={() => setFocused(true)}
         onBlur={() => setFocused(false)}
@@ -75,6 +77,7 @@ function NavigationLink({
   menu?: boolean;
 }) {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const active = pathIsActive(pathname, item.href);
   const [focused, setFocused] = useState(false);
   const [hovered, setHovered] = useState(false);
@@ -106,7 +109,7 @@ function NavigationLink({
             hovered && !menu && styles.desktopNavTextHovered,
             active && styles.navigationTextActive,
           ]}>
-          {item.label}
+          {t(item.label)}
         </Text>
         {menu ? (
           <Ionicons
@@ -134,13 +137,14 @@ function UtilityLink({
   onNavigate?: () => void;
 }) {
   const pathname = usePathname();
+  const { t } = useLanguage();
   const active = pathIsActive(pathname, href);
   const [focused, setFocused] = useState(false);
 
   return (
     <Link href={href} asChild>
       <Pressable
-        accessibilityLabel={label}
+        accessibilityLabel={t(label)}
         accessibilityRole="link"
         accessibilityState={{ selected: active }}
         onPress={onNavigate}
@@ -154,16 +158,17 @@ function UtilityLink({
           pressed && styles.pressed,
         ]}>
         <Ionicons name={icon} size={21} color={active ? colors.plum : colors.brand} />
-        {showLabel ? <Text style={styles.utilityLabel}>{label}</Text> : null}
+        {showLabel ? <Text style={styles.utilityLabel}>{t(label)}</Text> : null}
       </Pressable>
     </Link>
   );
 }
 
 function DesktopPrimaryNavigation({ compact = false }: { compact?: boolean }) {
+  const { t } = useLanguage();
   return (
     <View
-      accessibilityLabel="Primary navigation"
+      accessibilityLabel={t('Primary navigation')}
       role="navigation"
       style={[styles.desktopNavigation, compact && styles.desktopNavigationCompact]}>
       {primaryNavigation.map((item) => (
@@ -186,6 +191,7 @@ function DesktopUtilities() {
 
 function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
   const insets = useSafeAreaInsets();
+  const { t } = useLanguage();
 
   return (
     <Modal
@@ -196,7 +202,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
       visible={open}>
       <View style={styles.menuOverlay}>
         <Pressable
-          accessibilityLabel="Close navigation menu"
+          accessibilityLabel={t('Close navigation menu')}
           accessibilityRole="button"
           onPress={onClose}
           style={styles.menuBackdrop}
@@ -210,10 +216,10 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
           <View style={styles.menuHeader}>
             <View>
               <Text style={styles.menuEyebrow}>Vital Collective</Text>
-              <Text style={styles.menuTitle}>Explore Vital</Text>
+              <Text style={styles.menuTitle}>{t('Explore Vital')}</Text>
             </View>
             <Pressable
-              accessibilityLabel="Close menu"
+              accessibilityLabel={t('Close menu')}
               accessibilityRole="button"
               onPress={onClose}
               style={({ pressed }) => [styles.menuClose, pressed && styles.pressed]}>
@@ -221,7 +227,7 @@ function MobileMenu({ open, onClose }: { open: boolean; onClose: () => void }) {
             </Pressable>
           </View>
 
-          <View accessibilityLabel="Primary navigation" role="navigation" style={styles.menuLinks}>
+          <View accessibilityLabel={t('Primary navigation')} role="navigation" style={styles.menuLinks}>
             {primaryNavigation.map((item) => (
               <NavigationLink key={item.href} item={item} menu onNavigate={onClose} />
             ))}
@@ -241,6 +247,7 @@ export function AppShell({ children }: PropsWithChildren) {
   const { horizontalPadding, isDesktop, width } = useResponsiveLayout();
   const insets = useSafeAreaInsets();
   const [menuOpen, setMenuOpen] = useState(false);
+  const { t } = useLanguage();
   const compactDesktop = isDesktop && width < 1200;
 
   useEffect(() => {
@@ -275,7 +282,7 @@ export function AppShell({ children }: PropsWithChildren) {
             <View style={styles.mobileUtilities}>
               <UtilityLink href="/discover" icon="search-outline" label="Find something" />
               <Pressable
-                accessibilityLabel="Open navigation menu"
+                accessibilityLabel={t('Open navigation menu')}
                 accessibilityRole="button"
                 accessibilityState={{ expanded: menuOpen }}
                 onPress={() => setMenuOpen(true)}

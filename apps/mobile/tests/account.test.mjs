@@ -14,7 +14,7 @@ test('Blocked members is nested under Privacy & safety while other panels return
   assert.equal(accountParentPanel('blocked'), 'privacySafety');
   assert.equal(accountParentPanel('feedback'), null);
   const screen = readFileSync(new URL('../src/features/account/account-screen.tsx', import.meta.url), 'utf8');
-  assert.match(screen, /Group title="Privacy & safety"[\s\S]*link\('privacySafety'/);
+  assert.match(screen, /Group title=\{t\('Privacy & safety'\)\}[\s\S]*link\('privacySafety'/);
   assert.match(screen, /panel === 'blocked'[\s\S]*<BlockedMembersContent api=\{community\}/);
 });
 test('You preserves tab routing and registers hardware back only on Android', () => {
@@ -63,7 +63,7 @@ test('family reads are owner-scoped and request only privacy-minimised family fi
 });
 test('preferences use three existing self-owned tables; missing defaults are not invented', async () => {
   const { api, calls } = fixture({ response: null });
-  assert.deepEqual(await api.preferences('member-a'), { activities: null, notifications: null, newsletter: null });
+  assert.deepEqual(await api.preferences('member-a'), { activities: null, notifications: null, newsletter: null, language: null });
   assert.deepEqual(calls.map(c => c.url.pathname.split('/').pop()).sort(), ['newsletter_preferences', 'notification_preferences', 'user_preferences']);
   assert.ok(calls.every(c => c.url.searchParams.get('profile_id') === 'eq.member-a'));
 });
@@ -74,15 +74,17 @@ test('account API does not read provider entitlement rows directly', () => {
 test('preference writes are scoped updates, allowlist fields and cannot create rows', async () => {
   const { api, calls } = fixture({ response: { profile_id: 'member-a' } });
   await api.saveActivities('member-a', { preferred_sections: ['Vital Kids'], interests: ['Art'], profile_id: 'victim' });
+  await api.saveLanguage('member-a', 'cy');
   const notifications = Object.fromEntries(Object.keys(NOTIFICATION_LABELS).map(key => [key, true]));
   await api.saveNotifications('member-a', { ...notifications, profile_id: 'victim' });
   await api.saveNewsletter('member-a', false);
   await api.saveNewsletter('member-a', true);
   assert.ok(calls.every(c => c.method === 'PATCH' && c.url.searchParams.get('profile_id') === 'eq.member-a'));
   assert.deepEqual(calls[0].body, { preferred_sections: ['Vital Kids'], interests: ['Art'] });
-  assert.deepEqual(calls[1].body, notifications);
-  assert.equal(calls[2].body.subscribed, false); assert.ok(calls[2].body.unsubscribed_at);
-  assert.equal(calls[3].body.subscribed, true); assert.equal(calls[3].body.unsubscribed_at, null);
+  assert.deepEqual(calls[1].body, { language_code: 'cy' });
+  assert.deepEqual(calls[2].body, notifications);
+  assert.equal(calls[3].body.subscribed, false); assert.ok(calls[3].body.unsubscribed_at);
+  assert.equal(calls[4].body.subscribed, true); assert.equal(calls[4].body.unsubscribed_at, null);
 });
 test('missing-row and genuine backend failures reject rather than reporting a saved preference', async () => {
   const { api } = fixture({ status: 406, response: { code: 'PGRST116', message: 'No rows' } });

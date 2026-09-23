@@ -4,9 +4,11 @@ import { Tabs } from 'expo-router';
 import { AppShell } from '@/components/vital/app-shell';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { colors, typography } from '@/theme/tokens';
+import { useLanguage } from '@/features/localization/language-context';
 
 export default function TabLayout() {
   const { isDesktop } = useResponsiveLayout();
+  const { t } = useLanguage();
 
   return (
     <AppShell>
@@ -33,7 +35,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="index"
           options={{
-            title: 'Home',
+            title: t('Home'),
             tabBarIcon: ({ color, focused, size }) => (
               <Ionicons name={focused ? 'home' : 'home-outline'} color={color} size={size} />
             ),
@@ -42,7 +44,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="discover"
           options={{
-            title: 'Discover',
+            title: t('Discover'),
             tabBarIcon: ({ color, focused, size }) => (
               <Ionicons name={focused ? 'compass' : 'compass-outline'} color={color} size={size} />
             ),
@@ -51,7 +53,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="community"
           options={{
-            title: 'Community',
+            title: t('Community'),
             tabBarIcon: ({ color, focused, size }) => (
               <Ionicons name={focused ? 'people' : 'people-outline'} color={color} size={size} />
             ),
@@ -60,7 +62,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="saved"
           options={{
-            title: 'Saved',
+            title: t('Saved'),
             tabBarIcon: ({ color, focused, size }) => (
               <Ionicons name={focused ? 'bookmark' : 'bookmark-outline'} color={color} size={size} />
             ),
@@ -69,7 +71,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="you"
           options={{
-            title: 'You',
+            title: t('You'),
             tabBarIcon: ({ color, focused, size }) => (
               <Ionicons name={focused ? 'person' : 'person-outline'} color={color} size={size} />
             ),

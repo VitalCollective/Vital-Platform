@@ -9,6 +9,8 @@ import {
 } from '@/components/vital/auth-shell';
 import { Button } from '@/components/vital/button';
 import { useAuth } from '@/features/auth/auth-context';
+import { useLanguage } from '@/features/localization/language-context';
+import { LanguageSelector } from '@/features/localization/language-selector';
 import { customerSafeErrorMessage } from '@/lib/errors';
 import { colors, layout, spacing, typography } from '@/theme/tokens';
 
@@ -16,6 +18,7 @@ type AuthMode = 'sign-in' | 'sign-up';
 
 export default function AuthScreen() {
   const { signIn, signUp } = useAuth();
+  const { t } = useLanguage();
   const [mode, setMode] = useState<AuthMode>('sign-in');
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
@@ -29,11 +32,11 @@ export default function AuthScreen() {
     setMessage(null);
 
     if (!email.trim() || !password) {
-      setError('Enter both your email address and password.');
+      setError(t('Enter both your email address and password.'));
       return;
     }
     if (mode === 'sign-up' && password.length < 8) {
-      setError('Choose a password with at least 8 characters.');
+      setError(t('Choose a password with at least 8 characters.'));
       return;
     }
 
@@ -45,7 +48,7 @@ export default function AuthScreen() {
         const result = await signUp(email, password, displayName);
         if (result.needsEmailConfirmation) {
           setMessage(
-            'Check your inbox to confirm your email, then come back and sign in.',
+            t('Check your inbox to confirm your email, then come back and sign in.'),
           );
           setMode('sign-in');
           setPassword('');
@@ -77,26 +80,27 @@ export default function AuthScreen() {
 
   return (
     <AuthShell
-      title={isSignIn ? 'Welcome back' : 'Join Vital Collective'}
+      title={isSignIn ? t('Welcome back') : t('Join Vital Collective')}
       intro={
         isSignIn
-          ? 'Sign in to return to thoughtful ideas for family life.'
-          : 'Create your account, then choose the Vital membership that suits you.'
+          ? t('Sign in to return to thoughtful ideas for family life.')
+          : t('Create your account, then choose the Vital membership that suits you.')
       }>
+      <LanguageSelector compact />
       {mode === 'sign-up' ? (
         <AuthField
-          label="Member name"
+          label={t('Member name')}
           autoCapitalize="words"
           autoComplete="name"
           textContentType="name"
           value={displayName}
           onChangeText={setDisplayName}
-          placeholder="What should we call you?"
+          placeholder={t('What should we call you?')}
         />
       ) : null}
 
       <AuthField
-        label="Email address"
+        label={t('Email address')}
         autoCapitalize="none"
         autoComplete="email"
         autoCorrect={false}
@@ -110,7 +114,7 @@ export default function AuthScreen() {
 
       <View style={styles.passwordGroup}>
         <AuthField
-          label="Password"
+          label={t('Password')}
           autoCapitalize="none"
           autoComplete={isSignIn ? 'current-password' : 'new-password'}
           autoCorrect={false}
@@ -118,7 +122,7 @@ export default function AuthScreen() {
           secureTextEntry
           value={password}
           onChangeText={setPassword}
-          placeholder={isSignIn ? 'Enter your password' : 'At least 8 characters'}
+          placeholder={isSignIn ? t('Enter your password') : t('At least 8 characters')}
           returnKeyType="done"
           onSubmitEditing={() => void submit()}
         />
@@ -132,7 +136,7 @@ export default function AuthScreen() {
                 styles.forgotLink,
                 pressed && styles.linkPressed,
               ]}>
-              <Text style={styles.linkText}>Forgot password?</Text>
+              <Text style={styles.linkText}>{t('Forgot password?')}</Text>
             </Pressable>
           </Link>
         ) : null}
@@ -142,7 +146,7 @@ export default function AuthScreen() {
       {message ? <AuthNotice kind="success">{message}</AuthNotice> : null}
 
       <Button
-        label={isSignIn ? 'Sign in' : 'Create account'}
+        label={isSignIn ? t('Sign in') : t('Create account')}
         onPress={() => void submit()}
         loading={isSubmitting}
       />
@@ -156,8 +160,8 @@ export default function AuthScreen() {
         ]}>
         <Text style={styles.switchText}>
           {isSignIn
-            ? 'New to Vital? Create an account'
-            : 'Already have an account? Sign in'}
+            ? t('New to Vital? Create an account')
+            : t('Already have an account? Sign in')}
         </Text>
       </Pressable>
     </AuthShell>

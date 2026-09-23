@@ -13,6 +13,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { useLanguage } from '@/features/localization/language-context';
 import { colors, layout, radii, spacing, typography } from '@/theme/tokens';
 
 type AuthShellProps = PropsWithChildren<{
@@ -59,6 +60,7 @@ function BrandMark() {
 
 export function AuthShell({ title, intro, children, footer }: AuthShellProps) {
   const { horizontalPadding, isTablet } = useResponsiveLayout();
+  const { t } = useLanguage();
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -84,9 +86,9 @@ export function AuthShell({ title, intro, children, footer }: AuthShellProps) {
               <Text
                 accessibilityRole="header"
                 style={[styles.title, isTablet && styles.titleTablet]}>
-                {title}
+                {t(title)}
               </Text>
-              <Text style={styles.intro}>{intro}</Text>
+              <Text style={styles.intro}>{t(intro)}</Text>
             </View>
 
             <View style={[styles.panel, isTablet && styles.panelTablet]}>{children}</View>
@@ -107,24 +109,25 @@ export function AuthField({
   ...inputProps
 }: AuthFieldProps) {
   const [isFocused, setIsFocused] = useState(false);
+  const { t } = useLanguage();
 
   return (
     <View style={styles.field}>
-      <Text style={styles.label}>{label}</Text>
+      <Text style={styles.label}>{t(label)}</Text>
       <TextInput
         {...inputProps}
-        accessibilityLabel={label}
-        accessibilityHint={hint}
+        accessibilityLabel={t(label)}
+        accessibilityHint={hint ? t(hint) : undefined}
         onBlur={() => setIsFocused(false)}
         onChangeText={onChangeText}
         onFocus={() => setIsFocused(true)}
-        placeholder={placeholder}
+        placeholder={t(placeholder)}
         placeholderTextColor={colors.inkSubtle}
         selectionColor={colors.plum}
         style={[styles.input, isFocused && styles.inputFocused]}
         value={value}
       />
-      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
+      {hint ? <Text style={styles.hint}>{t(hint)}</Text> : null}
     </View>
   );
 }

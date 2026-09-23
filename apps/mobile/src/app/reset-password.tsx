@@ -9,10 +9,13 @@ import {
 } from '@/components/vital/auth-shell';
 import { Button } from '@/components/vital/button';
 import { useAuth } from '@/features/auth/auth-context';
+import { useLanguage } from '@/features/localization/language-context';
+import { LanguageSelector } from '@/features/localization/language-selector';
 import { customerSafeErrorMessage } from '@/lib/errors';
 import { colors, layout, spacing, typography } from '@/theme/tokens';
 
 export default function ResetPasswordScreen() {
+  const { t } = useLanguage();
   const router = useRouter();
   const routeParameters = useLocalSearchParams();
   const {
@@ -59,11 +62,11 @@ export default function ResetPasswordScreen() {
     setError(null);
 
     if (password.length < 8) {
-      setError('Choose a password with at least 8 characters.');
+      setError(t('Choose a password with at least 8 characters.'));
       return;
     }
     if (password !== confirmation) {
-      setError('The two passwords do not match. Please enter them again.');
+      setError(t('The two passwords do not match. Please enter them again.'));
       return;
     }
 
@@ -97,19 +100,20 @@ export default function ResetPasswordScreen() {
 
   return (
     <AuthShell
-      title={isComplete ? 'Password updated' : 'Choose a new password'}
+      title={isComplete ? t('Password updated') : t('Choose a new password')}
       intro={
         isComplete
-          ? 'Your Vital Collective account is ready when you are.'
-          : 'Use a memorable password that you do not use for another account.'
+          ? t('Your Vital Collective account is ready when you are.')
+          : t('Use a memorable password that you do not use for another account.')
       }>
+      <LanguageSelector compact />
       {isPasswordRecoveryLinkLoading ? (
         <View
           accessibilityLiveRegion="polite"
           accessibilityRole="progressbar"
           style={styles.loading}>
           <ActivityIndicator color={colors.plum} />
-          <Text style={styles.loadingText}>Checking your secure reset link…</Text>
+          <Text style={styles.loadingText}>{t('Checking your secure reset link…')}</Text>
         </View>
       ) : recoveryUnavailable ? (
         <>
@@ -125,7 +129,7 @@ export default function ResetPasswordScreen() {
                 styles.linkButton,
                 pressed && styles.linkPressed,
               ]}>
-              <Text style={styles.linkText}>Request a new reset link</Text>
+              <Text style={styles.linkText}>{t('Request a new reset link')}</Text>
             </Pressable>
           </Link>
         </>
@@ -134,12 +138,12 @@ export default function ResetPasswordScreen() {
           <AuthNotice kind="success">
             Your password has been changed successfully.
           </AuthNotice>
-          <Button label="Continue to Vital" onPress={continueToApp} />
+          <Button label={t('Continue to Vital')} onPress={continueToApp} />
         </>
       ) : (
         <>
           <AuthField
-            label="New password"
+            label={t('New password')}
             autoCapitalize="none"
             autoComplete="new-password"
             autoCorrect={false}
@@ -147,12 +151,12 @@ export default function ResetPasswordScreen() {
             secureTextEntry
             value={password}
             onChangeText={setPassword}
-            placeholder="At least 8 characters"
-            hint="Use at least 8 characters."
+            placeholder={t('At least 8 characters')}
+            hint={t('Use at least 8 characters.')}
             returnKeyType="next"
           />
           <AuthField
-            label="Confirm new password"
+            label={t('Confirm new password')}
             autoCapitalize="none"
             autoComplete="new-password"
             autoCorrect={false}
@@ -160,13 +164,13 @@ export default function ResetPasswordScreen() {
             secureTextEntry
             value={confirmation}
             onChangeText={setConfirmation}
-            placeholder="Enter the same password again"
+            placeholder={t('Enter the same password again')}
             returnKeyType="done"
             onSubmitEditing={() => void submit()}
           />
           {error ? <AuthNotice kind="error">{error}</AuthNotice> : null}
           <Button
-            label="Update password"
+            label={t('Update password')}
             onPress={() => void submit()}
             loading={isSubmitting}
           />

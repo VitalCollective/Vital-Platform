@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
+import { useLanguage } from '@/features/localization/language-context';
 
 import { colors, layout, radii, spacing, typography } from '@/theme/tokens';
 
@@ -11,6 +12,7 @@ export function FilterChip({
   selected: boolean;
   onPress: () => void;
 }) {
+  const { t } = useLanguage();
   return (
     <Pressable
       accessibilityRole="button"
@@ -21,7 +23,7 @@ export function FilterChip({
         selected && styles.selectedChip,
         { opacity: pressed ? 0.78 : 1 },
       ]}>
-      <Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
+      <Text style={[styles.label, selected && styles.selectedLabel]}>{t(label)}</Text>
     </Pressable>
   );
 }

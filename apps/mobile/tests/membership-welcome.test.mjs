@@ -56,6 +56,6 @@ test('persistence is atomic, entitlement-gated and scoped to the authenticated p
 test('feedback dismisses the modal and opens the general feedback destination', () => {
   const modal = readFileSync(new URL('../src/features/billing/membership-welcome-modal.tsx', import.meta.url), 'utf8');
   assert.match(modal, /function sendFeedback\(\)[\s\S]*dismiss\(\);[\s\S]*pathname: '\/you'[\s\S]*panel: 'feedback'/);
-  assert.match(modal, /label="Start exploring" onPress=\{dismiss\}/);
-  assert.match(modal, /label="Send feedback"/);
+  assert.match(modal, /label=\{t\('Start exploring'\)\} onPress=\{dismiss\}/);
+  assert.match(modal, /label=\{t\('Send feedback'\)\}/);
 });

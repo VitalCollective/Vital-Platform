@@ -4,6 +4,7 @@ import { Button } from '@/components/vital/button';
 import { StatePanel } from '@/components/vital/state-panel';
 import { customerSafeErrorMessage, withFutureJwtTimingRetry } from '@/lib/errors';
 import { withRequestTimeout } from '@/lib/request-lifecycle';
+import { useLanguage } from '@/features/localization/language-context';
 import type { CommunityApi } from './community-api';
 import { useCommunityPage } from './community-hooks';
 import { participationMessage, POST_TYPES, validateReply, type CommunityAccess, type CommunityMember, type CommunityPostDetail, type CommunityReply, type ReportTarget } from './community-model';
@@ -14,6 +15,7 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
   onRules: () => void; onReport: (target: ReportTarget) => void; onMember: (member: CommunityMember) => void;
   onReplyCreated: (postId: string) => void; onActivity: (id: string) => void; refreshKey?: number;
 }) {
+  const { t } = useLanguage();
   const [post, setPost] = useState<CommunityPostDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -54,12 +56,12 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
       await api.reply(id, body, replyTo ? replyTo.parent_comment_id ?? replyTo.id : null);
       setPost((current) => current ? { ...current, reply_count: current.reply_count + 1 } : current);
       onReplyCreated(id);
-      setBody(''); setReplyTo(null); setNotice('Your reply has been added to the conversation.'); await replies.refresh(); setPost(await api.post(id));
+      setBody(''); setReplyTo(null); setNotice(t('Your reply has been added to the conversation.')); await replies.refresh(); setPost(await api.post(id));
     });
   }
   return <View style={s.stack}>
-    <View style={s.row}><CommunityAction label="Back to Community" icon="arrow-back" onPress={onBack} /><CommunityAction label="Refresh" icon="refresh-outline" onPress={() => { setReload((v) => v + 1); void replies.refresh(); }} /></View>
-    {loading && !post ? <StatePanel kind="loading" title="Opening conversation" message="Finding the post and replies…" /> : error ? <StatePanel kind="error" title="Conversation unavailable" message={error} onRetry={() => setReload((v) => v + 1)} /> : post ? <>
+    <View style={s.row}><CommunityAction label={t('Back to Community')} icon="arrow-back" onPress={onBack} /><CommunityAction label={t('Refresh')} icon="refresh-outline" onPress={() => { setReload((v) => v + 1); void replies.refresh(); }} /></View>
+    {loading && !post ? <StatePanel kind="loading" title={t('Opening conversation')} message={t('Finding the post and replies…')} /> : error ? <StatePanel kind="error" title={t('Conversation unavailable')} message={error} onRetry={() => setReload((v) => v + 1)} /> : post ? <>
       <View style={s.card}>
         <Text style={s.eyebrow}>{POST_TYPES.find((type) => type.value === post.post_type)?.noun ?? 'Conversation'}{post.topic ? ` · ${post.topic}` : ''}</Text>
         <Text accessibilityRole="header" style={s.title}>{post.title}</Text>
@@ -75,13 +77,13 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
       </View>
       <CommunityNotice message={actionError} error />
       <CommunityNotice message={notice} />
-      {confirmRemove && <View style={s.card}><Text style={s.body}>Remove your {confirmRemove.kind === 'post' ? 'post' : 'reply'}?</Text><Text style={s.meta}>It will no longer be visible in the conversation.</Text><Button label="Confirm removal" variant="danger" loading={busy} onPress={() => void action(async () => { await api.removeOwn(confirmRemove.kind, confirmRemove.id); if (confirmRemove.kind === 'post') onBack(); else await replies.refresh(); setConfirmRemove(null); })} /><CommunityAction label="Keep it" onPress={() => setConfirmRemove(null)} /></View>}
-      <Text accessibilityRole="header" style={s.title}>Replies</Text>
-      {replies.loading ? <Text style={s.meta}>Loading replies…</Text> : !replies.items.length && !replies.error ? <Text style={s.body}>No replies yet. A useful thought or a little encouragement is welcome.</Text> : null}
+      {confirmRemove && <View style={s.card}><Text style={s.body}>{t('Remove your {kind}?', { kind: t(confirmRemove.kind === 'post' ? 'post' : 'reply') })}</Text><Text style={s.meta}>{t('It will no longer be visible in the conversation.')}</Text><Button label="Confirm removal" variant="danger" loading={busy} onPress={() => void action(async () => { await api.removeOwn(confirmRemove.kind, confirmRemove.id); if (confirmRemove.kind === 'post') onBack(); else await replies.refresh(); setConfirmRemove(null); })} /><CommunityAction label="Keep it" onPress={() => setConfirmRemove(null)} /></View>}
+      <Text accessibilityRole="header" style={s.title}>{t('Replies')}</Text>
+      {replies.loading ? <Text style={s.meta}>{t('Loading replies…')}</Text> : !replies.items.length && !replies.error ? <Text style={s.body}>{t('No replies yet. A useful thought or a little encouragement is welcome.')}</Text> : null}
       {replies.items.map((reply) => <View key={reply.id} style={s.card}>
         <CommunityAuthor name={reply.author_name} imageUrl={reply.author_image_url} bio={reply.author_bio} createdAt={reply.created_at} seeded={reply.is_seeded}
           onMember={reply.author_id !== userId && !reply.is_seeded ? () => onMember({ id: reply.author_id, name: reply.author_name, imageUrl: reply.author_image_url, bio: reply.author_bio, seeded: false }) : undefined} />
-        {reply.parent_comment_id && <Text style={s.meta}>In reply to {reply.reply_to_name ?? 'an earlier reply'}</Text>}
+        {reply.parent_comment_id && <Text style={s.meta}>{t('In reply to {name}', { name: reply.reply_to_name ?? t('an earlier reply') })}</Text>}
         <Text selectable style={s.body}>{reply.body}</Text>
         <View style={s.row}>
           <CommunityAction label={`Helpful${reply.helpful_count ? ` · ${reply.helpful_count}` : ''}`} icon="hand-left-outline" selected={reply.viewer_helpful}
@@ -91,13 +93,13 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
         </View>
       </View>)}
       <CommunityNotice message={replies.error} error />
-      {replies.error && <Button label="Try again" onPress={() => void (replies.items.length ? replies.more() : replies.refresh())} />}
-      {replies.hasMore && <Button label="Show more replies" variant="secondary" loading={replies.loadingMore} onPress={() => void replies.more()} />}
-      {post.locked ? <CommunityNotice message="Replies are closed for this conversation. You can still report a concern." /> : !access?.canParticipate ? <View style={s.stack}><CommunityNotice message={participationMessage(access)} />{!access?.acceptedRules && <Button label="Read Community Rules" variant="secondary" onPress={onRules} />}</View> : <View style={s.card}>
-        <Text style={s.title}>{replyTo ? `Reply to ${replyTo.author_name}` : 'Add your reply'}</Text>
+      {replies.error && <Button label={t('Try again')} onPress={() => void (replies.items.length ? replies.more() : replies.refresh())} />}
+      {replies.hasMore && <Button label={t('Show more replies')} variant="secondary" loading={replies.loadingMore} onPress={() => void replies.more()} />}
+      {post.locked ? <CommunityNotice message={t('Replies are closed for this conversation. You can still report a concern.')} /> : !access?.canParticipate ? <View style={s.stack}><CommunityNotice message={participationMessage(access)} />{!access?.acceptedRules && <Button label="Read Community Rules" variant="secondary" onPress={onRules} />}</View> : <View style={s.card}>
+        <Text style={s.title}>{replyTo ? t('Reply to {name}', { name: replyTo.author_name }) : t('Add your reply')}</Text>
         {replyTo && <CommunityAction label="Reply to the post instead" onPress={() => setReplyTo(null)} />}
         <CommunityField inputRef={replyInput} label="Your reply" value={body} onChangeText={setBody} multiline maxLength={10000} editable={!busy} placeholder="Share a useful thought…" />
-        <Button label="Send reply" loading={busy} onPress={sendReply} />
+        <Button label={t('Send reply')} loading={busy} onPress={sendReply} />
       </View>}
     </> : null}
   </View>;

@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { Button } from '@/components/vital/button';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
+import { useLanguage } from '@/features/localization/language-context';
 
 type StatePanelProps = {
   title: string;
@@ -17,6 +18,7 @@ export function StatePanel({
   kind = 'empty',
   onRetry,
 }: StatePanelProps) {
+  const { t } = useLanguage();
   return (
     <View
       style={[styles.panel, kind === 'error' && styles.errorPanel]}
@@ -31,9 +33,9 @@ export function StatePanel({
           color={kind === 'error' ? colors.danger : colors.brand}
         />
       )}
-      <Text style={styles.title}>{title}</Text>
-      <Text style={styles.message}>{message}</Text>
-      {onRetry ? <Button label="Try again" onPress={onRetry} variant="secondary" /> : null}
+      <Text style={styles.title}>{t(title)}</Text>
+      <Text style={styles.message}>{t(message)}</Text>
+      {onRetry ? <Button label={t('Try again')} onPress={onRetry} variant="secondary" /> : null}
     </View>
   );
 }

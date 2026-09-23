@@ -27,6 +27,7 @@ export const NOTIFICATION_LABELS = {
 } as const;
 export type NotificationPreferences = Record<keyof typeof NOTIFICATION_LABELS, boolean>;
 export type ActivityPreferences = { preferred_sections: string[]; interests: string[] };
+export type LanguagePreference = 'en' | 'cy';
 export const FAMILY_RELATIONSHIPS = ['Child', 'Partner', 'Parent', 'Grandparent', 'Other'] as const;
 export type FamilyRelationship = typeof FAMILY_RELATIONSHIPS[number];
 export type FamilyMember = {

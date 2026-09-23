@@ -19,6 +19,7 @@ import { Screen, ScreenHeader } from '@/components/vital/screen';
 import { StatePanel } from '@/components/vital/state-panel';
 import { activityDetailHref } from '@/features/activities/activity-navigation';
 import { useDiscoverActivities } from '@/features/activities/activity-hooks';
+import { useLanguage } from '@/features/localization/language-context';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { colors, layout, radii, spacing, typography } from '@/theme/tokens';
@@ -73,6 +74,7 @@ function optionLabel<T extends string>(
 }
 
 export default function DiscoverScreen() {
+  const { t } = useLanguage();
   const params = useLocalSearchParams<{ section?: string | string[] }>();
   const router = useRouter();
   const { isTablet } = useResponsiveLayout();
@@ -159,8 +161,8 @@ export default function DiscoverScreen() {
       activeMoreFilterCount,
   );
   const activeMoreFilterSummary = [
-    age === 'any' ? null : optionLabel(AGE_OPTIONS, age),
-    duration === 'any' ? null : optionLabel(DURATION_OPTIONS, duration),
+    age === 'any' ? null : t(optionLabel(AGE_OPTIONS, age)),
+    duration === 'any' ? null : t(optionLabel(DURATION_OPTIONS, duration)),
   ]
     .filter(Boolean)
     .join(' · ');
@@ -169,15 +171,15 @@ export default function DiscoverScreen() {
     <>
       <Screen scrollProps={{ keyboardDismissMode: 'on-drag' }}>
         <ScreenHeader
-          eyebrow="Find something to do"
-          title="Discover"
-          description="Search by what sounds useful, then narrow the setting or part of Vital."
+          eyebrow={t('Find something to do')}
+          title={t('Discover')}
+          description={t('Search by what sounds useful, then narrow the setting or part of Vital.')}
         />
 
         <View style={styles.searchWrap}>
           <Ionicons name="search" size={21} color={colors.inkSubtle} />
           <TextInput
-            accessibilityLabel="Search activities"
+            accessibilityLabel={t('Search activities')}
             autoCapitalize="none"
             autoCorrect={false}
             returnKeyType="search"
@@ -186,14 +188,14 @@ export default function DiscoverScreen() {
               setSearch(value);
               setResultLimit(INITIAL_RESULT_LIMIT);
             }}
-            placeholder="Try ‘outdoors’, ‘drawing’ or ‘bread’"
+            placeholder={t('Try ‘outdoors’, ‘drawing’ or ‘bread’')}
             placeholderTextColor={colors.inkSubtle}
             style={styles.searchInput}
           />
           {search ? (
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Clear search"
+              accessibilityLabel={t('Clear search')}
               onPress={() => {
                 setSearch('');
                 setResultLimit(INITIAL_RESULT_LIMIT);
@@ -205,17 +207,17 @@ export default function DiscoverScreen() {
         </View>
 
         <View style={styles.filterGroup}>
-          <Text style={styles.filterLabel}>Part of Vital</Text>
+          <Text style={styles.filterLabel}>{t('Part of Vital')}</Text>
           <View style={styles.chipWrap}>
             <FilterChip
-              label="All"
+              label={t('All')}
               selected={section === null}
               onPress={() => setSectionFilter(null)}
             />
             {SECTION_OPTIONS.map((item) => (
               <FilterChip
                 key={item}
-                label={item.replace('Vital ', '')}
+                label={t(item.replace('Vital ', ''))}
                 selected={section === item}
                 onPress={() => setSectionFilter(item)}
               />
@@ -224,7 +226,7 @@ export default function DiscoverScreen() {
         </View>
 
         <View style={styles.filterGroup}>
-          <Text style={styles.filterLabel}>Setting</Text>
+          <Text style={styles.filterLabel}>{t('Setting')}</Text>
           <View style={styles.chipWrap}>
             {(
               [
@@ -235,7 +237,7 @@ export default function DiscoverScreen() {
             ).map(([value, label]) => (
               <FilterChip
                 key={value}
-                label={label}
+                label={t(label)}
                 selected={environment === value}
                 onPress={() => setEnvironmentFilter(value)}
               />
@@ -256,7 +258,7 @@ export default function DiscoverScreen() {
             ]}>
             <View style={styles.moreFiltersLabelRow}>
               <Ionicons name="options-outline" size={20} color={colors.brand} />
-              <Text style={styles.moreFiltersLabel}>More filters</Text>
+              <Text style={styles.moreFiltersLabel}>{t('More filters')}</Text>
               {activeMoreFilterCount ? (
                 <View style={styles.filterCountBadge}>
                   <Text style={styles.filterCountText}>{activeMoreFilterCount}</Text>
@@ -271,10 +273,10 @@ export default function DiscoverScreen() {
               <Text style={styles.activeFilterText}>{activeMoreFilterSummary}</Text>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel="Clear age and time filters"
+                accessibilityLabel={t('Clear age and time filters')}
                 onPress={clearMoreFilters}
                 hitSlop={8}>
-                <Text style={styles.clearMoreText}>Clear</Text>
+                <Text style={styles.clearMoreText}>{t('Clear')}</Text>
               </Pressable>
             </View>
           ) : null}
@@ -283,15 +285,15 @@ export default function DiscoverScreen() {
         <View style={styles.resultHeader}>
           <Text style={styles.resultTitle} accessibilityLiveRegion="polite">
             {results.isLoading && !results.data
-              ? 'Finding activities…'
-              : `${count.toLocaleString()} ${count === 1 ? 'activity' : 'activities'}`}
+              ? t('Finding activities…')
+              : t(count === 1 ? '{count} activity' : '{count} activities', { count: count.toLocaleString() })}
           </Text>
           {hasFilters ? (
             <Pressable
               accessibilityRole="button"
               onPress={clearFilters}
               style={styles.resetButton}>
-              <Text style={styles.resetText}>Reset all</Text>
+              <Text style={styles.resetText}>{t('Reset all')}</Text>
             </Pressable>
           ) : null}
         </View>
@@ -299,13 +301,13 @@ export default function DiscoverScreen() {
         {results.isLoading && !results.data ? (
           <StatePanel
             kind="loading"
-            title="Searching Vital"
-            message="We are looking through the Vital collection."
+            title={t('Searching Vital')}
+            message={t('We are looking through the Vital collection.')}
           />
         ) : results.error ? (
           <StatePanel
             kind="error"
-            title="Search is unavailable"
+            title={t('Search is unavailable')}
             message={results.error}
             onRetry={() => void results.retry()}
           />
@@ -314,7 +316,7 @@ export default function DiscoverScreen() {
             {results.isLoading ? (
               <View style={styles.refreshing}>
                 <ActivityIndicator color={colors.brand} />
-                <Text style={styles.refreshingText}>Updating results…</Text>
+                <Text style={styles.refreshingText}>{t('Updating results…')}</Text>
               </View>
             ) : null}
             {results.data.activities.map((activity) => (
@@ -331,15 +333,15 @@ export default function DiscoverScreen() {
           </View>
         ) : (
           <StatePanel
-            title="Nothing matched those filters"
-            message="Try a broader phrase, another part of Vital, or fewer filters."
+            title={t('Nothing matched those filters')}
+            message={t('Try a broader phrase, another part of Vital, or fewer filters.')}
           />
         )}
 
         {results.data?.activities.length && hasMoreResults ? (
           <View style={styles.showMore}>
             <Button
-              label="Show more"
+              label={t('Show more')}
               icon="chevron-down"
               variant="secondary"
               loading={results.isLoading}
@@ -348,11 +350,11 @@ export default function DiscoverScreen() {
               }
             />
             <Text style={styles.shownText}>
-              Showing {shownCount.toLocaleString()} of {count.toLocaleString()}
+              {t('Showing {shown} of {count}', { shown: shownCount.toLocaleString(), count: count.toLocaleString() })}
             </Text>
           </View>
         ) : results.data?.activities.length && count > 0 ? (
-          <Text style={styles.endText}>All matching activities are shown.</Text>
+          <Text style={styles.endText}>{t('All matching activities are shown.')}</Text>
         ) : null}
       </Screen>
 
@@ -366,7 +368,7 @@ export default function DiscoverScreen() {
           accessibilityViewIsModal>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Close filters"
+            accessibilityLabel={t('Close filters')}
             onPress={() => setAreMoreFiltersOpen(false)}
             style={StyleSheet.absoluteFill}
           />
@@ -376,12 +378,12 @@ export default function DiscoverScreen() {
               showsVerticalScrollIndicator={false}>
               <View style={styles.sheetHeadingRow}>
                 <View style={styles.sheetHeadingCopy}>
-                  <Text style={styles.sheetEyebrow}>Narrow the ideas</Text>
-                  <Text style={styles.sheetTitle}>Age and time</Text>
+                  <Text style={styles.sheetEyebrow}>{t('Narrow the ideas')}</Text>
+                  <Text style={styles.sheetTitle}>{t('Age and time')}</Text>
                 </View>
                 <Pressable
                   accessibilityRole="button"
-                  accessibilityLabel="Close filters"
+                  accessibilityLabel={t('Close filters')}
                   onPress={() => setAreMoreFiltersOpen(false)}
                   style={styles.closeButton}>
                   <Ionicons name="close" size={24} color={colors.ink} />
@@ -389,12 +391,12 @@ export default function DiscoverScreen() {
               </View>
 
               <View style={styles.sheetGroup}>
-                <Text style={styles.filterLabel}>Age</Text>
+                <Text style={styles.filterLabel}>{t('Age')}</Text>
                 <View style={styles.chipWrap}>
                   {AGE_OPTIONS.map((option) => (
                     <FilterChip
                       key={option.value}
-                      label={option.label}
+                      label={t(option.label)}
                       selected={draftAge === option.value}
                       onPress={() => setDraftAge(option.value)}
                     />
@@ -403,12 +405,12 @@ export default function DiscoverScreen() {
               </View>
 
               <View style={styles.sheetGroup}>
-                <Text style={styles.filterLabel}>Time</Text>
+                <Text style={styles.filterLabel}>{t('Time')}</Text>
                 <View style={styles.chipWrap}>
                   {DURATION_OPTIONS.map((option) => (
                     <FilterChip
                       key={option.value}
-                      label={option.label}
+                      label={t(option.label)}
                       selected={draftDuration === option.value}
                       onPress={() => setDraftDuration(option.value)}
                     />
@@ -424,9 +426,9 @@ export default function DiscoverScreen() {
                     setDraftDuration('any');
                   }}
                   style={styles.clearSheetButton}>
-                  <Text style={styles.clearSheetText}>Clear age and time</Text>
+                  <Text style={styles.clearSheetText}>{t('Clear age and time')}</Text>
                 </Pressable>
-                <Button label="Apply filters" onPress={applyMoreFilters} />
+                <Button label={t('Apply filters')} onPress={applyMoreFilters} />
               </View>
             </ScrollView>
           </View>

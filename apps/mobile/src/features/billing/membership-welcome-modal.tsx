@@ -2,6 +2,7 @@ import { useEffect, useMemo, useReducer } from 'react';
 import { Image, Modal, SafeAreaView, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Button } from '@/components/vital/button';
+import { useLanguage } from '@/features/localization/language-context';
 import { reportTechnicalError } from '@/lib/errors';
 import { requireSupabase } from '@/lib/supabase';
 import { colors, layout, radii, shadows, spacing, typography } from '@/theme/tokens';
@@ -15,6 +16,7 @@ import {
 export function MembershipWelcomeModal() {
   const router = useRouter();
   const billing = useBilling();
+  const { t } = useLanguage();
   const api = useMemo(() => createBillingApi(requireSupabase()), []);
   const [state, dispatch] = useReducer(membershipWelcomeReducer, EMPTY_MEMBERSHIP_WELCOME);
 
@@ -58,15 +60,15 @@ export function MembershipWelcomeModal() {
             source={require('../../../assets/brand/vital-mark.png')}
             style={styles.mark}
           />
-          <Text accessibilityRole="header" style={styles.title}>Welcome to Vital Collective</Text>
-          <Text style={styles.lead}>Your membership is now active.</Text>
-          <Text style={styles.body}>We’re a family-run UK app, and we’re really pleased to have you with us.</Text>
-          <Text style={styles.body}>Everything in Vital is designed to help families find practical ideas, make time together and discover useful things to do in everyday life.</Text>
-          <Text style={styles.body}>We love hearing from members, so if you have feedback, suggestions or activity ideas, please tell us — it helps us shape Vital for real families.</Text>
-          <Text style={styles.offer}>Suggest an activity and, if we include it, we’ll give you a month free.</Text>
+          <Text accessibilityRole="header" style={styles.title}>{t('Welcome to Vital Collective')}</Text>
+          <Text style={styles.lead}>{t('Your membership is now active.')}</Text>
+          <Text style={styles.body}>{t('We’re a family-run UK app, and we’re really pleased to have you with us.')}</Text>
+          <Text style={styles.body}>{t('Everything in Vital is designed to help families find practical ideas, make time together and discover useful things to do in everyday life.')}</Text>
+          <Text style={styles.body}>{t('We love hearing from members, so if you have feedback, suggestions or activity ideas, please tell us — it helps us shape Vital for real families.')}</Text>
+          <Text style={styles.offer}>{t('Suggest an activity and, if we include it, we’ll give you a month free.')}</Text>
           <View style={styles.actions}>
-            <Button label="Start exploring" onPress={dismiss} />
-            <Button label="Send feedback" variant="secondary" onPress={sendFeedback} />
+            <Button label={t('Start exploring')} onPress={dismiss} />
+            <Button label={t('Send feedback')} variant="secondary" onPress={sendFeedback} />
           </View>
         </View>
       </ScrollView>

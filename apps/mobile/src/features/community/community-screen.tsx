@@ -5,6 +5,7 @@ import { FilterChip } from '@/components/vital/filter-chip';
 import { Screen, ScreenHeader } from '@/components/vital/screen';
 import { StatePanel } from '@/components/vital/state-panel';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { useLanguage } from '@/features/localization/language-context';
 import { customerSafeErrorMessage, withFutureJwtTimingRetry } from '@/lib/errors';
 import { withRequestTimeout } from '@/lib/request-lifecycle';
 import { colors, radii, spacing, typography } from '@/theme/tokens';
@@ -22,6 +23,7 @@ import { CommunityAction, CommunityAuthor, CommunityField, CommunityNotice, s } 
 export function CommunityScreenContent({ api, userId, onActivity, refreshKey = 0 }: {
   api: CommunityApi; userId: string; onActivity: (id: string) => void; refreshKey?: number;
 }) {
+  const { t } = useLanguage();
   const [search, setSearch] = useState('');
   const [topic, setTopic] = useState<CommunityTopic | null>(null);
   const [postType, setPostType] = useState<PostType | null>(null);
@@ -70,31 +72,31 @@ export function CommunityScreenContent({ api, userId, onActivity, refreshKey = 0
       <View style={styles.reading}>
         {postId ? <CommunityDetail key={postId} api={api} id={postId} userId={userId} access={access} refreshKey={refreshKey}
           onBack={() => { setPostId(null); refresh(); }} onRules={() => setAbout(true)} onReport={setReport} onMember={setMember} onReplyCreated={replyCreated} onActivity={onActivity} /> : <>
-          <ScreenHeader eyebrow="Community" title="Made to be useful, not noisy."
-            description="Find and share useful family ideas, experiences, questions and encouragement." />
+          <ScreenHeader eyebrow={t('Community')} title={t('Made to be useful, not noisy.')}
+            description={t('Find and share useful family ideas, experiences, questions and encouragement.')} />
           <View style={s.stack}>
-            <CommunityField label="Search Community" placeholder="Search ideas, questions and experiences" value={search}
+            <CommunityField label={t('Search Community')} placeholder={t('Search ideas, questions and experiences')} value={search}
               onChangeText={(value) => { setSearch(value); setOrder(value.trim() ? 'relevant' : 'recent'); }} maxLength={200}
               returnKeyType="search" autoCorrect={false} />
-            <View style={s.row}><FilterChip label="All" selected={!topic} onPress={() => setTopic(null)} />{COMMUNITY_TOPICS.map((value) => <FilterChip key={value} label={value} selected={topic === value} onPress={() => setTopic(value)} />)}</View>
+            <View style={s.row}><FilterChip label={t('All')} selected={!topic} onPress={() => setTopic(null)} />{COMMUNITY_TOPICS.map((value) => <FilterChip key={value} label={t(value)} selected={topic === value} onPress={() => setTopic(value)} />)}</View>
             <View style={styles.posting}>
-              <Text style={s.label}>Something to share?</Text>
-              <View style={styles.postingGrid}>{POST_TYPES.slice(0, 4).map((type) => <View key={type.value} style={styles.postingOption}><CommunityAction label={type.label} icon={type.icon} onPress={() => startPost(type.value)} /></View>)}</View>
+              <Text style={s.label}>{t('Something to share?')}</Text>
+              <View style={styles.postingGrid}>{POST_TYPES.slice(0, 4).map((type) => <View key={type.value} style={styles.postingOption}><CommunityAction label={t(type.label)} icon={type.icon} onPress={() => startPost(type.value)} /></View>)}</View>
             </View>
             <View style={s.row}>
-              {Boolean(query.trim()) && <FilterChip label="Relevant" selected={order === 'relevant'} onPress={() => setOrder('relevant')} />}
-              <FilterChip label="Recent" selected={order === 'recent'} onPress={() => setOrder('recent')} />
-              <FilterChip label="Helpful" selected={order === 'helpful'} onPress={() => setOrder('helpful')} />
-              <CommunityAction label={moreTypes ? 'Hide post types' : 'Post type'} icon="options-outline" onPress={() => setMoreTypes(!moreTypes)} />
+              {Boolean(query.trim()) && <FilterChip label={t('Relevant')} selected={order === 'relevant'} onPress={() => setOrder('relevant')} />}
+              <FilterChip label={t('Recent')} selected={order === 'recent'} onPress={() => setOrder('recent')} />
+              <FilterChip label={t('Helpful')} selected={order === 'helpful'} onPress={() => setOrder('helpful')} />
+              <CommunityAction label={t(moreTypes ? 'Hide post types' : 'Post type')} icon="options-outline" onPress={() => setMoreTypes(!moreTypes)} />
             </View>
-            {moreTypes && <View style={s.row}><FilterChip label="All post types" selected={!postType} onPress={() => setPostType(null)} />{POST_TYPES.map((type) => <FilterChip key={type.value} label={type.noun} selected={postType === type.value} onPress={() => setPostType(type.value)} />)}</View>}
+            {moreTypes && <View style={s.row}><FilterChip label={t('All post types')} selected={!postType} onPress={() => setPostType(null)} />{POST_TYPES.map((type) => <FilterChip key={type.value} label={t(type.noun)} selected={postType === type.value} onPress={() => setPostType(type.value)} />)}</View>}
             {filtering && <View style={s.row}><Text style={s.meta}>{[topic, POST_TYPES.find((t) => t.value === postType)?.noun, query.trim() ? `“${query.trim()}”` : null].filter(Boolean).join(' · ')}</Text><CommunityAction label="Clear filters" onPress={resetFilters} /></View>}
             <CommunityNotice message={notice} /><CommunityNotice message={accessError} error />
             {access?.restricted && <CommunityNotice message={participationMessage(access)} />}
-            {feed.loading ? <StatePanel kind="loading" title="Finding conversations" message="A moment to gather the latest posts…" /> : feed.error && !feed.items.length ? <StatePanel kind="error" title="Community is unavailable just now" message={feed.error} onRetry={refresh} /> : !feed.items.length ? <View style={s.stack}>
+            {feed.loading ? <StatePanel kind="loading" title={t('Finding conversations')} message={t('A moment to gather the latest posts…')} /> : feed.error && !feed.items.length ? <StatePanel kind="error" title={t('Community is unavailable just now')} message={feed.error} onRetry={refresh} /> : !feed.items.length ? <View style={s.stack}>
               <StatePanel title={filtering ? 'No conversations found' : 'There is room for your first thought'} message={filtering ? 'Try fewer words or another topic. You can also ask the question yourself.' : 'Ask a question, share something that worked, or tell us how it really went.'} />
-              {filtering && <Button label="Clear search and filters" variant="secondary" onPress={resetFilters} />}
-              <Button label="Ask a question" onPress={() => startPost('question')} />
+              {filtering && <Button label={t('Clear search and filters')} variant="secondary" onPress={resetFilters} />}
+              <Button label={t('Ask a question')} onPress={() => startPost('question')} />
             </View> : feed.items.map((post) => <View key={post.id} style={s.card}>
               <Text style={s.eyebrow}>{POST_TYPES.find((t) => t.value === post.post_type)?.noun ?? 'Conversation'}{post.topic ? ` · ${post.topic}` : ''}{post.locked ? ' · Replies closed' : ''}</Text>
               <Pressable accessibilityRole="button" accessibilityLabel={`Open conversation: ${post.title}`} onPress={() => { setPostId(post.id); setNotice(null); }} style={({ pressed }) => [s.stack, { opacity: pressed ? 0.75 : 1 }]}>
@@ -106,10 +108,10 @@ export function CommunityScreenContent({ api, userId, onActivity, refreshKey = 0
               {post.activity_id && post.activity_title && <CommunityAction label={`Activity: ${post.activity_title}`} icon="link-outline" onPress={() => onActivity(post.activity_id!)} />}
               <View style={s.row}><CommunityAction label={`${post.reply_count} ${post.reply_count === 1 ? 'reply' : 'replies'} · Read conversation`} icon="chatbubble-outline" onPress={() => setPostId(post.id)} />{post.helpful_count > 0 && <Text style={s.meta}>{post.helpful_count} Helpful</Text>}</View>
             </View>)}
-            {!!feed.items.length && feed.error && <><CommunityNotice message={feed.error} error /><Button label="Try again" onPress={() => void feed.more()} /></>}
-            {feed.hasMore && <Button label="Show more conversations" variant="secondary" loading={feed.loadingMore} onPress={() => void feed.more()} />}
-            {!feed.loading && feed.items.length > 0 && !feed.hasMore && <Text style={styles.endNote}>You are up to date with these conversations. Come back when it is useful.</Text>}
-            <View style={s.row}><CommunityAction label="About Community & rules" icon="information-circle-outline" onPress={() => setAbout(true)} /><CommunityAction label="Blocked members" icon="ban-outline" onPress={() => setBlockedMembers(true)} /><CommunityAction label="Refresh" icon="refresh-outline" onPress={refresh} />{access?.isModerator && <CommunityAction label="Moderation review" icon="shield-checkmark-outline" onPress={() => setModeration(true)} />}</View>
+            {!!feed.items.length && feed.error && <><CommunityNotice message={feed.error} error /><Button label={t('Try again')} onPress={() => void feed.more()} /></>}
+            {feed.hasMore && <Button label={t('Show more conversations')} variant="secondary" loading={feed.loadingMore} onPress={() => void feed.more()} />}
+            {!feed.loading && feed.items.length > 0 && !feed.hasMore && <Text style={styles.endNote}>{t('You are up to date with these conversations. Come back when it is useful.')}</Text>}
+            <View style={s.row}><CommunityAction label={t('About Community & rules')} icon="information-circle-outline" onPress={() => setAbout(true)} /><CommunityAction label={t('Blocked members')} icon="ban-outline" onPress={() => setBlockedMembers(true)} /><CommunityAction label={t('Refresh')} icon="refresh-outline" onPress={refresh} />{access?.isModerator && <CommunityAction label={t('Moderation review')} icon="shield-checkmark-outline" onPress={() => setModeration(true)} />}</View>
           </View>
         </>}
       </View>

@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
+import { useLanguage } from '@/features/localization/language-context';
 import { colors, layout, spacing, typography } from '@/theme/tokens';
 
 type ScreenProps = PropsWithChildren<{
@@ -66,12 +67,13 @@ export function ScreenHeader({
   description?: string;
 }) {
   const { isDesktop } = useResponsiveLayout();
+  const { t } = useLanguage();
 
   return (
     <View style={styles.header} accessibilityRole="header">
-      {eyebrow ? <Text style={styles.eyebrow}>{eyebrow}</Text> : null}
-      <Text style={[styles.title, isDesktop && styles.titleDesktop]}>{title}</Text>
-      {description ? <Text style={styles.description}>{description}</Text> : null}
+      {eyebrow ? <Text style={styles.eyebrow}>{t(eyebrow)}</Text> : null}
+      <Text style={[styles.title, isDesktop && styles.titleDesktop]}>{t(title)}</Text>
+      {description ? <Text style={styles.description}>{t(description)}</Text> : null}
     </View>
   );
 }

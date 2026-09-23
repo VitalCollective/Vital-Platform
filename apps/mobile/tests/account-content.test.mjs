@@ -60,8 +60,8 @@ test('contact actions use approved email subjects and store plans remain display
   assert.match(screen, /showDevelopmentFallbackPlans \? MEMBERSHIP_PLANS : \[\]/);
   assert.match(screen, /Membership plans are temporarily unavailable\. Please try again\./);
   assert.match(screen, /onPress=\{\(\) => void billing\.purchase\(plan\.id\)\}/);
-  assert.match(screen, /label="Restore purchases"/);
-  assert.match(screen, /label="Manage subscription"/);
+  assert.match(screen, /label=\{t\('Restore purchases'\)\}/);
+  assert.match(screen, /label=\{t\('Manage subscription'\)\}/);
   assert.doesNotMatch(screen, /RevenueCat|Sandbox membership|configured for development|not configured in this build/);
 });
 
@@ -85,7 +85,7 @@ test('every mobile drawer destination closes the menu after selection', () => {
 test('sign-up copy uses launch terminology and describes the membership step accurately', () => {
   const auth = readFileSync(new URL('../src/app/(auth)/index.tsx', import.meta.url), 'utf8');
   assert.match(auth, /Join Vital Collective/);
-  assert.match(auth, /label="Member name"/);
+  assert.match(auth, /label=\{t\('Member name'\)\}/);
   assert.match(auth, /choose the Vital membership that suits you/);
   assert.match(auth, /Already have an account\? Sign in/);
   assert.doesNotMatch(auth, /Join the collective|Create an account to save ideas|label="Display name"|Already a member\? Sign in|Your member name may be shown/);
@@ -95,7 +95,7 @@ test('all You child panels share a leading back chevron; profile opts into nativ
   const screen = readFileSync(new URL('../src/features/account/account-screen.tsx', import.meta.url), 'utf8');
   const ui = readFileSync(new URL('../src/features/account/account-ui.tsx', import.meta.url), 'utf8');
   const layout = readFileSync(new URL('../src/components/vital/screen.tsx', import.meta.url), 'utf8');
-  assert.match(screen, /label=\{parentPanel \? `Back to \$\{ACCOUNT_PANELS\[parentPanel\]\}` : 'Back to You'\}/);
+  assert.match(screen, /label=\{parentPanel \? t\('Back to \{section\}'/);
   assert.match(ui, /direction === 'back' && <Ionicons name="chevron-back"/);
   assert.match(screen, /keyboardAware=\{panel === 'profile'[\s\S]*panel === 'suggest'[\s\S]*panel === 'feedback'[\s\S]*panel === 'deletion'\}/);
   assert.match(layout, /automaticallyAdjustKeyboardInsets=\{keyboardAware && Platform.OS === 'ios'\}/);

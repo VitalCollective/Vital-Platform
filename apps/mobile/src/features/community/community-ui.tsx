@@ -4,23 +4,26 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, layout, radii, spacing, typography } from '@/theme/tokens';
 import { ProfileAvatar } from '@/components/vital/profile-avatar';
+import { useLanguage } from '@/features/localization/language-context';
 
 export function CommunityField({ label, inputRef, ...props }: TextInputProps & { label: string; inputRef?: Ref<TextInput> }) {
+  const { t } = useLanguage();
   const [focused, setFocused] = useState(false);
   return <View style={s.field}>
-    <Text style={s.label}>{label}</Text>
-    <TextInput {...props} ref={inputRef} accessibilityLabel={label} placeholderTextColor={colors.inkSubtle}
+    <Text style={s.label}>{t(label)}</Text>
+    <TextInput {...props} placeholder={props.placeholder ? t(props.placeholder) : undefined} ref={inputRef} accessibilityLabel={t(label)} placeholderTextColor={colors.inkSubtle}
       onFocus={(e) => { setFocused(true); props.onFocus?.(e); }}
       onBlur={(e) => { setFocused(false); props.onBlur?.(e); }}
       style={[s.input, props.multiline && s.multiline, focused && s.focused, props.style]} />
   </View>;
 }
 export function CommunityModal({ title, onClose, children, busy = false }: PropsWithChildren<{ title: string; onClose: () => void; busy?: boolean }>) {
+  const { t } = useLanguage();
   return <Modal visible animationType="slide" presentationStyle="pageSheet" onRequestClose={() => { if (!busy) onClose(); }}>
     <SafeAreaView style={s.modal} edges={['top', 'bottom', 'left', 'right']}>
       <KeyboardAvoidingView style={s.flex} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={s.modalHeader}>
-          <Text accessibilityRole="header" style={s.heading}>{title}</Text>
+          <Text accessibilityRole="header" style={s.heading}>{t(title)}</Text>
           <CommunityAction label="Close" icon="close" disabled={busy} onPress={onClose} />
         </View>
         <ScrollView keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" contentContainerStyle={s.modalBody}>
@@ -33,25 +36,28 @@ export function CommunityModal({ title, onClose, children, busy = false }: Props
 export function CommunityAction({ label, onPress, icon, selected = false, disabled = false }: {
   label: string; onPress: () => void; icon?: keyof typeof Ionicons.glyphMap; selected?: boolean; disabled?: boolean;
 }) {
-  return <Pressable accessibilityRole="button" accessibilityLabel={label}
+  const { t } = useLanguage();
+  return <Pressable accessibilityRole="button" accessibilityLabel={t(label)}
     accessibilityState={{ selected, disabled }} disabled={disabled} onPress={onPress}
     style={({ pressed }) => [s.action, selected && s.actionSelected, { opacity: disabled ? 0.45 : pressed ? 0.7 : 1 }]}>
     {icon && <Ionicons name={icon} color={colors.plum} size={19} />}
-    <Text style={s.actionText}>{label}</Text>
+    <Text style={s.actionText}>{t(label)}</Text>
   </Pressable>;
 }
 export function CommunityNotice({ message, error = false }: { message: string | null; error?: boolean }) {
+  const { t } = useLanguage();
   if (!message) return null;
-  return <Text accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={[s.notice, error && s.error]}>{message}</Text>;
+  return <Text accessibilityRole={error ? 'alert' : undefined} accessibilityLiveRegion="polite" style={[s.notice, error && s.error]}>{t(message)}</Text>;
 }
 export function CommunityAuthor({ name, seeded, createdAt, imageUrl, bio, onMember, deleted = false }: { name: string; seeded: boolean; createdAt: string; imageUrl?: string | null; bio?: string | null; onMember?: () => void; deleted?: boolean }) {
+  const { language, t } = useLanguage();
   const [expanded, setExpanded] = useState(false);
   const [focused, setFocused] = useState(false);
   const author = <View style={s.author}>
     <ProfileAvatar name={name} imageUrl={imageUrl} deleted={deleted} />
     <View style={s.flex}>
       <View style={s.row}><Text style={s.authorName}>{name}</Text>{(!!bio || onMember) && <Ionicons name={onMember ? 'chevron-forward' : expanded ? 'chevron-up' : 'chevron-down'} size={14} color={colors.plum} />}</View>
-      <Text style={s.meta}>{new Date(createdAt).toLocaleDateString(undefined, { day: 'numeric', month: 'short', year: 'numeric' })}{seeded ? ' · Vital starter' : ''}</Text>
+      <Text style={s.meta}>{new Date(createdAt).toLocaleDateString(language === 'cy' ? 'cy-GB' : 'en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}{seeded ? ` · ${t('Vital starter')}` : ''}</Text>
     </View>
   </View>;
   if (!bio && !onMember) return author;

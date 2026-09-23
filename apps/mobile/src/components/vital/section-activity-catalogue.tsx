@@ -9,6 +9,7 @@ import { Screen, ScreenHeader } from '@/components/vital/screen';
 import { StatePanel } from '@/components/vital/state-panel';
 import { activityDetailHref } from '@/features/activities/activity-navigation';
 import { useSectionActivities } from '@/features/activities/activity-hooks';
+import { useLanguage } from '@/features/localization/language-context';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import { colors, spacing, typography } from '@/theme/tokens';
 import type { AgeFilter, VitalSection } from '@/types/content';
@@ -32,6 +33,7 @@ export function SectionActivityCatalogue({
   sentence: string;
 }) {
   const router = useRouter();
+  const { t } = useLanguage();
   const { isTablet } = useResponsiveLayout();
   const [age, setAge] = useState<AgeFilter>('any');
   const [resultLimit, setResultLimit] = useState(INITIAL_RESULT_LIMIT);
@@ -48,16 +50,16 @@ export function SectionActivityCatalogue({
 
   return (
     <Screen>
-      <ScreenHeader eyebrow="Vital Collective" title={title} description={sentence} />
+      <ScreenHeader eyebrow="Vital Collective" title={t(title)} description={t(sentence)} />
 
       {showAgeFilter ? (
         <View style={styles.filterGroup}>
-          <Text style={styles.filterLabel}>Age</Text>
+          <Text style={styles.filterLabel}>{t('Age')}</Text>
           <View style={styles.chipWrap}>
             {AGE_OPTIONS.map((option) => (
               <FilterChip
                 key={option.value}
-                label={option.label}
+                label={t(option.label)}
                 selected={age === option.value}
                 onPress={() => setAge(option.value)}
               />
@@ -69,15 +71,15 @@ export function SectionActivityCatalogue({
       <View style={styles.resultHeader}>
         <Text style={styles.resultTitle} accessibilityLiveRegion="polite">
           {results.isLoading && !results.data
-            ? 'Finding activities…'
-            : `${count.toLocaleString()} ${count === 1 ? 'activity' : 'activities'}`}
+            ? t('Finding activities…')
+            : t(count === 1 ? '{count} activity' : '{count} activities', { count: count.toLocaleString() })}
         </Text>
         {showAgeFilter && age !== 'any' ? (
           <Pressable
             accessibilityRole="button"
             onPress={() => setAge('any')}
             style={styles.resetButton}>
-            <Text style={styles.resetText}>Clear age</Text>
+            <Text style={styles.resetText}>{t('Clear age')}</Text>
           </Pressable>
         ) : null}
       </View>
@@ -85,13 +87,13 @@ export function SectionActivityCatalogue({
       {results.isLoading && !results.data ? (
         <StatePanel
           kind="loading"
-          title={`Loading ${title}`}
-          message="We are gathering ideas from the Vital collection."
+          title={t('Loading {section}', { section: t(title) })}
+          message={t('We are gathering ideas from the Vital collection.')}
         />
       ) : results.error ? (
         <StatePanel
           kind="error"
-          title="Activities are unavailable"
+          title={t('Activities are unavailable')}
           message={results.error}
           onRetry={() => void results.retry()}
         />
@@ -100,7 +102,7 @@ export function SectionActivityCatalogue({
           {results.isLoading ? (
             <View style={styles.refreshing}>
               <ActivityIndicator color={colors.brand} />
-              <Text style={styles.refreshingText}>Updating activities…</Text>
+              <Text style={styles.refreshingText}>{t('Updating activities…')}</Text>
             </View>
           ) : null}
           {activities.map((activity) => (
@@ -117,11 +119,11 @@ export function SectionActivityCatalogue({
         </View>
       ) : (
         <StatePanel
-          title={age === 'any' ? `No ${title} activities yet` : 'No activities for this age'}
+          title={age === 'any' ? t('No activities in {section} yet', { section: t(title) }) : t('No activities for this age')}
           message={
             age === 'any'
-              ? 'There are no published activities in this section just now.'
-              : 'Try another age group or clear the age filter.'
+              ? t('There are no published activities in this section just now.')
+              : t('Try another age group or clear the age filter.')
           }
         />
       )}
@@ -129,17 +131,17 @@ export function SectionActivityCatalogue({
       {activities.length && hasMoreResults ? (
         <View style={styles.showMore}>
           <Button
-            label="Show more"
+            label={t('Show more')}
             icon="chevron-down"
             variant="secondary"
             onPress={() => setResultLimit((current) => current + RESULT_INCREMENT)}
           />
           <Text style={styles.shownText}>
-            Showing {activities.length.toLocaleString()} of {count.toLocaleString()}
+            {t('Showing {shown} of {count}', { shown: activities.length.toLocaleString(), count: count.toLocaleString() })}
           </Text>
         </View>
       ) : activities.length && count > 0 ? (
-        <Text style={styles.endText}>All activities in this section are shown.</Text>
+        <Text style={styles.endText}>{t('All activities in this section are shown.')}</Text>
       ) : null}
     </Screen>
   );

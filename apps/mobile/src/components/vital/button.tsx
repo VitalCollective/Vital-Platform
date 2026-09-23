@@ -1,5 +1,6 @@
 import { ActivityIndicator, Pressable, StyleSheet, Text } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useLanguage } from '@/features/localization/language-context';
 
 import { colors, layout, radii, spacing, typography } from '@/theme/tokens';
 
@@ -22,6 +23,8 @@ export function Button({
   variant = 'primary',
   accessibilityHint,
 }: ButtonProps) {
+  const { t } = useLanguage();
+  const translatedLabel = t(label);
   const isDisabled = disabled || loading;
   const palette = {
     primary: { background: colors.brand, foreground: colors.white, border: colors.brand },
@@ -40,8 +43,8 @@ export function Button({
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={label}
-      accessibilityHint={accessibilityHint}
+      accessibilityLabel={translatedLabel}
+      accessibilityHint={accessibilityHint ? t(accessibilityHint) : undefined}
       accessibilityState={{ disabled: isDisabled, busy: loading }}
       disabled={isDisabled}
       onPress={onPress}
@@ -58,7 +61,7 @@ export function Button({
       ) : icon ? (
         <Ionicons name={icon} size={20} color={palette.foreground} />
       ) : null}
-      <Text style={[styles.label, { color: palette.foreground }]}>{label}</Text>
+      <Text style={[styles.label, { color: palette.foreground }]}>{translatedLabel}</Text>
     </Pressable>
   );
 }

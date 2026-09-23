@@ -7,6 +7,7 @@ import { Screen } from '@/components/vital/screen';
 import { StatePanel } from '@/components/vital/state-panel';
 import { useIdeasForToday } from '@/features/activities/activity-hooks';
 import { useAuth } from '@/features/auth/auth-context';
+import { useLanguage } from '@/features/localization/language-context';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import {
   colors,
@@ -68,6 +69,7 @@ function firstNameFromDisplayName(value: unknown): string | null {
 export default function HomeScreen() {
   const router = useRouter();
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { isDesktop, isTablet } = useResponsiveLayout();
   const ideas = useIdeasForToday();
   const firstName = firstNameFromDisplayName(user?.user_metadata.display_name);
@@ -77,14 +79,13 @@ export default function HomeScreen() {
       <View style={[styles.hero, isTablet && styles.heroWide]}>
         <View style={styles.heroCopy}>
           <Text style={styles.eyebrow}>
-            {firstName ? `Welcome back, ${firstName}` : 'Welcome to Vital'}
+            {firstName ? t('Welcome back, {name}', { name: firstName }) : t('Welcome to Vital')}
           </Text>
           <Text style={[styles.heroTitle, isDesktop && styles.heroTitleDesktop]}>
-            What can Vital help you do today?
+            {t('What can Vital help you do today?')}
           </Text>
           <Text style={styles.heroIntro}>
-            Find a useful idea for your family, make time together, or learn
-            something that makes everyday life feel more possible.
+            {t('Find a useful idea for your family, make time together, or learn something that makes everyday life feel more possible.')}
           </Text>
         </View>
 
@@ -106,8 +107,8 @@ export default function HomeScreen() {
 
       <Pressable
         accessibilityRole="link"
-        accessibilityLabel="Find something"
-        accessibilityHint="Opens Discover to search Vital activities"
+        accessibilityLabel={t('Find something')}
+        accessibilityHint={t('Opens Discover to search Vital activities')}
         onPress={() => router.push('/discover')}
         style={({ pressed }) => [
           styles.findCard,
@@ -117,12 +118,11 @@ export default function HomeScreen() {
         <View style={styles.findCopy}>
           <View style={styles.findLabelRow}>
             <Ionicons name="search" size={19} color={colors.onBrandMuted} />
-            <Text style={styles.findLabel}>Find something</Text>
+            <Text style={styles.findLabel}>{t('Find something')}</Text>
           </View>
-          <Text style={styles.findTitle}>What would help right now?</Text>
+          <Text style={styles.findTitle}>{t('What would help right now?')}</Text>
           <Text style={styles.findText}>
-            Search real Vital activities and ideas, then narrow them by part of
-            Vital or where you want to be.
+            {t('Search real Vital activities and ideas, then narrow them by part of Vital or where you want to be.')}
           </Text>
         </View>
         <View style={styles.findArrow}>
@@ -132,11 +132,10 @@ export default function HomeScreen() {
 
       <View style={[styles.sectionBlock, !isTablet && styles.sectionBlockPhone]}>
         <View style={styles.sectionHeading}>
-          <Text style={styles.sectionEyebrow}>Explore the collective</Text>
-          <Text style={styles.sectionTitle}>Five parts of family life</Text>
+          <Text style={styles.sectionEyebrow}>{t('Explore the collective')}</Text>
+          <Text style={styles.sectionTitle}>{t('Five parts of family life')}</Text>
           <Text style={styles.sectionIntro}>
-            Each part of Vital has its own focus, with practical ideas that are
-            made to be used away from the screen.
+            {t('Each part of Vital has its own focus, with practical ideas that are made to be used away from the screen.')}
           </Text>
         </View>
 
@@ -148,7 +147,7 @@ export default function HomeScreen() {
               <Pressable
                 key={item.section}
                 accessibilityRole="link"
-                accessibilityLabel={`${item.section}: ${item.description}`}
+                accessibilityLabel={`${t(item.section)}: ${t(item.description)}`}
                 onPress={() => router.push(item.href)}
                 style={({ pressed }) => [
                   styles.sectionCard,
@@ -166,10 +165,10 @@ export default function HomeScreen() {
                     {String(index + 1).padStart(2, '0')}
                   </Text>
                   <Text style={[styles.sectionCardTitle, { color: accent.accent }]}>
-                    {item.section}
+                    {t(item.section)}
                   </Text>
                   <Text style={styles.sectionCardText} numberOfLines={isTablet ? undefined : 2}>
-                    {item.description}
+                    {t(item.description)}
                   </Text>
                 </View>
                 <View
@@ -179,7 +178,7 @@ export default function HomeScreen() {
                   ]}>
                   {isTablet ? (
                     <Text style={[styles.sectionCardActionText, { color: accent.accent }]}>
-                      Explore
+                      {t('Explore')}
                     </Text>
                   ) : null}
                   <Ionicons name="arrow-forward" size={17} color={accent.accent} />
@@ -194,7 +193,7 @@ export default function HomeScreen() {
         <View style={[styles.sectionBlock, !isTablet && styles.sectionBlockPhone]}>
           <View style={styles.sectionHeadingRow}>
             <View style={styles.sectionHeading}>
-              <Text style={styles.sectionTitle}>Ideas to try</Text>
+              <Text style={styles.sectionTitle}>{t('Ideas to try')}</Text>
             </View>
             <Pressable
               accessibilityRole="link"
@@ -203,7 +202,7 @@ export default function HomeScreen() {
                 styles.viewAllLink,
                 pressed && styles.pressed,
               ]}>
-              <Text style={styles.viewAllText}>View all</Text>
+              <Text style={styles.viewAllText}>{t('View all')}</Text>
               <Ionicons name="arrow-forward" size={17} color={colors.plum} />
             </Pressable>
           </View>
@@ -211,13 +210,13 @@ export default function HomeScreen() {
           {ideas.isLoading ? (
             <StatePanel
               kind="loading"
-              title="Finding a few good ideas"
-              message="We are looking through the Vital collection."
+              title={t('Finding a few good ideas')}
+              message={t('We are looking through the Vital collection.')}
             />
           ) : ideas.error ? (
             <StatePanel
               kind="error"
-              title="The ideas did not arrive"
+              title={t('The ideas did not arrive')}
               message={ideas.error}
               onRetry={() => void ideas.retry()}
             />

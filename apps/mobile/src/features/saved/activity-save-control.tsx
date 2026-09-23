@@ -4,6 +4,7 @@ import { useFocusEffect } from 'expo-router';
 
 import { Button } from '@/components/vital/button';
 import { useAuth } from '@/features/auth/auth-context';
+import { useLanguage } from '@/features/localization/language-context';
 import { createActivitySavesApi } from '@/features/saved/activity-saves-api';
 import { createActivitySaveController, type ActivitySaveState } from '@/features/saved/activity-save-state';
 import { requireSupabase } from '@/lib/supabase';
@@ -30,26 +31,27 @@ function MemberActivitySave({ profileId, activityId }: { profileId: string; acti
 export function ActivitySaveButton({ state, onToggle, onRetry }: {
   state: ActivitySaveState; onToggle: () => void; onRetry: () => void;
 }) {
+  const { t } = useLanguage();
   const busy = state.isLoading || state.isSaving;
   return (
     <View style={styles.container}>
       <View style={styles.button}>
         <Button
-          label={state.saved === null ? (state.error ? 'Saved status unavailable' : 'Checking saved status…') : state.saved ? 'Saved' : 'Save'}
+          label={t(state.saved === null ? (state.error ? 'Saved status unavailable' : 'Checking saved status…') : state.saved ? 'Saved' : 'Save')}
           icon={state.saved ? 'bookmark' : 'bookmark-outline'}
           variant={state.saved ? 'primary' : 'secondary'}
           loading={busy}
           disabled={state.saved === null || Boolean(state.error)}
-          accessibilityHint={state.saved ? 'Remove this activity from Saved' : 'Add this activity to Saved'}
+          accessibilityHint={t(state.saved ? 'Remove this activity from Saved' : 'Add this activity to Saved')}
           onPress={onToggle}
         />
       </View>
-      {state.isSaving ? <Text style={styles.notice} accessibilityLiveRegion="polite">Updating your saved activity…</Text> : null}
+      {state.isSaving ? <Text style={styles.notice} accessibilityLiveRegion="polite">{t('Updating your saved activity…')}</Text> : null}
       {state.error ? (
         <View style={styles.error}>
           <Text style={styles.errorText} accessibilityRole="alert">{state.error}</Text>
           <View style={styles.button}>
-            <Button label="Try again" variant="secondary" onPress={onRetry} />
+            <Button label={t('Try again')} variant="secondary" onPress={onRetry} />
           </View>
         </View>
       ) : null}

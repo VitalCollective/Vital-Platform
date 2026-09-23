@@ -4,11 +4,13 @@ import { Button } from '@/components/vital/button';
 import { ProfileAvatar } from '@/components/vital/profile-avatar';
 import { FilterChip } from '@/components/vital/filter-chip';
 import { customerSafeErrorMessage } from '@/lib/errors';
+import { useLanguage } from '@/features/localization/language-context';
 import type { CommunityApi } from './community-api';
 import { participationMessage, REPORT_REASONS, STARTER_DISCLOSURE, type BlockedCommunityMember, type CommunityAccess, type CommunityMember, type CommunityRestriction, type ReportReason, type ReportTarget } from './community-model';
 import { CommunityAction, CommunityField, CommunityModal, CommunityNotice, s } from './community-ui';
 
 export function CommunityAbout({ api, access, onClose, onAccepted }: { api: CommunityApi; access: CommunityAccess | null; onClose: () => void; onAccepted: () => void }) {
+  const { t } = useLanguage();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   async function accept() {
@@ -18,13 +20,13 @@ export function CommunityAbout({ api, access, onClose, onAccepted }: { api: Comm
     catch (cause) { setError(customerSafeErrorMessage('Accept Community Rules', cause, "We couldn't save your acceptance. Please try again.")); }
     finally { setBusy(false); }
   }
-  return <CommunityModal title="About Community" busy={busy} onClose={onClose}>
-    <Text style={s.title}>Made to be useful, not noisy.</Text>
-    <Text style={s.body}>Share what worked. Ask when you are stuck. Different families find different things useful. There is room here for the big adventures and the evenings when you order takeaway and watch a film.</Text>
-    <Text accessibilityRole="header" style={s.title}>About starter conversations</Text>
+  return <CommunityModal title={t('About Community')} busy={busy} onClose={onClose}>
+    <Text style={s.title}>{t('Made to be useful, not noisy.')}</Text>
+    <Text style={s.body}>{t('Share what worked. Ask when you are stuck. Different families find different things useful. There is room here for the big adventures and the evenings when you order takeaway and watch a film.')}</Text>
+    <Text accessibilityRole="header" style={s.title}>{t('About starter conversations')}</Text>
     {STARTER_DISCLOSURE.map(paragraph => <Text key={paragraph} style={s.body}>{paragraph}</Text>)}
     <Text accessibilityRole="header" style={s.title}>{access?.rules?.title ?? 'Community Rules'}</Text>
-    {access?.rules ? <Text selectable style={s.body}>{access.rules.content_markdown.trim()}</Text> : <Text style={s.meta}>We couldn't load the current rules. Close this page and try refreshing Community.</Text>}
+    {access?.rules ? <Text selectable style={s.body}>{access.rules.content_markdown.trim()}</Text> : <Text style={s.meta}>{t("We couldn't load the current rules. Close this page and try refreshing Community.")}</Text>}
     <CommunityNotice message={error} error />
     {access?.rules && !access.acceptedRules ? <Button label="I agree to the Community Rules" onPress={() => void accept()} loading={busy} /> : access?.acceptedRules ? <CommunityNotice message="You have accepted the current Community Rules." /> : null}
     {access?.restricted ? <CommunityNotice message={participationMessage(access)} /> : null}
@@ -34,6 +36,7 @@ export function CommunityAbout({ api, access, onClose, onAccepted }: { api: Comm
 export function ReportComposer({ api, target, onClose, onReported, onBlocked }: {
   api: CommunityApi; target: ReportTarget; onClose: () => void; onReported: () => void; onBlocked: () => void;
 }) {
+  const { t } = useLanguage();
   const [reason, setReason] = useState<ReportReason>('spam_scam');
   const [details, setDetails] = useState('');
   const [busy, setBusy] = useState(false);
@@ -48,20 +51,21 @@ export function ReportComposer({ api, target, onClose, onReported, onBlocked }: 
     } catch (cause) { setError(customerSafeErrorMessage('Community report/block', cause, "We couldn't save that just now. Please try again.")); }
     finally { setBusy(false); }
   }
-  return <CommunityModal title="Report a concern" busy={busy} onClose={onClose}>
-    <Text style={s.body}>The Vital team will review your report. Your report is not shown publicly.</Text>
-    <View style={s.stack}>{REPORT_REASONS.map(([value, label]) => <FilterChip key={value} label={label} selected={reason === value} onPress={() => setReason(value)} />)}</View>
+  return <CommunityModal title={t('Report a concern')} busy={busy} onClose={onClose}>
+    <Text style={s.body}>{t('The Vital team will review your report. Your report is not shown publicly.')}</Text>
+    <View style={s.stack}>{REPORT_REASONS.map(([value, label]) => <FilterChip key={value} label={t(label)} selected={reason === value} onPress={() => setReason(value)} />)}</View>
     <CommunityField label="Anything else we should know? · optional" value={details} onChangeText={setDetails} multiline maxLength={4000} editable={!busy} />
     <CommunityNotice message={error} error />
     <Button label="Send report" onPress={() => void submit()} loading={busy} />
-    {!target.authorSeeded && <><Text style={s.meta}>Blocking is separate from reporting. It hides your Community profiles, posts and replies from each other and prevents new replies or Helpful reactions between you. Existing content is not deleted.</Text>
-      {confirmBlock ? <View style={s.card}><Text style={s.body}>Block this member?</Text><Text style={s.meta}>No report will be sent unless you separately choose Send report.</Text><Button label="Confirm block" variant="danger" disabled={busy} onPress={() => void submit(true)} /><CommunityAction label="Keep member unblocked" onPress={() => setConfirmBlock(false)} /></View> : <CommunityAction label="Block member" icon="ban-outline" onPress={() => setConfirmBlock(true)} />}</>}
+    {!target.authorSeeded && <><Text style={s.meta}>{t('Blocking is separate from reporting. It hides your Community profiles, posts and replies from each other and prevents new replies or Helpful reactions between you. Existing content is not deleted.')}</Text>
+      {confirmBlock ? <View style={s.card}><Text style={s.body}>{t('Block this member?')}</Text><Text style={s.meta}>{t('No report will be sent unless you separately choose Send report.')}</Text><Button label="Confirm block" variant="danger" disabled={busy} onPress={() => void submit(true)} /><CommunityAction label="Keep member unblocked" onPress={() => setConfirmBlock(false)} /></View> : <CommunityAction label="Block member" icon="ban-outline" onPress={() => setConfirmBlock(true)} />}</>}
   </CommunityModal>;
 }
 
 export function CommunityMemberActions({ api, member, onClose, onChanged }: {
   api: CommunityApi; member: CommunityMember; onClose: () => void; onChanged: (blocked: boolean) => void;
 }) {
+  const { t } = useLanguage();
   const [blocked, setBlocked] = useState<boolean | null>(null);
   const [confirm, setConfirm] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -78,15 +82,15 @@ export function CommunityMemberActions({ api, member, onClose, onChanged }: {
   }
   return <CommunityModal title="Community profile" busy={busy} onClose={onClose}>
     <View style={s.author}><ProfileAvatar name={member.name} imageUrl={member.imageUrl} size={54} /><Text style={s.title}>{member.name}</Text></View>
-    <Text selectable style={s.body}>{member.bio || 'No introduction added.'}</Text>
+    <Text selectable style={s.body}>{member.bio || t('No introduction added.')}</Text>
     <CommunityNotice message={error} error />
-    {blocked === null && !error ? <Text style={s.meta}>Checking member settings…</Text> : blocked ? <>
-      <Text style={s.meta}>Unblocking makes your Community content visible to each other again and allows new interactions, subject to the Community Rules.</Text>
+    {blocked === null && !error ? <Text style={s.meta}>{t('Checking member settings…')}</Text> : blocked ? <>
+      <Text style={s.meta}>{t('Unblocking makes your Community content visible to each other again and allows new interactions, subject to the Community Rules.')}</Text>
       <Button label="Unblock member" variant="secondary" loading={busy} onPress={() => void change(false)} />
     </> : confirm ? <View style={s.card}>
-      <Text style={s.title}>Block this member?</Text>
-      <Text style={s.body}>You will no longer see each other’s Community profile, posts or replies, and neither of you can add new replies or Helpful reactions to the other’s content.</Text>
-      <Text style={s.meta}>Existing content is not deleted. Blocking is reversible and does not send a report.</Text>
+      <Text style={s.title}>{t('Block this member?')}</Text>
+      <Text style={s.body}>{t('You will no longer see each other’s Community profile, posts or replies, and neither of you can add new replies or Helpful reactions to the other’s content.')}</Text>
+      <Text style={s.meta}>{t('Existing content is not deleted. Blocking is reversible and does not send a report.')}</Text>
       <Button label="Confirm block" variant="danger" loading={busy} onPress={() => void change(true)} />
       <CommunityAction label="Keep member unblocked" onPress={() => setConfirm(false)} />
     </View> : <CommunityAction label="Block member" icon="ban-outline" onPress={() => setConfirm(true)} />}
@@ -94,6 +98,7 @@ export function CommunityMemberActions({ api, member, onClose, onChanged }: {
 }
 
 export function BlockedMembersContent({ api, onChanged, onBusyChange }: { api: CommunityApi; onChanged: () => void; onBusyChange?: (busy: boolean) => void }) {
+  const { language, t } = useLanguage();
   const [members, setMembers] = useState<BlockedCommunityMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState<string | null>(null);
@@ -114,10 +119,10 @@ export function BlockedMembersContent({ api, onChanged, onBusyChange }: { api: C
     finally { setBusy(null); }
   }
   return <>
-    <Text style={s.body}>People you block cannot see your normal Community profile, posts or replies, and you cannot see theirs. You cannot reply or mark each other’s content Helpful.</Text>
+    <Text style={s.body}>{t('People you block cannot see your normal Community profile, posts or replies, and you cannot see theirs. You cannot reply or mark each other’s content Helpful.')}</Text>
     <CommunityNotice message={error} error />
-    {loading ? <Text style={s.meta}>Loading blocked members…</Text> : !members.length ? <Text style={s.meta}>You have not blocked any members.</Text> : members.map(member => <View key={member.profileId} style={s.card}>
-      <View style={s.author}><ProfileAvatar name={member.displayName} imageUrl={member.imageUrl} /><View style={s.flex}><Text style={s.authorName}>{member.displayName}</Text><Text style={s.meta}>Blocked {new Date(member.blockedAt).toLocaleDateString()}</Text></View></View>
+    {loading ? <Text style={s.meta}>{t('Loading blocked members…')}</Text> : !members.length ? <Text style={s.meta}>{t('You have not blocked any members.')}</Text> : members.map(member => <View key={member.profileId} style={s.card}>
+      <View style={s.author}><ProfileAvatar name={member.displayName} imageUrl={member.imageUrl} /><View style={s.flex}><Text style={s.authorName}>{member.displayName}</Text><Text style={s.meta}>{t('Blocked {date}', { date: new Date(member.blockedAt).toLocaleDateString(language === 'cy' ? 'cy-GB' : 'en-GB') })}</Text></View></View>
       <Button label="Unblock member" variant="secondary" loading={busy === member.profileId} disabled={busy !== null && busy !== member.profileId} onPress={() => void unblock(member)} />
     </View>)}
   </>;

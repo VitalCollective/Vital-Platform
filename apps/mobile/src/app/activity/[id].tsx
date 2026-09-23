@@ -9,6 +9,7 @@ import { Screen, ScreenHeader } from '@/components/vital/screen';
 import { StatePanel } from '@/components/vital/state-panel';
 import { activityIdFromRouteParam } from '@/features/activities/activity-navigation';
 import { useActivity } from '@/features/activities/activity-hooks';
+import { useLanguage } from '@/features/localization/language-context';
 import { ActivitySaveControl } from '@/features/saved/activity-save-control';
 import { customerSafeErrorMessage } from '@/lib/errors';
 import { openPrintableResource } from '@/services/resources';
@@ -21,14 +22,14 @@ import {
 } from '@/theme/tokens';
 import type { ActivityDetail } from '@/types/content';
 
-function ageLabel(activity: ActivityDetail): string | null {
+function ageLabel(activity: ActivityDetail, t: (value: string) => string): string | null {
   if (activity.age_min && activity.age_max) {
     return activity.age_min === activity.age_max
-      ? `Age ${activity.age_min}`
-      : `Ages ${activity.age_min}–${activity.age_max}`;
+      ? `${t('Age')} ${activity.age_min}`
+      : `${t('Ages')} ${activity.age_min}–${activity.age_max}`;
   }
-  if (activity.age_min) return `Age ${activity.age_min}+`;
-  if (activity.age_max) return `Up to age ${activity.age_max}`;
+  if (activity.age_min) return `${t('Age')} ${activity.age_min}+`;
+  if (activity.age_max) return `${t('Up to age')} ${activity.age_max}`;
   return null;
 }
 
@@ -40,6 +41,7 @@ function settingLabel(activity: ActivityDetail): string | null {
 }
 
 export default function ActivityDetailScreen() {
+  const { t } = useLanguage();
   const params = useLocalSearchParams<{ id?: string | string[] }>();
   const activityId = activityIdFromRouteParam(params.id);
   const result = useActivity(activityId);
@@ -69,8 +71,8 @@ export default function ActivityDetailScreen() {
       <Screen>
         <StatePanel
           kind="loading"
-          title="Preparing the activity"
-          message="Gathering the useful details and any printable resources."
+          title={t('Preparing the activity')}
+          message={t('Gathering the useful details and any printable resources.')}
         />
       </Screen>
     );
@@ -81,8 +83,8 @@ export default function ActivityDetailScreen() {
       <Screen>
         <StatePanel
           kind="error"
-          title="This activity is unavailable"
-          message={result.error ?? 'The activity could not be loaded.'}
+          title={t('This activity is unavailable')}
+          message={result.error ?? t('The activity could not be loaded.')}
           onRetry={() => void result.retry()}
         />
       </Screen>
@@ -92,26 +94,26 @@ export default function ActivityDetailScreen() {
   const { activity, printableResourceState, resources } = result.data;
   const accent = sectionColors[activity.section];
   const metadata = [
-    { label: 'Age', value: ageLabel(activity) },
-    { label: 'Time', value: activity.duration },
-    { label: 'Setting', value: settingLabel(activity) },
-    { label: 'Preparation', value: activity.prep_time },
-    { label: 'Difficulty', value: activity.difficulty },
-    { label: 'Cost', value: activity.cost },
+    { label: t('Age'), value: ageLabel(activity, t) },
+    { label: t('Time'), value: activity.duration },
+    { label: t('Setting'), value: settingLabel(activity) ? t(settingLabel(activity)!) : null },
+    { label: t('Preparation'), value: activity.prep_time },
+    { label: t('Difficulty'), value: activity.difficulty },
+    { label: t('Cost'), value: activity.cost },
   ].filter((item): item is { label: string; value: string } => Boolean(item.value));
 
   const practical = [
-    { label: 'Equipment', value: activity.equipment },
-    { label: 'Adult involvement', value: activity.parent_involvement },
-    { label: 'Mess level', value: activity.mess_level },
-    { label: 'Weather', value: activity.weather },
-    { label: 'Season', value: activity.season },
+    { label: t('Equipment'), value: activity.equipment },
+    { label: t('Adult involvement'), value: activity.parent_involvement },
+    { label: t('Mess level'), value: activity.mess_level },
+    { label: t('Weather'), value: activity.weather },
+    { label: t('Season'), value: activity.season },
   ].filter((item): item is { label: string; value: string } => Boolean(item.value));
 
   const benefits = [
-    { label: 'Physical', value: activity.physical_benefits },
-    { label: 'Mental', value: activity.mental_benefits },
-    { label: 'Social', value: activity.social_benefits },
+    { label: t('Physical'), value: activity.physical_benefits },
+    { label: t('Mental'), value: activity.mental_benefits },
+    { label: t('Social'), value: activity.social_benefits },
   ].filter((item): item is { label: string; value: string } => Boolean(item.value));
 
   return (
@@ -119,7 +121,7 @@ export default function ActivityDetailScreen() {
       <Stack.Screen options={{ title: activity.title }} />
       <View style={[styles.sectionMarker, { backgroundColor: accent.soft }]}>
         <View style={[styles.markerLine, { backgroundColor: accent.accent }]} />
-        <Text style={[styles.sectionName, { color: accent.accent }]}>{activity.section}</Text>
+        <Text style={[styles.sectionName, { color: accent.accent }]}>{t(activity.section)}</Text>
       </View>
       <ScreenHeader title={activity.title} description={activity.summary ?? undefined} />
       <ActivitySaveControl activityId={activity.id} />
@@ -136,13 +138,13 @@ export default function ActivityDetailScreen() {
       ) : null}
 
       {activity.instructions ? (
-        <DetailSection title="How to do it">
+        <DetailSection title={t('How to do it')}>
           <DetailText>{activity.instructions}</DetailText>
         </DetailSection>
       ) : null}
 
       {practical.length ? (
-        <DetailSection title="What you’ll need to know">
+        <DetailSection title={t('What you’ll need to know')}>
           <View style={styles.factList}>
             {practical.map((item) => (
               <View key={item.label} style={styles.factRow}>
@@ -155,13 +157,13 @@ export default function ActivityDetailScreen() {
       ) : null}
 
       {activity.why_children_enjoy_it ? (
-        <DetailSection title="Why it works">
+        <DetailSection title={t('Why it works')}>
           <DetailText>{activity.why_children_enjoy_it}</DetailText>
         </DetailSection>
       ) : null}
 
       {benefits.length ? (
-        <DetailSection title="What it builds">
+        <DetailSection title={t('What it builds')}>
           <View style={styles.benefitList}>
             {benefits.map((item) => (
               <View key={item.label} style={styles.benefitItem}>
@@ -174,13 +176,13 @@ export default function ActivityDetailScreen() {
       ) : null}
 
       {activity.variations ? (
-        <DetailSection title="Try it another way">
+        <DetailSection title={t('Try it another way')}>
           <DetailText>{activity.variations}</DetailText>
         </DetailSection>
       ) : null}
 
       {activity.safety_notes ? (
-        <DetailSection title="Keep in mind">
+        <DetailSection title={t('Keep in mind')}>
           <View style={styles.safetyNote}>
             <Ionicons name="shield-checkmark-outline" size={23} color={colors.warning} />
             <Text style={styles.safetyText}>{activity.safety_notes}</Text>
@@ -188,11 +190,11 @@ export default function ActivityDetailScreen() {
         </DetailSection>
       ) : null}
 
-      <DetailSection title="Printable resources">
+      <DetailSection title={t('Printable resources')}>
         {resources.length ? (
           <View style={styles.resourceList}>
             <Text style={styles.printPrinciple}>
-              Print it if you can, put the phone down, and go do it.
+              {t('Print it if you can, put the phone down, and go do it.')}
             </Text>
             {resourceError ? (
               <Text style={styles.resourceError} accessibilityRole="alert">
@@ -207,9 +209,9 @@ export default function ActivityDetailScreen() {
                     <Text style={styles.resourceTitle}>{resource.title}</Text>
                     <Text style={styles.resourceMeta}>
                       {[
-                        resource.useType,
+                        t(resource.useType),
                         resource.pageCount
-                          ? `${resource.pageCount} ${resource.pageCount === 1 ? 'page' : 'pages'}`
+                          ? t(resource.pageCount === 1 ? '{count} page' : '{count} pages', { count: resource.pageCount })
                           : null,
                       ]
                         .filter(Boolean)
@@ -218,7 +220,7 @@ export default function ActivityDetailScreen() {
                   </View>
                 </View>
                 <Button
-                  label="Open printable resource"
+                  label={t('Open printable resource')}
                   icon="open-outline"
                   loading={openingResourceId === resource.id}
                   disabled={openingResourceId !== null && openingResourceId !== resource.id}
@@ -230,12 +232,12 @@ export default function ActivityDetailScreen() {
         ) : null}
         {printableResourceState === 'not-required' ? (
           <Text style={styles.noResource}>
-            No printable resource needed for this activity.
+            {t('No printable resource needed for this activity.')}
           </Text>
         ) : null}
         {printableResourceState === 'unavailable' ? (
           <Text style={styles.resourceUnavailable} accessibilityRole="alert">
-            A printable resource for this activity is temporarily unavailable.
+            {t('A printable resource for this activity is temporarily unavailable.')}
           </Text>
         ) : null}
       </DetailSection>
@@ -243,7 +245,7 @@ export default function ActivityDetailScreen() {
       <View style={styles.finishNote}>
         <Ionicons name="phone-portrait-outline" size={25} color={colors.brand} />
         <Text style={styles.finishText}>
-          You have what you need. The best part happens away from this screen.
+          {t('You have what you need. The best part happens away from this screen.')}
         </Text>
       </View>
     </Screen>

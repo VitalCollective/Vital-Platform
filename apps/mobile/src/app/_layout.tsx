@@ -21,6 +21,9 @@ import { useAuth } from '@/features/auth/auth-context';
 import { BillingProvider } from '@/features/billing/billing-provider';
 import { useBilling } from '@/features/billing/billing-context';
 import { MembershipWelcomeModal } from '@/features/billing/membership-welcome-modal';
+import { LanguageProvider } from '@/features/localization/language-provider';
+import { LanguagePreferenceSync } from '@/features/localization/language-preference-sync';
+import { useLanguage } from '@/features/localization/language-context';
 import { colors, spacing, typography } from '@/theme/tokens';
 
 void SplashScreen.preventAutoHideAsync();
@@ -28,7 +31,8 @@ void SplashScreen.preventAutoHideAsync();
 function RootNavigator() {
   const { configurationError, isLoading, isPasswordRecovery, session } = useAuth();
   const { hasAccess, isResolving: isMembershipResolving } = useBilling();
-  const isPreparing = isLoading
+  const { ready: isLanguageReady, t } = useLanguage();
+  const isPreparing = !isLanguageReady || isLoading
     || Boolean(session && !isPasswordRecovery && isMembershipResolving);
 
   useEffect(() => {
@@ -39,7 +43,7 @@ function RootNavigator() {
     return (
       <View style={styles.centered}>
         <Text style={styles.brand}>Vital Collective</Text>
-        <Text style={styles.loading}>Preparing something worthwhile…</Text>
+        <Text style={styles.loading}>{t('Preparing something worthwhile…')}</Text>
       </View>
     );
   }
@@ -72,8 +76,8 @@ function RootNavigator() {
         <Stack.Screen
           name="activity/[id]"
           options={{
-            title: 'Activity',
-            headerBackTitle: 'Discover',
+            title: t('Activity'),
+            headerBackTitle: t('Discover'),
             headerStyle: { backgroundColor: colors.surface },
             headerTintColor: colors.brand,
             headerShadowVisible: false,
@@ -97,13 +101,16 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <AuthProvider>
-        <BillingProvider>
-          <RootNavigator />
-          <MembershipWelcomeModal />
-          <StatusBar style="dark" />
-        </BillingProvider>
-      </AuthProvider>
+      <LanguageProvider>
+        <AuthProvider>
+          <LanguagePreferenceSync />
+          <BillingProvider>
+            <RootNavigator />
+            <MembershipWelcomeModal />
+            <StatusBar style="dark" />
+          </BillingProvider>
+        </AuthProvider>
+      </LanguageProvider>
     </SafeAreaProvider>
   );
 }

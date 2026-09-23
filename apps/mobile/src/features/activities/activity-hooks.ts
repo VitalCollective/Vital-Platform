@@ -17,6 +17,7 @@ import type {
   DiscoverResult,
   VitalSection,
 } from '@/types/content';
+import { useLanguage } from '@/features/localization/language-context';
 
 type AsyncState<T> = {
   data: T | null;
@@ -25,6 +26,7 @@ type AsyncState<T> = {
 };
 
 export function useIdeasForToday() {
+  const { language, t } = useLanguage();
   const [state, setState] = useState<AsyncState<ActivitySummary[]>>({
     data: null,
     error: null,
@@ -34,7 +36,7 @@ export function useIdeasForToday() {
   const load = useCallback(async () => {
     setState((current) => ({ ...current, isLoading: true, error: null }));
     try {
-      const data = await withRequestTimeout(fetchIdeasForToday());
+      const data = await withRequestTimeout(fetchIdeasForToday(language));
       setState({ data, error: null, isLoading: false });
     } catch (error) {
       setState({
@@ -42,12 +44,12 @@ export function useIdeasForToday() {
         error: customerSafeErrorMessage(
           'Unable to load Home ideas',
           error,
-          "We couldn't load your ideas just now.",
+          t("We couldn't load your ideas just now."),
         ),
         isLoading: false,
       });
     }
-  }, []);
+  }, [language, t]);
 
   useEffect(() => {
     void load();
@@ -57,6 +59,7 @@ export function useIdeasForToday() {
 }
 
 export function useDiscoverActivities(filters: DiscoverFilters) {
+  const { language, t } = useLanguage();
   const requestId = useRef(0);
   const [state, setState] = useState<AsyncState<DiscoverResult>>({
     data: null,
@@ -76,7 +79,7 @@ export function useDiscoverActivities(filters: DiscoverFilters) {
         limit,
         search,
         section,
-      }));
+      }, language));
       if (currentRequestId === requestId.current) {
         setState({ data, error: null, isLoading: false });
       }
@@ -87,13 +90,13 @@ export function useDiscoverActivities(filters: DiscoverFilters) {
           error: customerSafeErrorMessage(
             'Unable to load Discover activities',
             error,
-            "We couldn't load activities just now.",
+            t("We couldn't load activities just now."),
           ),
           isLoading: false,
         });
       }
     }
-  }, [age, duration, environment, limit, search, section]);
+  }, [age, duration, environment, language, limit, search, section, t]);
 
   useEffect(() => {
     void load();
@@ -106,6 +109,7 @@ export function useDiscoverActivities(filters: DiscoverFilters) {
 }
 
 export function useSectionActivities(section: VitalSection, age: AgeFilter) {
+  const { language, t } = useLanguage();
   const requestId = useRef(0);
   const [state, setState] = useState<AsyncState<DiscoverResult>>({
     data: null,
@@ -118,7 +122,7 @@ export function useSectionActivities(section: VitalSection, age: AgeFilter) {
     setState((current) => ({ ...current, isLoading: true, error: null }));
     try {
       const data = await withRequestTimeout(
-        fetchSectionActivities(requireSupabase(), section, age),
+        fetchSectionActivities(requireSupabase(), section, age, language),
       );
       if (currentRequestId === requestId.current) {
         setState({ data, error: null, isLoading: false });
@@ -130,13 +134,13 @@ export function useSectionActivities(section: VitalSection, age: AgeFilter) {
           error: customerSafeErrorMessage(
             `Unable to load ${section} activities`,
             error,
-            "We couldn't load these activities just now.",
+            t("We couldn't load these activities just now."),
           ),
           isLoading: false,
         });
       }
     }
-  }, [age, section]);
+  }, [age, language, section, t]);
 
   useEffect(() => {
     void load();
@@ -149,6 +153,7 @@ export function useSectionActivities(section: VitalSection, age: AgeFilter) {
 }
 
 export function useActivity(activityId: string | undefined) {
+  const { language, t } = useLanguage();
   const requestId = useRef(0);
   const [state, setState] = useState<AsyncState<ActivityWithResources>>({
     data: null,
@@ -165,7 +170,7 @@ export function useActivity(activityId: string | undefined) {
 
     setState((current) => ({ ...current, isLoading: true, error: null }));
     try {
-      const data = await withRequestTimeout(fetchActivityWithResources(activityId));
+      const data = await withRequestTimeout(fetchActivityWithResources(activityId, language));
       if (currentRequestId === requestId.current) {
         setState({ data, error: null, isLoading: false });
       }
@@ -176,13 +181,13 @@ export function useActivity(activityId: string | undefined) {
           error: customerSafeErrorMessage(
             'Unable to load activity details',
             error,
-            "We couldn't load this activity just now.",
+            t("We couldn't load this activity just now."),
           ),
           isLoading: false,
         });
       }
     }
-  }, [activityId]);
+  }, [activityId, language, t]);
 
   useEffect(() => {
     void load();

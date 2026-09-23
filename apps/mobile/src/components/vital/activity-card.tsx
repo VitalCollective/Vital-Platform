@@ -3,11 +3,12 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { colors, radii, sectionColors, shadows, spacing, typography } from '@/theme/tokens';
 import type { ActivitySummary } from '@/types/content';
+import { useLanguage } from '@/features/localization/language-context';
 
-function customerAgeValue(value: string | null): string | null {
+function customerAgeValue(value: string | null, allAges: string): string | null {
   const normalized = value?.trim().replace(/^ages?\s+/i, '') ?? '';
   if (!normalized) return null;
-  if (normalized.toLowerCase() === 'all') return 'All ages';
+  if (normalized.toLowerCase() === 'all') return allAges;
   return normalized;
 }
 
@@ -15,27 +16,27 @@ function isNumericAge(value: string): boolean {
   return /^\d+$/.test(value);
 }
 
-function ageLabel(activity: ActivitySummary): string | null {
-  const minimum = customerAgeValue(activity.age_min);
-  const maximum = customerAgeValue(activity.age_max);
+function ageLabel(activity: ActivitySummary, t: (value: string) => string): string | null {
+  const minimum = customerAgeValue(activity.age_min, t('All ages'));
+  const maximum = customerAgeValue(activity.age_max, t('All ages'));
 
   if (minimum && maximum) {
     if (minimum.toLowerCase() === maximum.toLowerCase()) {
-      return isNumericAge(minimum) ? `Age ${minimum}` : minimum;
+      return isNumericAge(minimum) ? `${t('Age')} ${minimum}` : minimum;
     }
     return isNumericAge(minimum) && isNumericAge(maximum)
-      ? `Ages ${minimum}–${maximum}`
+      ? `${t('Ages')} ${minimum}–${maximum}`
       : `${minimum}–${maximum}`;
   }
-  if (minimum) return isNumericAge(minimum) ? `Age ${minimum}+` : minimum;
-  if (maximum) return isNumericAge(maximum) ? `Up to age ${maximum}` : maximum;
+  if (minimum) return isNumericAge(minimum) ? `${t('Age')} ${minimum}+` : minimum;
+  if (maximum) return isNumericAge(maximum) ? `${t('Up to age')} ${maximum}` : maximum;
   return null;
 }
 
-function environmentLabel(activity: ActivitySummary): string | null {
-  if (activity.indoor && activity.outdoor) return 'Indoors or outdoors';
-  if (activity.indoor) return 'Indoors';
-  if (activity.outdoor) return 'Outdoors';
+function environmentLabel(activity: ActivitySummary, t: (value: string) => string): string | null {
+  if (activity.indoor && activity.outdoor) return t('Indoors or outdoors');
+  if (activity.indoor) return t('Indoors');
+  if (activity.outdoor) return t('Outdoors');
   return null;
 }
 
@@ -50,17 +51,18 @@ export function ActivityCard({
   compact?: boolean;
   variant?: 'standard' | 'catalogue';
 }) {
+  const { t } = useLanguage();
   const accent = sectionColors[activity.section];
   const isCatalogue = variant === 'catalogue';
-  const details = [ageLabel(activity), activity.duration, environmentLabel(activity)].filter(
+  const details = [ageLabel(activity, t), activity.duration, environmentLabel(activity, t)].filter(
     (value): value is string => Boolean(value),
   );
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={`${activity.title}, ${activity.section}`}
-      accessibilityHint="Opens activity details"
+      accessibilityLabel={`${activity.title}, ${t(activity.section)}`}
+      accessibilityHint={t('Opens activity details')}
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
@@ -71,7 +73,7 @@ export function ActivityCard({
       ]}>
       <View style={styles.topLine}>
         <View style={[styles.accent, { backgroundColor: accent.accent }]} />
-        <Text style={[styles.section, { color: accent.accent }]}>{activity.section}</Text>
+        <Text style={[styles.section, { color: accent.accent }]}>{t(activity.section)}</Text>
       </View>
       <Text
         style={[
@@ -101,7 +103,7 @@ export function ActivityCard({
           compact && styles.openRowCompact,
           isCatalogue && styles.openRowCatalogue,
         ]}>
-        <Text style={styles.openText}>See the activity</Text>
+        <Text style={styles.openText}>{t('See the activity')}</Text>
         <Ionicons name="arrow-forward" size={18} color={colors.brand} />
       </View>
     </Pressable>

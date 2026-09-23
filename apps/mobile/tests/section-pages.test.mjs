@@ -123,6 +123,55 @@ test('every section loader requests and returns its exact published section', as
   }
 });
 
+test('Welsh section catalogues merge translated fields without changing canonical identity or English fallback', async () => {
+  const row = {
+    ...activity('VK-5-7-0001', '5', '7', true, false),
+    section: 'Vital Kids', title: 'Treasure map', summary: 'Draw a map together',
+    duration: '20 mins', equipment: 'Paper', physical_benefits: null,
+    mental_benefits: null, weather: null, collection_labels: [],
+  };
+  const client = createClient('https://sections-welsh.test.invalid', 'public-test-key', {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { fetch: async (url) => {
+      const target = new URL(url);
+      const data = target.pathname.endsWith('/activity_translations')
+        ? [{ activity_id: row.id, locale: 'cy', title: 'Map trysor', summary: null }]
+        : [row];
+      return new Response(JSON.stringify(data), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'Content-Range': '0-0/1' },
+      });
+    } },
+  });
+  const result = await fetchSectionActivities(client, 'Vital Kids', 'any', 'cy');
+  assert.equal(result.count, 1);
+  assert.equal(result.activities[0].id, row.id);
+  assert.equal(result.activities[0].title, 'Map trysor');
+  assert.equal(result.activities[0].summary, row.summary);
+});
+
+test('a localized-field failure cannot hide canonical English activities in Cymraeg mode', async () => {
+  const row = {
+    ...activity('VK-5-7-0002', '5', '7', true, false), section: 'Vital Kids',
+    title: 'English fallback', summary: 'Still available', duration: '10 mins',
+    equipment: 'None', physical_benefits: null, mental_benefits: null,
+    weather: null, collection_labels: [],
+  };
+  const client = createClient('https://sections-welsh-fallback.test.invalid', 'public-test-key', {
+    auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
+    global: { fetch: async (url) => {
+      const isTranslation = new URL(url).pathname.endsWith('/activity_translations');
+      return new Response(JSON.stringify(isTranslation ? { message: 'temporarily unavailable' } : [row]), {
+        status: isTranslation ? 503 : 200,
+        headers: { 'Content-Type': 'application/json', 'Content-Range': '0-0/1' },
+      });
+    } },
+  });
+  const result = await fetchSectionActivities(client, 'Vital Kids', 'any', 'cy');
+  assert.equal(result.activities[0].id, row.id);
+  assert.equal(result.activities[0].title, row.title);
+});
+
 test('shared catalogue keeps the approved card/detail path and required states', () => {
   const source = readFileSync(
     new URL('../src/components/vital/section-activity-catalogue.tsx', import.meta.url),
@@ -130,13 +179,13 @@ test('shared catalogue keeps the approved card/detail path and required states',
   );
 
   assert.match(source, /const INITIAL_RESULT_LIMIT = 20/);
-  assert.match(source, /label="Show more"/);
+  assert.match(source, /label=\{t\('Show more'\)\}/);
   assert.match(source, /<ActivityCard/);
   assert.match(source, /activityDetailHref\(activity\.id\)/);
   assert.match(source, /kind="loading"/);
   assert.match(source, /kind="error"/);
   assert.match(source, /onRetry=/);
-  assert.match(source, /No .* activities/);
+  assert.match(source, /No activities in \{section\} yet/);
   assert.match(source, /title === 'Vital Kids' \|\| title === 'Vital Together'/);
   assert.doesNotMatch(source, /label: 'All ages'/);
 });

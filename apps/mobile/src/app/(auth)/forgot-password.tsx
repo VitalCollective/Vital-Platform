@@ -9,6 +9,8 @@ import {
 } from '@/components/vital/auth-shell';
 import { Button } from '@/components/vital/button';
 import { useAuth } from '@/features/auth/auth-context';
+import { useLanguage } from '@/features/localization/language-context';
+import { LanguageSelector } from '@/features/localization/language-selector';
 import { customerSafeErrorMessage } from '@/lib/errors';
 import { colors, layout, spacing, typography } from '@/theme/tokens';
 
@@ -16,6 +18,7 @@ const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordScreen() {
   const { requestPasswordReset } = useAuth();
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -26,11 +29,11 @@ export default function ForgotPasswordScreen() {
     setError(null);
 
     if (!normalizedEmail) {
-      setError('Enter the email address you use for Vital Collective.');
+      setError(t('Enter the email address you use for Vital Collective.'));
       return;
     }
     if (!emailPattern.test(normalizedEmail)) {
-      setError('Enter a complete email address, such as name@example.com.');
+      setError(t('Enter a complete email address, such as name@example.com.'));
       return;
     }
 
@@ -53,8 +56,9 @@ export default function ForgotPasswordScreen() {
 
   return (
     <AuthShell
-      title="Reset your password"
-      intro="Enter your email and we’ll send you a secure link to choose a new password.">
+      title={t('Reset your password')}
+      intro={t('Enter your email and we’ll send you a secure link to choose a new password.')}>
+      <LanguageSelector compact />
       {isSent ? (
         <>
           <AuthNotice kind="success">
@@ -62,7 +66,7 @@ export default function ForgotPasswordScreen() {
             Check your inbox and spam folder.
           </AuthNotice>
           <Button
-            label="Send another link"
+            label={t('Send another link')}
             variant="secondary"
             onPress={() => setIsSent(false)}
           />
@@ -70,7 +74,7 @@ export default function ForgotPasswordScreen() {
       ) : (
         <>
           <AuthField
-            label="Email address"
+            label={t('Email address')}
             autoCapitalize="none"
             autoComplete="email"
             autoCorrect={false}
@@ -84,7 +88,7 @@ export default function ForgotPasswordScreen() {
           />
           {error ? <AuthNotice kind="error">{error}</AuthNotice> : null}
           <Button
-            label="Send reset link"
+            label={t('Send reset link')}
             onPress={() => void submit()}
             loading={isSubmitting}
           />
@@ -95,7 +99,7 @@ export default function ForgotPasswordScreen() {
         <Pressable
           accessibilityRole="link"
           style={({ pressed }) => [styles.backLink, pressed && styles.linkPressed]}>
-          <Text style={styles.backText}>Back to sign in</Text>
+          <Text style={styles.backText}>{t('Back to sign in')}</Text>
         </Pressable>
       </Link>
     </AuthShell>

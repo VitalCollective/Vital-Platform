@@ -14,6 +14,14 @@ import {
 import { classifyPrintableResourceState } from '@/lib/printable-resources';
 import { requireSupabase } from '@/lib/supabase';
 import {
+  ACTIVITY_TRANSLATION_FIELDS,
+  applyActivityTranslations,
+  applyResourceTranslation,
+  type ActivityTranslation,
+  type ResourceTranslation,
+} from '@/features/localization/content-localization';
+import type { AppLanguage } from '@/features/localization/localization-model';
+import {
   VITAL_SECTIONS,
   type ActivityDetail,
   type ActivityResource,
@@ -32,6 +40,37 @@ const DETAIL_FIELDS = `${SUMMARY_FIELDS},instructions,why_children_enjoy_it,phys
 
 const HOME_IDEA_COUNT = 3;
 const HOME_SECTION_POOL_SIZE = 3;
+const ACTIVITY_TRANSLATION_SELECT = `activity_id,locale,${ACTIVITY_TRANSLATION_FIELDS.join(',')},tags,collection_labels`;
+
+async function translatedActivities<T extends ActivitySummary | ActivityDetail>(
+  activities: readonly T[],
+  language: AppLanguage,
+): Promise<T[]> {
+  if (language !== 'cy' || !activities.length) return [...activities];
+  const client = requireSupabase();
+  const { data, error } = await client.from('activity_translations')
+    .select(ACTIVITY_TRANSLATION_SELECT).eq('locale', 'cy')
+    .in('activity_id', activities.map(({ id }) => id));
+  if (error) {
+    reportTechnicalError('Load localized activity fields; using canonical English fallback', error);
+    return [...activities];
+  }
+  return applyActivityTranslations(activities, (data ?? []) as unknown as ActivityTranslation[]);
+}
+
+async function welshSearchActivityIds(search: string, language: AppLanguage): Promise<string[]> {
+  if (language !== 'cy' || !search) return [];
+  const client = requireSupabase();
+  const { data, error } = await client.from('activity_translations').select('activity_id')
+    .eq('locale', 'cy')
+    .or(`search_document.wfts(simple).${search},title.ilike.*${search}*,summary.ilike.*${search}*,instructions.ilike.*${search}*,equipment.ilike.*${search}*`)
+    .limit(250);
+  if (error) {
+    reportTechnicalError('Search localized activity fields; using canonical English fallback', error);
+    return [];
+  }
+  return [...new Set((data ?? []).map(({ activity_id }) => activity_id as string))];
+}
 
 type DiscoverLane = {
   section?: VitalSection;
@@ -68,7 +107,7 @@ type ActivityResourceQueryRow = {
     | null;
 };
 
-export async function fetchIdeasForToday(): Promise<ActivitySummary[]> {
+export async function fetchIdeasForToday(language: AppLanguage = 'en'): Promise<ActivitySummary[]> {
   const client = requireSupabase();
   const loadSectionPools = async () => {
     const results = await Promise.all(
@@ -106,19 +145,22 @@ export async function fetchIdeasForToday(): Promise<ActivitySummary[]> {
     (_, index) => sectionPools[(index + utcDay) % sectionPools.length],
   );
 
-  return rotatedPools
+  const selected = rotatedPools
     .map((pool, index) => pool[(utcDay + index) % pool.length])
     .filter((activity): activity is ActivitySummary => Boolean(activity))
     .slice(0, HOME_IDEA_COUNT);
+  return translatedActivities(selected, language);
 }
 
 async function runDiscoverQuery(
   filters: DiscoverFilters,
   useFallback: boolean,
+  language: AppLanguage,
 ): Promise<DiscoverResult> {
   const client = requireSupabase();
   const normalizedSearch = normalizeDiscoverSearch(filters.search);
   const searchPlan = resolveDiscoverSearch(filters.search);
+  const translatedSearchIds = await welshSearchActivityIds(searchPlan.literalSearch, language);
   const isDiversifiedDefault =
     !normalizedSearch &&
     filters.section === null &&
@@ -179,9 +221,9 @@ async function runDiscoverQuery(
       }
 
       if (searchPlan.literalSearch) {
-        request = request.or(
-          discoverSearchFilter(searchPlan.literalSearch, useFallback),
-        );
+        const englishFilter = discoverSearchFilter(searchPlan.literalSearch, useFallback);
+        const translationFilter = translatedSearchIds.length ? `,id.in.(${translatedSearchIds.join(',')})` : '';
+        request = request.or(`${englishFilter}${translationFilter}`);
       }
 
       const { data, error, count } = await request
@@ -190,7 +232,7 @@ async function runDiscoverQuery(
       if (error) throw error;
 
       return {
-        activities: (data ?? []) as unknown as ActivitySummary[],
+        activities: await translatedActivities((data ?? []) as unknown as ActivitySummary[], language),
         count: count ?? 0,
       };
     }),
@@ -217,9 +259,10 @@ async function runDiscoverQuery(
 
 export async function fetchDiscoverActivities(
   filters: DiscoverFilters,
+  language: AppLanguage = 'en',
 ): Promise<DiscoverResult> {
   const runWithJwtTimingContainment = (useFallback: boolean) =>
-    withFutureJwtTimingRetry(() => runDiscoverQuery(filters, useFallback), {
+    withFutureJwtTimingRetry(() => runDiscoverQuery(filters, useFallback, language), {
       onRetry: (error, attempt, delayMs) =>
         reportTechnicalError(
           `Discover received transient PGRST303; retry ${attempt} in ${delayMs}ms`,
@@ -260,6 +303,7 @@ function mapResourceLink(row: ActivityResourceQueryRow): ActivityResource | null
 
 export async function fetchActivityWithResources(
   activityId: string,
+  language: AppLanguage = 'en',
 ): Promise<ActivityWithResources> {
   const client = requireSupabase();
   const [activityResult, resourceResult] = await Promise.all([
@@ -287,12 +331,26 @@ export async function fetchActivityWithResources(
   }
 
   const resourceRows = (resourceResult.data ?? []) as unknown as ActivityResourceQueryRow[];
-  const resources = resourceRows
+  let resources = resourceRows
     .map(mapResourceLink)
     .filter((resource): resource is ActivityResource => resource !== null);
 
+  const [activity] = await translatedActivities(
+    [activityResult.data as unknown as ActivityDetail],
+    language,
+  );
+  if (language === 'cy' && resources.length) {
+    const { data, error } = await client.from('resource_translations')
+      .select('resource_id,locale,title,summary,storage_path')
+      .eq('locale', 'cy').in('resource_id', resources.map(({ id }) => id));
+    if (error) reportTechnicalError('Load localized resource fields; using canonical English fallback', error);
+    const byId = new Map(((error ? [] : data ?? []) as unknown as ResourceTranslation[])
+      .map((translation) => [translation.resource_id, translation]));
+    resources = resources.map((resource) => applyResourceTranslation(resource, byId.get(resource.id)));
+  }
+
   return {
-    activity: activityResult.data as unknown as ActivityDetail,
+    activity,
     resources,
     printableResourceState: classifyPrintableResourceState(
       resourceRows.length,
