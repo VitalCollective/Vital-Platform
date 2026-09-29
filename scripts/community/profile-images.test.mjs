@@ -24,13 +24,24 @@ await db.exec(`create role anon; create role authenticated; create role service_
 for(const name of ['20260823204450_initial_vital_schema.sql','20260826085303_community_and_moderation.sql','20260910120000_community_v1.sql']) {
   await db.exec(await readFile(new URL(`../../supabase/migrations/${name}`,import.meta.url),'utf8'));
 }
-const member='40000000-0000-4000-8000-000000000001',other='40000000-0000-4000-8000-000000000002';
-await db.query('insert into auth.users(id,raw_user_meta_data) values($1,$3),($2,$3)',[member,other,{display_name:'TEST real member'}]);
+const member='40000000-0000-4000-8000-000000000001';
+const other='40000000-0000-4000-8000-000000000002';
+const expired='40000000-0000-4000-8000-000000000003';
+await db.query('insert into auth.users(id,raw_user_meta_data) values($1,$4),($2,$4),($3,$4)',[member,other,expired,{display_name:'TEST real member'}]);
 await db.query("insert into public.community_posts(room_id,author_id,title,body) values('10000000-0000-4000-8000-000000000001',$1,'TEST existing post','Do not change existing Community')",[member]);
 const existingProfiles=(await db.query('select * from public.profiles order by id')).rows;
 const existingPosts=(await db.query('select * from public.community_posts')).rows;
 const migration=await readFile(new URL('../../supabase/migrations/20260910180000_community_profile_images.sql',import.meta.url),'utf8');
 await db.exec(migration);
+for(const name of ['20260913120000_complete_community_member_blocking.sql','20260914180000_revenuecat_subscription_foundation.sql']) {
+  await db.exec(await readFile(new URL(`../../supabase/migrations/${name}`,import.meta.url),'utf8'));
+}
+await db.query(`insert into public.subscription_entitlements(
+  profile_id,entitlement_id,status,expires_at,auto_renewing,store,platform,environment,
+  revenuecat_customer_id,provider_verified_at
+) values
+  ($1,'vital_membership','active','2030-01-01',true,'app_store','ios','production',$1,now()),
+  ($2,'vital_membership','active','2030-01-01',true,'app_store','ios','production',$2,now())`,[member,other]);
 async function as(id,role='authenticated'){await db.exec(`reset role; set role ${role}; select set_config('request.jwt.claim.sub','${id??''}',false);`);}
 async function root(){await db.exec("reset role; select set_config('request.jwt.claim.sub','',false);");}
 async function row(sql,args){return (await db.query(sql,args)).rows[0];}
@@ -46,7 +57,7 @@ test('image migration reuses avatar_url and preserves existing real profiles, co
   const bucket=await row("select * from storage.buckets where id='profile-images'");
   assert.equal(bucket.public,false);assert.equal(bucket.file_size_limit,524288);
   assert.deepEqual(bucket.allowed_mime_types,['image/jpeg','image/png','image/webp']);
-  assert.equal((await row("select count(*)::int as n from pg_policies where schemaname='storage'")).n,4);
+  assert.equal((await row("select count(*)::int as n from pg_policies where schemaname='storage' and policyname like '%profile images%'")).n,4);
   assert.doesNotMatch(migration,/\b(insert\s+into|update|delete\s+from|alter\s+table)\s+auth\./i);
 });
 
@@ -97,8 +108,41 @@ test('real members read linked starter images; only their own image paths can be
   await assert.rejects(db.query("update public.profiles set avatar_url='https://example.com/tracker.jpg' where id=auth.uid()"));
   assert.equal((await db.query('delete from storage.objects where name=$1 returning id',[seedPath])).rows.length,0);
   await as(other);assert.equal((await db.query('select * from storage.objects')).rows.length,2);
-  await as(member);await db.query('delete from storage.objects where name=$1',[ownPath]);
-  await db.query('update public.profiles set avatar_url=null where id=auth.uid()');
+});
+
+test('profile-image reads compose with membership and profile visibility while self-management remains available',async()=>{
+  const memberPath=`${member}/photo-v1.png`;
+  const otherPath=`${other}/photo-v1.png`;
+  const expiredPath=`${expired}/photo-v1.png`;
+  const orphanPath='40000000-0000-4000-8000-000000000099/orphan.png';
+
+  await as(other);
+  await db.query("insert into storage.objects(bucket_id,name,metadata) values('profile-images',$1,$2)",[otherPath,{mimetype:'image/png',size:100}]);
+  await db.query('update public.profiles set avatar_url=$1 where id=auth.uid()',[`profile-images/${otherPath}`]);
+
+  await root();
+  await db.query("insert into storage.objects(bucket_id,name,metadata) values('profile-images',$1,$2)",[orphanPath,{mimetype:'image/png',size:100}]);
+
+  await as(member);
+  assert.deepEqual((await db.query('select name from storage.objects order by name')).rows.map(row=>row.name),[memberPath,otherPath,seedPath].sort());
+  await db.query('insert into public.community_blocks(blocker_id,blocked_profile_id) values(auth.uid(),$1)',[other]);
+  assert.deepEqual((await db.query('select name from storage.objects order by name')).rows.map(row=>row.name),[memberPath,seedPath].sort());
+
+  await as(other);
+  assert.deepEqual((await db.query('select name from storage.objects order by name')).rows.map(row=>row.name),[otherPath,seedPath].sort());
+
+  await as(member);
+  await db.query('delete from public.community_blocks where blocker_id=auth.uid() and blocked_profile_id=$1',[other]);
+  assert.equal((await db.query('select name from storage.objects')).rows.length,3,'entitled member regains the referenced image after unblock');
+
+  await as(expired);
+  assert.equal((await db.query('select name from storage.objects')).rows.length,0,'expired member cannot read referenced member or starter images');
+  await db.query("insert into storage.objects(bucket_id,name,metadata) values('profile-images',$1,$2)",[expiredPath,{mimetype:'image/png',size:100}]);
+  await db.query('update public.profiles set avatar_url=$1 where id=auth.uid()',[`profile-images/${expiredPath}`]);
+  assert.deepEqual((await db.query('select name from storage.objects')).rows,[{name:expiredPath}], 'expired member retains own-image account management');
+
+  await as(member);
+  assert.equal((await db.query('select name from storage.objects where name=$1',[orphanPath])).rows.length,0,'unreferenced/deleted-profile objects are not directory-readable');
 });
 
 test('anonymous and seeded subjects cannot access images or act; metrics and service permissions remain protected',async()=>{
@@ -108,6 +152,6 @@ test('anonymous and seeded subjects cannot access images or act; metrics and ser
     await assert.rejects(db.query('select public.import_community_starters($1)',[bundle]));
   }
   assert.equal((await row('select public.can_create_community_content() as yes')).yes,false);
-  await as(null,'service_role');assert.deepEqual((await row('select public.community_genuine_metrics() as metrics')).metrics,{members:2,posts:1,replies:0,helpful_reactions:0});
+  await as(null,'service_role');assert.deepEqual((await row('select public.community_genuine_metrics() as metrics')).metrics,{members:3,posts:1,replies:0,helpful_reactions:0});
 });
 test.after(async()=>{await db.close();});
