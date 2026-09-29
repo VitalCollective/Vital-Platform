@@ -62,7 +62,7 @@ export function CommunityAuthor({ name, seeded, createdAt, imageUrl, bio, onMemb
   </View>;
   if (!bio && !onMember) return author;
   return <View style={{ gap: spacing.xs }}>
-    <Pressable accessibilityRole="button" accessibilityLabel={onMember ? `View ${name}'s Community profile` : `About ${name}`}
+    <Pressable accessibilityRole="button" accessibilityLabel={onMember ? t("View {name}'s Community profile", { name }) : t('About {name}', { name })}
       accessibilityState={onMember ? undefined : { expanded }} aria-expanded={onMember ? undefined : expanded}
       onPress={onMember ?? (() => setExpanded(value => !value))} onFocus={() => setFocused(true)} onBlur={() => setFocused(false)}
       style={{ minHeight: layout.touchTarget, justifyContent: 'center', borderRadius: radii.sm, borderWidth: 2, borderColor: focused ? colors.focus : 'transparent' }}>

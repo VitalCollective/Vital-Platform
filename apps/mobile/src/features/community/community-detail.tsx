@@ -63,14 +63,14 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
     <View style={s.row}><CommunityAction label={t('Back to Community')} icon="arrow-back" onPress={onBack} /><CommunityAction label={t('Refresh')} icon="refresh-outline" onPress={() => { setReload((v) => v + 1); void replies.refresh(); }} /></View>
     {loading && !post ? <StatePanel kind="loading" title={t('Opening conversation')} message={t('Finding the post and replies…')} /> : error ? <StatePanel kind="error" title={t('Conversation unavailable')} message={error} onRetry={() => setReload((v) => v + 1)} /> : post ? <>
       <View style={s.card}>
-        <Text style={s.eyebrow}>{POST_TYPES.find((type) => type.value === post.post_type)?.noun ?? 'Conversation'}{post.topic ? ` · ${post.topic}` : ''}</Text>
+        <Text style={s.eyebrow}>{t(POST_TYPES.find((type) => type.value === post.post_type)?.noun ?? 'Conversation')}{post.topic ? ` · ${t(post.topic)}` : ''}</Text>
         <Text accessibilityRole="header" style={s.title}>{post.title}</Text>
         <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} bio={post.author_bio} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded} deleted={!post.author_id}
           onMember={post.author_id && post.author_id !== userId && !post.is_seeded && !post.author_is_seeded ? () => onMember({ id: post.author_id!, name: post.author_name, imageUrl: post.author_image_url, bio: post.author_bio, seeded: false }) : undefined} />
         <Text selectable style={s.body}>{post.body}</Text>
-        {post.activity_id && post.activity_title && <CommunityAction label={`Vital activity: ${post.activity_title}`} icon="link-outline" onPress={() => onActivity(post.activity_id!)} />}
+        {post.activity_id && post.activity_title && <CommunityAction label={t('Vital activity: {title}', { title: post.activity_title })} icon="link-outline" onPress={() => onActivity(post.activity_id!)} />}
         {post.author_id && <View style={s.row}>
-          <CommunityAction label={`Helpful${post.helpful_count ? ` · ${post.helpful_count}` : ''}`} icon="hand-left-outline" selected={post.viewer_helpful}
+          <CommunityAction label={`${t('Helpful')}${post.helpful_count ? ` · ${post.helpful_count}` : ''}`} icon="hand-left-outline" selected={post.viewer_helpful}
             disabled={busy || (!post.viewer_helpful && !access?.canParticipate)} onPress={() => void helpful('post', post)} />
           {post.author_id !== userId ? <CommunityAction label={post.is_seeded || post.author_is_seeded ? 'Report' : 'Report / block'} icon="flag-outline" onPress={() => onReport({ type: 'post', id: post.id, authorId: post.author_id!, authorSeeded: post.is_seeded || post.author_is_seeded })} /> : !post.locked && !post.pinned && !access?.restricted ? <CommunityAction label="Remove my post" onPress={() => setConfirmRemove({ kind: 'post', id })} /> : null}
         </View>}
@@ -86,7 +86,7 @@ export function CommunityDetail({ api, id, userId, access, onBack, onRules, onRe
         {reply.parent_comment_id && <Text style={s.meta}>{t('In reply to {name}', { name: reply.reply_to_name ?? t('an earlier reply') })}</Text>}
         <Text selectable style={s.body}>{reply.body}</Text>
         <View style={s.row}>
-          <CommunityAction label={`Helpful${reply.helpful_count ? ` · ${reply.helpful_count}` : ''}`} icon="hand-left-outline" selected={reply.viewer_helpful}
+          <CommunityAction label={`${t('Helpful')}${reply.helpful_count ? ` · ${reply.helpful_count}` : ''}`} icon="hand-left-outline" selected={reply.viewer_helpful}
             disabled={busy || (!reply.viewer_helpful && !access?.canParticipate)} onPress={() => void helpful('comment', reply)} />
           {!post.locked && access?.canParticipate && <CommunityAction label="Reply" icon="return-down-forward-outline" onPress={() => { setReplyTo(reply); requestAnimationFrame(() => replyInput.current?.focus()); }} />}
           {reply.author_id !== userId ? <CommunityAction label={reply.is_seeded ? 'Report' : 'Report / block'} icon="flag-outline" onPress={() => onReport({ type: 'comment', id: reply.id, authorId: reply.author_id, authorSeeded: reply.is_seeded })} /> : !access?.restricted ? <CommunityAction label="Remove my reply" onPress={() => setConfirmRemove({ kind: 'comment', id: reply.id })} /> : null}

@@ -90,7 +90,7 @@ export function CommunityScreenContent({ api, userId, onActivity, refreshKey = 0
               <CommunityAction label={t(moreTypes ? 'Hide post types' : 'Post type')} icon="options-outline" onPress={() => setMoreTypes(!moreTypes)} />
             </View>
             {moreTypes && <View style={s.row}><FilterChip label={t('All post types')} selected={!postType} onPress={() => setPostType(null)} />{POST_TYPES.map((type) => <FilterChip key={type.value} label={t(type.noun)} selected={postType === type.value} onPress={() => setPostType(type.value)} />)}</View>}
-            {filtering && <View style={s.row}><Text style={s.meta}>{[topic, POST_TYPES.find((t) => t.value === postType)?.noun, query.trim() ? `“${query.trim()}”` : null].filter(Boolean).join(' · ')}</Text><CommunityAction label="Clear filters" onPress={resetFilters} /></View>}
+            {filtering && <View style={s.row}><Text style={s.meta}>{[topic ? t(topic) : null, postType ? t(POST_TYPES.find((type) => type.value === postType)?.noun ?? '') : null, query.trim() ? `“${query.trim()}”` : null].filter(Boolean).join(' · ')}</Text><CommunityAction label="Clear filters" onPress={resetFilters} /></View>}
             <CommunityNotice message={notice} /><CommunityNotice message={accessError} error />
             {access?.restricted && <CommunityNotice message={participationMessage(access)} />}
             {feed.loading ? <StatePanel kind="loading" title={t('Finding conversations')} message={t('A moment to gather the latest posts…')} /> : feed.error && !feed.items.length ? <StatePanel kind="error" title={t('Community is unavailable just now')} message={feed.error} onRetry={refresh} /> : !feed.items.length ? <View style={s.stack}>
@@ -98,15 +98,15 @@ export function CommunityScreenContent({ api, userId, onActivity, refreshKey = 0
               {filtering && <Button label={t('Clear search and filters')} variant="secondary" onPress={resetFilters} />}
               <Button label={t('Ask a question')} onPress={() => startPost('question')} />
             </View> : feed.items.map((post) => <View key={post.id} style={s.card}>
-              <Text style={s.eyebrow}>{POST_TYPES.find((t) => t.value === post.post_type)?.noun ?? 'Conversation'}{post.topic ? ` · ${post.topic}` : ''}{post.locked ? ' · Replies closed' : ''}</Text>
-              <Pressable accessibilityRole="button" accessibilityLabel={`Open conversation: ${post.title}`} onPress={() => { setPostId(post.id); setNotice(null); }} style={({ pressed }) => [s.stack, { opacity: pressed ? 0.75 : 1 }]}>
+              <Text style={s.eyebrow}>{t(POST_TYPES.find((type) => type.value === post.post_type)?.noun ?? 'Conversation')}{post.topic ? ` · ${t(post.topic)}` : ''}{post.locked ? ` · ${t('Replies closed')}` : ''}</Text>
+              <Pressable accessibilityRole="button" accessibilityLabel={t('Open conversation: {title}', { title: post.title })} onPress={() => { setPostId(post.id); setNotice(null); }} style={({ pressed }) => [s.stack, { opacity: pressed ? 0.75 : 1 }]}>
                 <Text style={s.title}>{post.title}</Text>
                 <Text style={s.body}>{post.excerpt}{post.excerpt.length === 320 ? '…' : ''}</Text>
               </Pressable>
               <CommunityAuthor name={post.author_name} imageUrl={post.author_image_url} bio={post.author_bio} createdAt={post.created_at} seeded={post.is_seeded || post.author_is_seeded} deleted={!post.author_id}
                 onMember={post.author_id && post.author_id !== userId && !post.is_seeded && !post.author_is_seeded ? () => setMember({ id: post.author_id!, name: post.author_name, imageUrl: post.author_image_url, bio: post.author_bio, seeded: false }) : undefined} />
-              {post.activity_id && post.activity_title && <CommunityAction label={`Activity: ${post.activity_title}`} icon="link-outline" onPress={() => onActivity(post.activity_id!)} />}
-              <View style={s.row}><CommunityAction label={`${post.reply_count} ${post.reply_count === 1 ? 'reply' : 'replies'} · Read conversation`} icon="chatbubble-outline" onPress={() => setPostId(post.id)} />{post.helpful_count > 0 && <Text style={s.meta}>{post.helpful_count} Helpful</Text>}</View>
+              {post.activity_id && post.activity_title && <CommunityAction label={t('Activity: {title}', { title: post.activity_title })} icon="link-outline" onPress={() => onActivity(post.activity_id!)} />}
+              <View style={s.row}><CommunityAction label={t(post.reply_count === 1 ? '{count} reply · Read conversation' : '{count} replies · Read conversation', { count: post.reply_count })} icon="chatbubble-outline" onPress={() => setPostId(post.id)} />{post.helpful_count > 0 && <Text style={s.meta}>{t('{count} Helpful', { count: post.helpful_count })}</Text>}</View>
             </View>)}
             {!!feed.items.length && feed.error && <><CommunityNotice message={feed.error} error /><Button label={t('Try again')} onPress={() => void feed.more()} /></>}
             {feed.hasMore && <Button label={t('Show more conversations')} variant="secondary" loading={feed.loadingMore} onPress={() => void feed.more()} />}

@@ -2,6 +2,7 @@ import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 import { Button } from '@/components/vital/button';
 import { customerSafeErrorMessage } from '@/lib/errors';
+import { useLanguage } from '@/features/localization/language-context';
 import type { CommunityApi } from './community-api';
 import { MemberModeration } from './community-actions';
 import { useCommunityPage } from './community-hooks';
@@ -9,6 +10,7 @@ import { REPORT_REASONS, type CommunityReport } from './community-model';
 import { CommunityAction, CommunityAuthor, CommunityField, CommunityModal, CommunityNotice, s } from './community-ui';
 
 export function CommunityModeration({ api, onClose }: { api: CommunityApi; onClose: () => void }) {
+  const { language, t } = useLanguage();
   const load = useCallback((offset: number) => api.reportQueue(offset), [api]);
   const queue = useCommunityPage(load);
   const [selected, setSelected] = useState<CommunityReport | null>(null);
@@ -39,12 +41,12 @@ export function CommunityModeration({ api, onClose }: { api: CommunityApi; onClo
     <CommunityNotice message={error ?? queue.error} error /><CommunityNotice message={notice} />
     {selected ? <View style={s.stack}>
       <CommunityAction label="Back to reports" icon="arrow-back" onPress={() => { setSelected(null); setError(null); setNotice(null); }} />
-      <Text style={s.label}>{REPORT_REASONS.find(([key]) => key === selected.reason_category)?.[1] ?? 'Reported concern'}</Text>
+      <Text style={s.label}>{t(REPORT_REASONS.find(([key]) => key === selected.reason_category)?.[1] ?? 'Reported concern')}</Text>
       {selected.details && <Text selectable style={s.body}>{selected.details}</Text>}
-      <Text style={s.title}>{selected.target?.title ?? 'Reported content'}</Text>
+      <Text style={s.title}>{selected.target?.title ?? t('Reported content')}</Text>
       {selected.target?.author_name && <CommunityAuthor name={selected.target.author_name} imageUrl={selected.target.author_image_url} bio={selected.target.author_bio}
         seeded={selected.target.author_is_seeded ?? false} deleted={!selected.target.author_id} createdAt={selected.target.created_at ?? selected.created_at} />}
-      <Text selectable style={s.body}>{selected.target?.body ?? 'The content is no longer available, or this report concerns a profile.'}</Text>
+      <Text selectable style={s.body}>{selected.target?.body ?? t('The content is no longer available, or this report concerns a profile.')}</Text>
       <CommunityField label="Moderation reason / review note" value={note} onChangeText={setNote} multiline maxLength={2000} editable={!busy} />
       {selected.target && selected.target_type !== 'profile' && <View style={s.row}>
         {selected.target.moderation_status === 'removed_by_moderator' ? <CommunityAction label="Restore content" disabled={busy} onPress={() => void act('restore')} /> : selected.target.moderation_status === 'visible' ? <CommunityAction label="Remove content" disabled={busy} onPress={() => void act('remove')} /> : null}
@@ -53,9 +55,9 @@ export function CommunityModeration({ api, onClose }: { api: CommunityApi; onClo
       <View style={s.row}><CommunityAction label="Mark under review" disabled={busy} onPress={() => void act('under_review')} /><CommunityAction label="Resolve report" disabled={busy} onPress={() => void act('resolved')} /><CommunityAction label="Dismiss report" disabled={busy} onPress={() => void act('dismissed')} /></View>
       {(selected.target?.author_id || selected.target_type === 'profile') && <CommunityAction label="Review member restrictions" icon="shield-checkmark-outline" onPress={() => setMemberId(selected.target?.author_id ?? selected.target_id)} />}
     </View> : <>
-      <Text style={s.meta}>Open concerns, oldest first. Content removals, restorations, locks, restrictions and dismissals use the existing audit history.</Text>
-      {queue.loading ? <Text style={s.meta}>Loading reports…</Text> : !queue.items.length && !queue.error ? <Text style={s.body}>No open reports to review.</Text> : null}
-      {queue.items.map((report) => <View key={report.id} style={s.card}><Text style={s.label}>{REPORT_REASONS.find(([key]) => key === report.reason_category)?.[1]}</Text><Text style={s.meta}>{report.target?.title ?? 'Reported reply or profile'} · {new Date(report.created_at).toLocaleDateString()}</Text><CommunityAction label="Review report" onPress={() => { setSelected(report); setNote(''); setNotice(null); }} /></View>)}
+      <Text style={s.meta}>{t('Open concerns, oldest first. Content removals, restorations, locks, restrictions and dismissals use the existing audit history.')}</Text>
+      {queue.loading ? <Text style={s.meta}>{t('Loading reports…')}</Text> : !queue.items.length && !queue.error ? <Text style={s.body}>{t('No open reports to review.')}</Text> : null}
+      {queue.items.map((report) => <View key={report.id} style={s.card}><Text style={s.label}>{t(REPORT_REASONS.find(([key]) => key === report.reason_category)?.[1] ?? 'Reported concern')}</Text><Text style={s.meta}>{report.target?.title ?? t('Reported reply or profile')} · {new Date(report.created_at).toLocaleDateString(language === 'cy' ? 'cy-GB' : 'en-GB')}</Text><CommunityAction label="Review report" onPress={() => { setSelected(report); setNote(''); setNotice(null); }} /></View>)}
       {queue.error && <Button label="Try again" onPress={() => void (queue.items.length ? queue.more() : queue.refresh())} />}
       {queue.hasMore && <Button label="Show more reports" variant="secondary" loading={queue.loadingMore} onPress={() => void queue.more()} />}
     </>}

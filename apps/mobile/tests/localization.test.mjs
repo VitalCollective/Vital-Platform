@@ -10,7 +10,7 @@ import {
   DEFAULT_LANGUAGE,
   resolvedLanguage,
 } from '../src/features/localization/localization-model.ts';
-import { translate } from '../src/features/localization/translations.ts';
+import { hasWelshUiTranslation, translate } from '../src/features/localization/translations.ts';
 
 test('English remains the default and unsupported stored values safely resolve to English', () => {
   assert.equal(DEFAULT_LANGUAGE, 'en');
@@ -71,10 +71,12 @@ test('normal app surfaces use the shared language provider and preference destin
   const root = readFileSync(new URL('../src/app/_layout.tsx', import.meta.url), 'utf8');
   const preferences = readFileSync(new URL('../src/features/account/account-preferences.tsx', import.meta.url), 'utf8');
   const auth = readFileSync(new URL('../src/app/(auth)/index.tsx', import.meta.url), 'utf8');
+  const home = readFileSync(new URL('../src/app/(tabs)/index.tsx', import.meta.url), 'utf8');
   assert.match(root, /<LanguageProvider>/);
   assert.match(root, /<LanguagePreferenceSync/);
   assert.match(preferences, /<LanguageSelector onChange=\{save\}/);
   assert.match(auth, /<LanguageSelector compact/);
+  assert.match(home, /<LanguageSelector compact/);
 });
 
 test('normal member journeys share bilingual controls without translating member content', () => {
@@ -106,7 +108,28 @@ test('language persistence is device-first and account sync remains owner-scoped
   assert.match(provider, /localStorage\?\.setItem\(LANGUAGE_STORAGE_KEY, next\)/);
   assert.match(sync, /\.eq\('profile_id', id\)/);
   assert.match(sync, /update\(\{ language_code: language \}\)/);
+  assert.match(sync, /syncedPreference\.current = \{ userId: id, language \}/);
   assert.doesNotMatch(sync, /upsert|insert/);
+});
+
+test('normal Welsh member journeys have translations for shared UI, failures and support copy', () => {
+  const required = [
+    'Home', 'Discover', 'Saved', 'Community', 'You', 'English', 'Cymraeg',
+    'Try again', 'Save', 'Saved', 'Show more', 'No activities found',
+    'We couldn\'t load your saved activities just now. Please try again.',
+    'We couldn\'t load the conversation just now.', 'Replies closed',
+    'Send feedback', 'Suggest an activity', 'Report a problem',
+    'Your password has been changed successfully.', 'Vital membership plans',
+    'Membership plans are temporarily unavailable. Please try again.',
+    'Delete account permanently', 'Vital Community Rules',
+  ];
+  for (const key of required) assert.equal(hasWelshUiTranslation(key), true, key);
+
+  const faq = JSON.parse(readFileSync(new URL('../../../packages/content/legal/faq.json', import.meta.url), 'utf8'));
+  for (const item of faq.questions) {
+    assert.equal(hasWelshUiTranslation(item.question), true, item.question);
+    for (const paragraph of item.answer) assert.equal(hasWelshUiTranslation(paragraph), true, item.id);
+  }
 });
 
 test('Welsh Discover search augments rather than replaces canonical English search', () => {

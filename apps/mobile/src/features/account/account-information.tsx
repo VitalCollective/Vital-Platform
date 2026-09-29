@@ -11,8 +11,9 @@ import { PRIVACY, TERMS, searchFaqs, SUPPORT_EMAIL, SUPPORT_SUBJECTS, type Legal
 import { supportUrl, type AccountPanel } from './account-model';
 
 function LegalText({ document }: { document: LegalDocument }) {
+  const { language, t } = useLanguage();
   return <View style={[a.stack, { maxWidth: layout.readingMaxWidth, width: '100%', alignSelf: 'center' }]}>
-    <Text style={a.meta}>Last updated: {new Date(`${document.lastUpdated}T12:00:00Z`).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })}</Text>
+    <Text style={a.meta}>{t('Last updated: {date}', { date: new Date(`${document.lastUpdated}T12:00:00Z`).toLocaleDateString(language === 'cy' ? 'cy-GB' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) })}</Text>
     {document.sections.map(section => <View key={section.heading} style={a.stack}>
       <Text accessibilityRole="header" style={a.title}>{section.heading}</Text>
       {section.blocks.map((block, index) => block.type === 'definitions' ? <View key={index} style={a.stack}>
@@ -32,7 +33,7 @@ export function SupportContact({ kind }: { kind: keyof typeof SUPPORT_SUBJECTS }
     if (!url) return;
     setError(null);
     try { await Linking.openURL(url); }
-    catch (cause) { setError(customerSafeErrorMessage('Open support email', cause, `We couldn't open your email app. You can email ${SUPPORT_EMAIL} directly.`)); }
+    catch (cause) { setError(customerSafeErrorMessage('Open support email', cause, t("We couldn't open your email app. You can email {email} directly.", { email: SUPPORT_EMAIL }))); }
   }
   return <View style={a.stack}>
     <Text selectable style={a.body}>{SUPPORT_EMAIL}</Text>
@@ -46,7 +47,7 @@ export function AccountHelp({ navigate }: { navigate: (panel: AccountPanel) => v
   const [search, setSearch] = useState('');
   const [expanded, setExpanded] = useState<string | null>(null);
   const [focused, setFocused] = useState<string | null>(null);
-  const questions = searchFaqs(search);
+  const questions = searchFaqs(search, t);
   return <View style={a.stack}>
     <Group title="Talk to Vital"><SupportContact kind="help" />
       <AccountLink label="Suggest an activity" onPress={() => navigate('suggest')} />
@@ -55,12 +56,12 @@ export function AccountHelp({ navigate }: { navigate: (panel: AccountPanel) => v
     <CommunityField label="Search help" placeholder="Try membership, Saved or privacy" value={search} onChangeText={setSearch} autoCapitalize="none" returnKeyType="search" />
     {!questions.length && <Text accessibilityLiveRegion="polite" style={a.body}>{t('No matching questions. Try another word, or contact Vital above.')}</Text>}
     {questions.map(item => <View key={item.id} style={a.rule}>
-      <Pressable accessibilityRole="button" accessibilityLabel={item.question} accessibilityState={{ expanded: expanded === item.id }} aria-expanded={expanded === item.id}
+      <Pressable accessibilityRole="button" accessibilityLabel={t(item.question)} accessibilityState={{ expanded: expanded === item.id }} aria-expanded={expanded === item.id}
         onFocus={() => setFocused(item.id)} onBlur={() => setFocused(null)} onPress={() => setExpanded(current => current === item.id ? null : item.id)}
         style={[a.link, focused === item.id && a.focused]}>
-        <Text style={[a.label, a.grow]}>{item.question}</Text><Ionicons name={expanded === item.id ? 'chevron-up' : 'chevron-down'} size={18} color={colors.plum} />
+        <Text style={[a.label, a.grow]}>{t(item.question)}</Text><Ionicons name={expanded === item.id ? 'chevron-up' : 'chevron-down'} size={18} color={colors.plum} />
       </Pressable>
-      {expanded === item.id && item.answer.map(paragraph => <Text selectable key={paragraph} style={a.body}>{paragraph}</Text>)}
+      {expanded === item.id && item.answer.map(paragraph => <Text selectable key={paragraph} style={a.body}>{t(paragraph)}</Text>)}
     </View>)}
   </View>;
 }

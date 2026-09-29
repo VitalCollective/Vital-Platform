@@ -8,6 +8,7 @@ import { StatePanel } from '@/components/vital/state-panel';
 import { useIdeasForToday } from '@/features/activities/activity-hooks';
 import { useAuth } from '@/features/auth/auth-context';
 import { useLanguage } from '@/features/localization/language-context';
+import { LanguageSelector } from '@/features/localization/language-selector';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
 import {
   colors,
@@ -76,6 +77,10 @@ export default function HomeScreen() {
 
   return (
     <Screen>
+      <View style={styles.languageSwitch}>
+        <LanguageSelector compact />
+      </View>
+
       <View style={[styles.hero, isTablet && styles.heroWide]}>
         <View style={styles.heroCopy}>
           <Text style={styles.eyebrow}>
@@ -92,8 +97,8 @@ export default function HomeScreen() {
         <Image
           accessibilityLabel={
             isDesktop
-              ? 'Vital Collective detailed family logo'
-              : 'Vital Collective simplified family logo'
+              ? t('Vital Collective detailed family logo')
+              : t('Vital Collective simplified family logo')
           }
           resizeMode="contain"
           source={isDesktop ? primaryLogo : secondaryLogo}
@@ -251,6 +256,10 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
+  languageSwitch: {
+    alignItems: 'flex-end',
+    marginBottom: spacing.sm,
+  },
   hero: {
     gap: spacing.lg,
     paddingBottom: spacing.xl,

@@ -248,8 +248,10 @@ export default function DiscoverScreen() {
         <View style={styles.moreFiltersBlock}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel={`More filters${activeMoreFilterCount ? `, ${activeMoreFilterCount} active` : ''}`}
-            accessibilityHint="Choose an age and amount of time"
+            accessibilityLabel={activeMoreFilterCount
+              ? t('More filters, {count} active', { count: activeMoreFilterCount })
+              : t('More filters')}
+            accessibilityHint={t('Choose an age and amount of time')}
             onPress={openMoreFilters}
             style={({ pressed }) => [
               styles.moreFiltersButton,

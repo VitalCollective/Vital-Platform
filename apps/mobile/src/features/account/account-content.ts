@@ -7,9 +7,9 @@ export type LegalDocument = { title: string; lastUpdated: string; sections: { he
 export const PRIVACY = privacyContent as LegalDocument;
 export const TERMS = termsContent as LegalDocument;
 export const FAQS = faqContent.questions;
-export function searchFaqs(query: string) {
+export function searchFaqs(query: string, localize: (value: string) => string = value => value) {
   const words = query.trim().toLocaleLowerCase().split(/\s+/).filter(Boolean);
-  return FAQS.filter(item => words.every(word => `${item.question} ${item.answer.join(' ')}`.toLocaleLowerCase().includes(word)));
+  return FAQS.filter(item => words.every(word => `${localize(item.question)} ${item.answer.map(value => localize(value)).join(' ')}`.toLocaleLowerCase().includes(word)));
 }
 export const SUPPORT_EMAIL = 'info@vitalcollective.co.uk';
 export const SUPPORT_SUBJECTS = {

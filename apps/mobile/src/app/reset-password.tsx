@@ -78,11 +78,11 @@ export default function ResetPasswordScreen() {
       setIsComplete(true);
     } catch (submitError) {
       setError(
-        customerSafeErrorMessage(
+        t(customerSafeErrorMessage(
           'Password update failed',
           submitError,
           "We couldn't update your password just now. Please try again.",
-        ),
+        )),
       );
     } finally {
       setIsSubmitting(false);
@@ -118,8 +118,8 @@ export default function ResetPasswordScreen() {
       ) : recoveryUnavailable ? (
         <>
           <AuthNotice kind="error">
-            {passwordRecoveryError ??
-              'Open the password reset link from your email before choosing a new password.'}
+            {t(passwordRecoveryError ??
+              'Open the password reset link from your email before choosing a new password.')}
           </AuthNotice>
           <Link href="/forgot-password" asChild>
             <Pressable
@@ -136,7 +136,7 @@ export default function ResetPasswordScreen() {
       ) : isComplete ? (
         <>
           <AuthNotice kind="success">
-            Your password has been changed successfully.
+            {t('Your password has been changed successfully.')}
           </AuthNotice>
           <Button label={t('Continue to Vital')} onPress={continueToApp} />
         </>

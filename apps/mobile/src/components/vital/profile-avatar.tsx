@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { StyleSheet, Text, View } from 'react-native';
+import { useLanguage } from '@/features/localization/language-context';
 import { avatarImageVisible, profileInitials } from '@/lib/profile-images';
 import { colors, typography } from '@/theme/tokens';
 
@@ -10,10 +11,11 @@ import { colors, typography } from '@/theme/tokens';
 export function ProfileAvatar({ name, imageUrl, size = 38, decorative = true, deleted = false }: {
   name: string; imageUrl?: string | null; size?: number; decorative?: boolean; deleted?: boolean;
 }) {
+  const { t } = useLanguage();
   const [failedUri, setFailedUri] = useState<string | null>(null);
   const [loadedUri, setLoadedUri] = useState<string | null>(null);
   return <View testID="profile-avatar" accessible={!decorative} accessibilityRole={decorative ? undefined : 'image'} aria-hidden={decorative}
-    accessibilityLabel={decorative ? undefined : `Profile image for ${name.trim() || 'Vital Member'}`}
+    accessibilityLabel={decorative ? undefined : t('Profile image for {name}', { name: name.trim() || t('Vital Member') })}
     accessibilityElementsHidden={decorative} importantForAccessibility={decorative ? 'no-hide-descendants' : 'yes'}
     style={[styles.circle, { width: size, height: size, borderRadius: size / 2 }]}>
     {deleted ? <Ionicons testID="profile-avatar-deleted" name="person-outline" size={size * 0.52} color={colors.inkSubtle} />

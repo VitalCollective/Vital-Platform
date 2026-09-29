@@ -56,13 +56,13 @@ export default function AuthScreen() {
       }
     } catch (submitError) {
       setError(
-        customerSafeErrorMessage(
+        t(customerSafeErrorMessage(
           isSignIn ? 'Sign in failed' : 'Sign up failed',
           submitError,
           isSignIn
             ? "We couldn't sign you in. Check your details and try again."
             : "We couldn't create your account just now. Please try again.",
-        ),
+        )),
       );
     } finally {
       setIsSubmitting(false);

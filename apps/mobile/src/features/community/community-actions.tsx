@@ -24,9 +24,9 @@ export function CommunityAbout({ api, access, onClose, onAccepted }: { api: Comm
     <Text style={s.title}>{t('Made to be useful, not noisy.')}</Text>
     <Text style={s.body}>{t('Share what worked. Ask when you are stuck. Different families find different things useful. There is room here for the big adventures and the evenings when you order takeaway and watch a film.')}</Text>
     <Text accessibilityRole="header" style={s.title}>{t('About starter conversations')}</Text>
-    {STARTER_DISCLOSURE.map(paragraph => <Text key={paragraph} style={s.body}>{paragraph}</Text>)}
-    <Text accessibilityRole="header" style={s.title}>{access?.rules?.title ?? 'Community Rules'}</Text>
-    {access?.rules ? <Text selectable style={s.body}>{access.rules.content_markdown.trim()}</Text> : <Text style={s.meta}>{t("We couldn't load the current rules. Close this page and try refreshing Community.")}</Text>}
+    {STARTER_DISCLOSURE.map(paragraph => <Text key={paragraph} style={s.body}>{t(paragraph)}</Text>)}
+    <Text accessibilityRole="header" style={s.title}>{t(access?.rules?.title ?? 'Community Rules')}</Text>
+    {access?.rules ? <Text selectable style={s.body}>{t(access.rules.content_markdown.trim())}</Text> : <Text style={s.meta}>{t("We couldn't load the current rules. Close this page and try refreshing Community.")}</Text>}
     <CommunityNotice message={error} error />
     {access?.rules && !access.acceptedRules ? <Button label="I agree to the Community Rules" onPress={() => void accept()} loading={busy} /> : access?.acceptedRules ? <CommunityNotice message="You have accepted the current Community Rules." /> : null}
     {access?.restricted ? <CommunityNotice message={participationMessage(access)} /> : null}
@@ -136,6 +136,7 @@ export function BlockedMembers({ api, onClose, onChanged }: { api: CommunityApi;
 }
 
 export function MemberModeration({ api, profileId, onClose }: { api: CommunityApi; profileId: string; onClose: () => void }) {
+  const { language, t } = useLanguage();
   const [restrictions, setRestrictions] = useState<CommunityRestriction[]>([]);
   const [reason, setReason] = useState('');
   const [type, setType] = useState<'posting_restriction' | 'community_suspension' | 'permanent_community_ban'>('posting_restriction');
@@ -160,15 +161,15 @@ export function MemberModeration({ api, profileId, onClose }: { api: CommunityAp
     finally { setBusy(false); }
   }
   return <CommunityModal title="Member restrictions" busy={busy} onClose={onClose}>
-    <Text style={s.meta}>Owner, Admin and Moderator permissions are checked by the server. You cannot restrict yourself or an equal or higher role, or revoke a restriction imposed by a higher role.</Text>
+    <Text style={s.meta}>{t('Owner, Admin and Moderator permissions are checked by the server. You cannot restrict yourself or an equal or higher role, or revoke a restriction imposed by a higher role.')}</Text>
     <View style={s.row}>{([['posting_restriction', 'Pause posting'], ['community_suspension', 'Suspend participation'], ['permanent_community_ban', 'Permanent ban']] as const).map(([value,label]) => <FilterChip key={value} label={label} selected={type === value} onPress={() => { setType(value); setConfirm(false); }} />)}</View>
     {type !== 'permanent_community_ban' && <CommunityField label="Duration in days" keyboardType="number-pad" value={days} onChangeText={(v) => { setDays(v); setConfirm(false); }} />}
     <CommunityField label="Reason for restriction" value={reason} onChangeText={(v) => { setReason(v); setConfirm(false); }} multiline maxLength={2000} />
     <CommunityNotice message={error} error /><CommunityNotice message={notice} />
     {confirm && <CommunityNotice message="Confirm this restriction? It will take effect immediately and be recorded in moderation history." />}
     <Button label={confirm ? 'Confirm restriction' : 'Review restriction'} variant="danger" onPress={() => void act()} loading={busy} />
-    <Text style={s.title}>Existing restrictions</Text>
-    {!restrictions.length && <Text style={s.meta}>No active restrictions recorded.</Text>}
-    {restrictions.map((restriction) => <View key={restriction.id} style={s.card}><Text style={s.body}>{restriction.reason}</Text><Text style={s.meta}>{restriction.ends_at ? `Ends ${new Date(restriction.ends_at).toLocaleDateString()}` : 'Permanent'}</Text><CommunityAction label="Revoke restriction" disabled={busy} onPress={() => void act(restriction.id)} /></View>)}
+    <Text style={s.title}>{t('Existing restrictions')}</Text>
+    {!restrictions.length && <Text style={s.meta}>{t('No active restrictions recorded.')}</Text>}
+    {restrictions.map((restriction) => <View key={restriction.id} style={s.card}><Text style={s.body}>{restriction.reason}</Text><Text style={s.meta}>{restriction.ends_at ? t('Ends {date}', { date: new Date(restriction.ends_at).toLocaleDateString(language === 'cy' ? 'cy-GB' : 'en-GB') }) : t('Permanent')}</Text><CommunityAction label="Revoke restriction" disabled={busy} onPress={() => void act(restriction.id)} /></View>)}
   </CommunityModal>;
 }

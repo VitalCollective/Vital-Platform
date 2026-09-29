@@ -166,8 +166,8 @@ export function membershipHeading(membership: VerifiedMembership): string {
   return 'Join Vital Collective';
 }
 
-export function formatMembershipDate(value: string | null): string | null {
+export function formatMembershipDate(value: string | null, language: 'en' | 'cy' = 'en'): string | null {
   if (!value || !Number.isFinite(Date.parse(value))) return null;
-  return new Intl.DateTimeFormat(undefined, { day: 'numeric', month: 'long', year: 'numeric' })
+  return new Intl.DateTimeFormat(language === 'cy' ? 'cy-GB' : 'en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
     .format(new Date(value));
 }

@@ -55,11 +55,12 @@ function EditProfile({ id, profile, onSaved, onPhotoChanged }: {
 }
 function MembershipPanel() {
   const billing = useBilling();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const endDate = formatMembershipDate(
     billing.membership.state === 'grace_period'
       ? billing.membership.gracePeriodEndsAt ?? billing.membership.periodEndsAt
       : billing.membership.periodEndsAt,
+    language,
   );
   const purchaseReady = billing.providerAvailable && billing.purchasesEnabled;
   const showDevelopmentFallbackPlans = billing.plans.length === 0 && billing.purchasesEnabled;
@@ -194,7 +195,7 @@ export function AccountScreen({ id, email, panel, api, community, navigate, open
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
-  const name = profile.value?.displayName ?? 'Vital Member';
+  const name = profile.value?.displayName ?? t('Vital Member');
   const parentPanel = panel ? accountParentPanel(panel) : null;
   async function leave() {
     if (busy) return;
@@ -206,8 +207,8 @@ export function AccountScreen({ id, email, panel, api, community, navigate, open
   const link = (destination: AccountPanel, label: string = ACCOUNT_PANELS[destination], detail?: string) =>
     <AccountLink label={t(label)} detail={detail ? t(detail) : undefined} onPress={() => { setNotice(null); navigate(destination); }} />;
   const identity = <><View style={a.row}><ProfileAvatar name={name} imageUrl={profile.value?.imageUrl} size={54} /><View style={a.grow}>
-    <Text style={a.title}>{name}</Text>{!panel && <Text style={a.meta}>{email ?? 'Email unavailable'}</Text>}</View></View>
-    {panel === 'identity' && <Text style={a.body}>{profile.value?.bio || 'No introduction added.'}</Text>}</>;
+    <Text style={a.title}>{name}</Text>{!panel && <Text style={a.meta}>{email ?? t('Email unavailable')}</Text>}</View></View>
+    {panel === 'identity' && <Text style={a.body}>{profile.value?.bio || t('No introduction added.')}</Text>}</>;
   return <Screen key={panel ?? 'hub'} keyboardAware={panel === 'profile' || panel === 'family' || panel === 'suggest' || panel === 'feedback' || panel === 'problem' || panel === 'deletion'} scrollProps={{ keyboardDismissMode: 'on-drag' }}>
     {panel && <AccountLink direction="back" label={parentPanel ? t('Back to {section}', { section: t(ACCOUNT_PANELS[parentPanel]) }) : t('Back to You')} onPress={() => navigate(parentPanel)} />}
     <ScreenHeader eyebrow={t('Your Vital')} title={t(panel ? ACCOUNT_PANELS[panel] : 'You')} description={!panel ? t('Your details, your family, your place in Vital.') : undefined} />

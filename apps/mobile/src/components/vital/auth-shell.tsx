@@ -46,10 +46,11 @@ type AuthNoticeProps = {
 };
 
 function BrandMark() {
+  const { t } = useLanguage();
   return (
     <Image
       accessible
-      accessibilityLabel="Vital Collective brand mark"
+      accessibilityLabel={t('Vital Collective brand mark')}
       accessibilityRole="image"
       resizeMode="cover"
       source={require('../../../assets/brand/vital-mark.png')}

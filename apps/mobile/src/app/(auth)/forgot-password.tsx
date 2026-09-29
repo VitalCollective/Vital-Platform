@@ -43,11 +43,11 @@ export default function ForgotPasswordScreen() {
       setIsSent(true);
     } catch (submitError) {
       setError(
-        customerSafeErrorMessage(
+        t(customerSafeErrorMessage(
           'Password reset email request failed',
           submitError,
           "We couldn't send the reset email just now. Please try again.",
-        ),
+        )),
       );
     } finally {
       setIsSubmitting(false);
@@ -62,8 +62,7 @@ export default function ForgotPasswordScreen() {
       {isSent ? (
         <>
           <AuthNotice kind="success">
-            If an account exists for {email.trim()}, a password reset link is on its way.
-            Check your inbox and spam folder.
+            {t('If an account exists for {email}, a password reset link is on its way. Check your inbox and spam folder.', { email: email.trim() })}
           </AuthNotice>
           <Button
             label={t('Send another link')}
