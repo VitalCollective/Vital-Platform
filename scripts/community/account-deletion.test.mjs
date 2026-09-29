@@ -49,7 +49,7 @@ await db.query("insert into public.community_comment_reactions(comment_id,profil
 await db.query('insert into public.community_blocks(blocker_id,blocked_profile_id) values($1,$2),($2,$1)',[member,other]);
 await db.query('insert into public.saved_community_posts(profile_id,post_id) values($1,$2)',[member,otherPost]);
 const report=(await row("insert into public.community_reports(reporter_id,target_type,target_id,reason_category,details) values($1,'post',$2,'other','Safety context') returning id",[member,otherPost])).id;
-await db.query("insert into public.community_user_restrictions(profile_id,restriction_type,ends_at,reason,imposed_by) values($1,'posting_restriction','2026-09-20','test',$2)",[member,moderator]);
+await db.query("insert into public.community_user_restrictions(profile_id,restriction_type,ends_at,reason,imposed_by) values($1,'posting_restriction',current_timestamp + interval '7 days','test',$2)",[member,moderator]);
 
 test('manifest is self-derived, rejects seed identities and protects moderation accounts',async()=>{
   await as(member);const manifest=(await row('select public.account_deletion_manifest() value')).value;
