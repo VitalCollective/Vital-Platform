@@ -1,9 +1,9 @@
 # Vital Collective billing setup
 
 The Supabase subscription foundation and Edge Functions are deployed. RevenueCat
-Test Store is the development purchase provider; Apple and Google remain future
-production integrations. Test purchases are enabled only in a development
-runtime with the explicit public development switch.
+Test Store remains the development purchase provider, while the dedicated iOS
+TestFlight profile uses Apple's sandbox automatically. Purchases require both an
+explicit channel and a separate public enable switch.
 
 ## Fixed catalogue
 
@@ -97,6 +97,7 @@ Create the ignored file `apps/mobile/.env.local` and add:
 
 ```dotenv
 EXPO_PUBLIC_REVENUECAT_TEST_STORE_API_KEY=test_your_actual_test_store_sdk_key
+EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL=test_store
 EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED=true
 ```
 
@@ -106,10 +107,25 @@ never place `REVENUECAT_SECRET_API_KEY`, webhook Authorization, webhook HMAC, a
 Supabase service-role key, or any other server credential in it.
 
 The EAS `development` profile is an internal development client and selects the
-development environment. Its non-secret purchase switch is `true`. The `preview`
-and `production` profiles explicitly set that switch to `false`, and application
-code additionally requires React Native's development runtime flag before any
-purchase can begin. The Test Store key itself is ignored in release runtimes.
+`test_store` channel. Application code accepts that channel only in React Native
+development runtimes with a valid public `test_` key. The iOS-only `testflight`
+profile selects the preview EAS environment, the Apple public SDK key and the
+`app_store_sandbox` channel. TestFlight itself supplies Apple's sandbox runtime.
+The ordinary `preview` and `production` profiles explicitly use the `disabled`
+channel and a false switch. A future live release must deliberately change both
+production values to `app_store_production` and `true`; a non-development build
+alone cannot enable purchasing. Test Store credentials are ignored outside the
+development channel.
+
+Create the TestFlight/App Store candidate from `apps/mobile`:
+
+```bash
+eas build --platform ios --profile testflight
+```
+
+Do not release a `testflight`-profile binary to the public App Store. It exists
+only for TestFlight sandbox acceptance; the final public binary must be produced
+from the separately reviewed `production` profile.
 
 Build and install for a registered physical iPhone from `apps/mobile`:
 

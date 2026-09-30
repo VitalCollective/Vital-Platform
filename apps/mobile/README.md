@@ -13,10 +13,12 @@ EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY=sb_publishable_...
 
 Obtain the project URL and **publishable** key from the Supabase Dashboard project API settings. `EXPO_PUBLIC_` values are compiled into the client bundle, so they must never contain a service-role or secret key. Real `.env` files are ignored by Git; `.env.example` contains placeholders only.
 
-The RevenueCat subscription foundation and SDK 57 development-build profile are
+The RevenueCat subscription foundation and SDK 57 purchase profiles are
 prepared. Test Store purchases use one public `test_...` SDK key on iOS and
-Android and are hard-gated to development runtimes; preview and production
-profiles keep purchases disabled. Put the local key and development switch in
+Android and remain hard-gated to development runtimes. The dedicated iOS
+`testflight` profile uses the Apple public SDK key and an explicit App Store
+sandbox purchase channel; preview and production remain disabled. Put the local
+key, `test_store` channel and development switch in
 the ignored `apps/mobile/.env.local` file as documented in
 [`docs/billing/README.md`](../../docs/billing/README.md). Never put RevenueCat's
 secret REST key or webhook secrets in an `EXPO_PUBLIC_` variable.

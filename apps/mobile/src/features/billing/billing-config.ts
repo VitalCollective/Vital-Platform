@@ -1,4 +1,5 @@
 import { Platform } from 'react-native';
+import { purchaseChannel, purchaseGate } from './billing-gate';
 
 function publicValue(value: string | undefined): string | null {
   const normalized = value?.trim();
@@ -11,15 +12,26 @@ function testStoreValue(value: string | undefined): string | null {
 }
 
 const isDevelopmentBuild = typeof __DEV__ !== 'undefined' && __DEV__;
+const channel = purchaseChannel(process.env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL);
+const testStoreApiKey = channel === 'test_store' && isDevelopmentBuild
+  ? testStoreValue(process.env.EXPO_PUBLIC_REVENUECAT_TEST_STORE_API_KEY)
+  : null;
+const iosApiKey = publicValue(process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY);
+const androidApiKey = publicValue(process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY);
 
 export const billingConfig = {
-  testStoreApiKey: isDevelopmentBuild
-    ? testStoreValue(process.env.EXPO_PUBLIC_REVENUECAT_TEST_STORE_API_KEY)
-    : null,
-  iosApiKey: publicValue(process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY),
-  androidApiKey: publicValue(process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY),
-  purchasesEnabled: isDevelopmentBuild
-    && process.env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED === 'true',
+  purchaseChannel: channel,
+  testStoreApiKey,
+  iosApiKey,
+  androidApiKey,
+  purchasesEnabled: purchaseGate({
+    channel,
+    enabled: process.env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED === 'true',
+    isDevelopmentBuild,
+    platform: Platform.OS,
+    hasTestStoreKey: Boolean(testStoreApiKey),
+    hasIosApiKey: Boolean(iosApiKey),
+  }),
 };
 
 export function revenueCatApiKey(): string | null {

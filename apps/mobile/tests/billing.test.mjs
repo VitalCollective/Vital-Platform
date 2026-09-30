@@ -15,6 +15,7 @@ import {
   verifiedAccessStillCurrent,
   verifiedMembershipBoundary,
 } from '../src/features/billing/billing-model.ts';
+import { purchaseChannel, purchaseGate } from '../src/features/billing/billing-gate.ts';
 
 const future = '2030-01-01T00:00:00.000Z';
 const past = '2020-01-01T00:00:00.000Z';
@@ -183,16 +184,44 @@ test('RevenueCat native client never starts anonymously or logs out into a gener
   assert.match(provider, /observeRevenueCatCustomerInfo[\s\S]*load\(user\.id, \{ refreshProvider: false \}\)/);
 });
 
-test('Test Store purchases are development-only and production profiles stay disabled', () => {
+test('purchase channels require the intended runtime, key and explicit enable flag', () => {
+  const common = {
+    enabled: true,
+    isDevelopmentBuild: true,
+    platform: 'ios',
+    hasTestStoreKey: true,
+    hasIosApiKey: true,
+  };
+  assert.equal(purchaseGate({ ...common, channel: 'test_store' }), true);
+  assert.equal(purchaseGate({ ...common, channel: 'test_store', isDevelopmentBuild: false }), false);
+  assert.equal(purchaseGate({ ...common, channel: 'test_store', hasTestStoreKey: false }), false);
+  assert.equal(purchaseGate({ ...common, channel: 'app_store_sandbox', isDevelopmentBuild: false }), true);
+  assert.equal(purchaseGate({ ...common, channel: 'app_store_sandbox', platform: 'android' }), false);
+  assert.equal(purchaseGate({ ...common, channel: 'app_store_production', isDevelopmentBuild: false }), true);
+  assert.equal(purchaseGate({ ...common, channel: 'app_store_production', enabled: false }), false);
+  assert.equal(purchaseGate({ ...common, channel: 'disabled' }), false);
+  assert.equal(purchaseChannel('unexpected'), 'disabled');
+});
+
+test('EAS profiles isolate Test Store, TestFlight and protected production purchasing', () => {
   const config = readFileSync(new URL('../src/features/billing/billing-config.ts', import.meta.url), 'utf8');
   const eas = JSON.parse(readFileSync(new URL('../eas.json', import.meta.url), 'utf8'));
   assert.match(config, /typeof __DEV__ !== 'undefined' && __DEV__/);
   assert.match(config, /EXPO_PUBLIC_REVENUECAT_TEST_STORE_API_KEY/);
   assert.match(config, /startsWith\('test_'\)/);
-  assert.match(config, /purchasesEnabled: isDevelopmentBuild/);
+  assert.match(config, /channel === 'test_store' && isDevelopmentBuild/);
+  assert.match(config, /purchaseGate\(/);
   assert.equal(eas.build.development.developmentClient, true);
   assert.equal(eas.build.development.environment, 'development');
+  assert.equal(eas.build.development.env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL, 'test_store');
   assert.equal(eas.build.development.env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED, 'true');
+  assert.equal(eas.build['ios-sandbox'].env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL, 'app_store_sandbox');
+  assert.equal(eas.build.testflight.distribution, 'store');
+  assert.equal(eas.build.testflight.environment, 'preview');
+  assert.equal(eas.build.testflight.env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL, 'app_store_sandbox');
+  assert.equal(eas.build.testflight.env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED, 'true');
+  assert.equal(eas.build.preview.env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL, 'disabled');
   assert.equal(eas.build.preview.env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED, 'false');
+  assert.equal(eas.build.production.env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL, 'disabled');
   assert.equal(eas.build.production.env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED, 'false');
 });
