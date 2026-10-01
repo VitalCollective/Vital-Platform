@@ -56,8 +56,8 @@ test('contact actions use approved email subjects and store plans remain display
   for (const value of ['£9.99', '£59.99', '7-day', 'Apple', 'Google']) assert.ok(terms.includes(value));
   const screen = readFileSync(new URL('../src/features/account/account-screen.tsx', import.meta.url), 'utf8');
   assert.match(screen, /const purchaseReady = billing\.providerAvailable && billing\.purchasesEnabled/);
-  assert.match(screen, /showDevelopmentFallbackPlans = billing\.plans\.length === 0 && billing\.purchasesEnabled/);
-  assert.match(screen, /showDevelopmentFallbackPlans \? MEMBERSHIP_PLANS : \[\]/);
+  assert.match(screen, /showDevelopmentFallbackPlans = billing\.plans\.length === 0[\s\S]*billingConfig\.purchaseChannel === 'test_store'/);
+  assert.match(screen, /membershipPlansForDisplay\(billing\.plans, showDevelopmentFallbackPlans\)/);
   assert.match(screen, /Membership plans are temporarily unavailable\. Please try again\./);
   assert.match(screen, /onPress=\{\(\) => void billing\.purchase\(plan\.id\)\}/);
   assert.match(screen, /label=\{t\('Restore purchases'\)\}/);

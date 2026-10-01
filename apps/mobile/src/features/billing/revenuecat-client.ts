@@ -6,7 +6,7 @@ import type {
 } from 'react-native-purchases';
 import { billingConfig, revenueCatApiKey } from './billing-config';
 import type { BillingPlan } from './billing-model';
-import { REVENUECAT_OFFERING_ID } from './billing-model';
+import { REVENUECAT_OFFERING_ID, storeLocalizedPlanPrice } from './billing-model';
 
 export type RevenueCatPresentation = {
   available: boolean;
@@ -35,7 +35,7 @@ function plan(aPackage: PurchasesPackage): BillingPlan | null {
     packageIdentifier: aPackage.identifier as BillingPlan['packageIdentifier'],
     productId: aPackage.product.identifier,
     title: id === 'monthly' ? 'Monthly' : 'Annual',
-    price: aPackage.product.priceString,
+    price: storeLocalizedPlanPrice(aPackage.product, id),
     interval: id === 'monthly' ? 'per month' : 'per year',
     trialDescription: trialDescription(aPackage),
   };

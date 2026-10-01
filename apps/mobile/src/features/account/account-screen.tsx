@@ -13,8 +13,9 @@ import { customerSafeErrorMessage, reportTechnicalError } from '@/lib/errors';
 import { getOwnCommunityProfile, updateOwnCommunityProfile } from '@/services/profiles';
 import { AccountDeletionError, type AccountApi } from './account-api';
 import { ACCOUNT_PANELS, accountParentPanel, profileValidation, type AccountPanel } from './account-model';
-import { MEMBERSHIP_PLANS } from './account-content';
+import { membershipPlansForDisplay } from './account-content';
 import { useBilling } from '@/features/billing/billing-context';
+import { billingConfig } from '@/features/billing/billing-config';
 import { useLanguage } from '@/features/localization/language-context';
 import { formatMembershipDate, membershipHeading } from '@/features/billing/billing-model';
 import { AccountFamily } from './account-family';
@@ -63,10 +64,10 @@ function MembershipPanel() {
     language,
   );
   const purchaseReady = billing.providerAvailable && billing.purchasesEnabled;
-  const showDevelopmentFallbackPlans = billing.plans.length === 0 && billing.purchasesEnabled;
-  const displayedPlans = billing.plans.length
-    ? billing.plans
-    : showDevelopmentFallbackPlans ? MEMBERSHIP_PLANS : [];
+  const showDevelopmentFallbackPlans = billing.plans.length === 0
+    && billing.purchasesEnabled
+    && billingConfig.purchaseChannel === 'test_store';
+  const displayedPlans = membershipPlansForDisplay(billing.plans, showDevelopmentFallbackPlans);
   return <View style={a.stack}><Group title={t(membershipHeading(billing.membership))}>
     {billing.isResolving ? <Text style={a.body}>{t('Checking your membership…')}</Text> : <>
       {billing.state === 'trial_active' && endDate && <Text style={a.body}>{t('Your trial ends on {date}. It will renew at the store price unless you cancel beforehand.', { date: endDate })}</Text>}

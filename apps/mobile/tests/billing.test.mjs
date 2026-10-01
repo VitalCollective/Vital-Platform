@@ -12,10 +12,12 @@ import {
   currentVerifiedMembership,
   returnedToForeground,
   scheduleVerifiedMembershipBoundaryRefresh,
+  storeLocalizedPlanPrice,
   verifiedAccessStillCurrent,
   verifiedMembershipBoundary,
 } from '../src/features/billing/billing-model.ts';
 import { purchaseChannel, purchaseGate } from '../src/features/billing/billing-gate.ts';
+import { membershipPlansForDisplay, MEMBERSHIP_PLANS } from '../src/features/account/account-content.ts';
 
 const future = '2030-01-01T00:00:00.000Z';
 const past = '2020-01-01T00:00:00.000Z';
@@ -29,6 +31,33 @@ test('fixed catalogue has one entitlement, default offering and reserved standar
     partnerMonthly: 'uk.co.vitalcollective.partner.monthly',
     partnerAnnual: 'uk.co.vitalcollective.partner.annual',
   });
+});
+
+test('resolved RevenueCat store-localised prices take precedence over generic and fallback prices', () => {
+  assert.equal(storeLocalizedPlanPrice({
+    priceString: '$9.99', pricePerMonthString: '£9.99', pricePerYearString: null,
+  }, 'monthly'), '£9.99');
+  assert.equal(storeLocalizedPlanPrice({
+    priceString: '$59.99', pricePerMonthString: null, pricePerYearString: '£59.99',
+  }, 'annual'), '£59.99');
+
+  const resolved = [{
+    id: 'monthly', packageIdentifier: '$rc_monthly',
+    productId: BILLING_PRODUCTS.standardMonthly, title: 'Monthly',
+    price: '£9.99', interval: 'per month', trialDescription: '1-week free trial',
+  }];
+  assert.equal(membershipPlansForDisplay(resolved, true), resolved);
+});
+
+test('fallback prices are development-only and never replace resolved store plans', () => {
+  assert.deepEqual(membershipPlansForDisplay([], false), []);
+  assert.equal(membershipPlansForDisplay([], true), MEMBERSHIP_PLANS);
+  const resolved = [{
+    id: 'annual', packageIdentifier: '$rc_annual',
+    productId: BILLING_PRODUCTS.standardAnnual, title: 'Annual',
+    price: '£59.99', interval: 'per year', trialDescription: '1-week free trial',
+  }];
+  assert.equal(membershipPlansForDisplay(resolved, false), resolved);
 });
 
 test('verified states grant access only while a server-confirmed period is current', () => {

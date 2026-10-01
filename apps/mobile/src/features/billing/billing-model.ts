@@ -48,6 +48,22 @@ export type BillingPlan = {
   trialDescription: string | null;
 };
 
+type StoreLocalizedPrice = {
+  priceString: string;
+  pricePerMonthString: string | null;
+  pricePerYearString: string | null;
+};
+
+export function storeLocalizedPlanPrice(
+  product: StoreLocalizedPrice,
+  planId: BillingPlan['id'],
+): string {
+  const recurringPrice = planId === 'monthly'
+    ? product.pricePerMonthString
+    : product.pricePerYearString;
+  return recurringPrice?.trim() || product.priceString;
+}
+
 export const EMPTY_MEMBERSHIP: VerifiedMembership = {
   state: 'no_entitlement', hasAccess: false, planKind: null, productId: null,
   store: null, platform: null, environment: null, startedAt: null,

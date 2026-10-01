@@ -1,6 +1,7 @@
 import privacyContent from '../../../../../packages/content/legal/privacy.json' with { type: 'json' };
 import termsContent from '../../../../../packages/content/legal/terms.json' with { type: 'json' };
 import faqContent from '../../../../../packages/content/legal/faq.json' with { type: 'json' };
+import type { BillingPlan } from '@/features/billing/billing-model';
 
 export type LegalBlock = { type: 'paragraph' | 'bullet'; text: string } | { type: 'definitions'; entries: { label: string; text: string }[] };
 export type LegalDocument = { title: string; lastUpdated: string; sections: { heading: string; blocks: LegalBlock[] }[] };
@@ -21,3 +22,11 @@ export const MEMBERSHIP_PLANS = [
   { id: 'monthly', title: 'Monthly', price: '£9.99', interval: 'per month' },
   { id: 'annual', title: 'Annual', price: '£59.99', interval: 'per year' },
 ] as const;
+
+export function membershipPlansForDisplay(
+  resolvedPlans: readonly BillingPlan[],
+  allowDevelopmentFallback: boolean,
+): readonly (BillingPlan | typeof MEMBERSHIP_PLANS[number])[] {
+  if (resolvedPlans.length > 0) return resolvedPlans;
+  return allowDevelopmentFallback ? MEMBERSHIP_PLANS : [];
+}
