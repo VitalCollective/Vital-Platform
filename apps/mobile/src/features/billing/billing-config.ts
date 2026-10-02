@@ -11,13 +11,18 @@ function testStoreValue(value: string | undefined): string | null {
   return normalized?.startsWith('test_') ? normalized : null;
 }
 
+function googlePlayValue(value: string | undefined): string | null {
+  const normalized = publicValue(value);
+  return normalized?.startsWith('goog_') ? normalized : null;
+}
+
 const isDevelopmentBuild = typeof __DEV__ !== 'undefined' && __DEV__;
 const channel = purchaseChannel(process.env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL);
 const testStoreApiKey = channel === 'test_store' && isDevelopmentBuild
   ? testStoreValue(process.env.EXPO_PUBLIC_REVENUECAT_TEST_STORE_API_KEY)
   : null;
 const iosApiKey = publicValue(process.env.EXPO_PUBLIC_REVENUECAT_IOS_API_KEY);
-const androidApiKey = publicValue(process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY);
+const androidApiKey = googlePlayValue(process.env.EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY);
 
 export const billingConfig = {
   purchaseChannel: channel,
@@ -31,6 +36,7 @@ export const billingConfig = {
     platform: Platform.OS,
     hasTestStoreKey: Boolean(testStoreApiKey),
     hasIosApiKey: Boolean(iosApiKey),
+    hasAndroidApiKey: Boolean(androidApiKey),
   }),
 };
 

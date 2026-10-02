@@ -31,6 +31,18 @@
         "EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED": "true"
       }
     },
+    "android-play-testing": {
+      "distribution": "store",
+      "autoIncrement": true,
+      "environment": "production",
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL": "play_store_testing",
+        "EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED": "true"
+      }
+    },
     "preview": {
       "distribution": "internal",
       "environment": "preview",

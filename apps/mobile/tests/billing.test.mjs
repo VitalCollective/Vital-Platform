@@ -220,6 +220,7 @@ test('purchase channels require the intended runtime, key and explicit enable fl
     platform: 'ios',
     hasTestStoreKey: true,
     hasIosApiKey: true,
+    hasAndroidApiKey: true,
   };
   assert.equal(purchaseGate({ ...common, channel: 'test_store' }), true);
   assert.equal(purchaseGate({ ...common, channel: 'test_store', isDevelopmentBuild: false }), false);
@@ -228,7 +229,15 @@ test('purchase channels require the intended runtime, key and explicit enable fl
   assert.equal(purchaseGate({ ...common, channel: 'app_store_sandbox', platform: 'android' }), false);
   assert.equal(purchaseGate({ ...common, channel: 'app_store_production', isDevelopmentBuild: false }), true);
   assert.equal(purchaseGate({ ...common, channel: 'app_store_production', enabled: false }), false);
+  assert.equal(purchaseGate({ ...common, channel: 'play_store_testing', platform: 'android', isDevelopmentBuild: false }), true);
+  assert.equal(purchaseGate({ ...common, channel: 'play_store_testing', platform: 'ios' }), false);
+  assert.equal(purchaseGate({ ...common, channel: 'play_store_testing', platform: 'android', enabled: false }), false);
+  assert.equal(purchaseGate({ ...common, channel: 'play_store_testing', platform: 'android', hasAndroidApiKey: false }), false);
+  assert.equal(purchaseGate({ ...common, channel: 'play_store_production', platform: 'android', isDevelopmentBuild: false }), true);
+  assert.equal(purchaseGate({ ...common, channel: 'play_store_production', platform: 'ios' }), false);
   assert.equal(purchaseGate({ ...common, channel: 'disabled' }), false);
+  assert.equal(purchaseChannel('play_store_testing'), 'play_store_testing');
+  assert.equal(purchaseChannel('play_store_production'), 'play_store_production');
   assert.equal(purchaseChannel('unexpected'), 'disabled');
 });
 
@@ -238,6 +247,8 @@ test('EAS profiles isolate Test Store, TestFlight and protected production purch
   assert.match(config, /typeof __DEV__ !== 'undefined' && __DEV__/);
   assert.match(config, /EXPO_PUBLIC_REVENUECAT_TEST_STORE_API_KEY/);
   assert.match(config, /startsWith\('test_'\)/);
+  assert.match(config, /EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY/);
+  assert.match(config, /startsWith\('goog_'\)/);
   assert.match(config, /channel === 'test_store' && isDevelopmentBuild/);
   assert.match(config, /purchaseGate\(/);
   assert.equal(eas.build.development.developmentClient, true);
@@ -249,8 +260,16 @@ test('EAS profiles isolate Test Store, TestFlight and protected production purch
   assert.equal(eas.build.testflight.environment, 'preview');
   assert.equal(eas.build.testflight.env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL, 'app_store_sandbox');
   assert.equal(eas.build.testflight.env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED, 'true');
+  assert.equal(eas.build['android-play-testing'].distribution, 'store');
+  assert.equal(eas.build['android-play-testing'].environment, 'production');
+  assert.equal(eas.build['android-play-testing'].autoIncrement, true);
+  assert.equal(eas.build['android-play-testing'].android.buildType, 'app-bundle');
+  assert.equal(eas.build['android-play-testing'].env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL, 'play_store_testing');
+  assert.equal(eas.build['android-play-testing'].env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED, 'true');
+  assert.equal(eas.build['android-play-testing'].env.EXPO_PUBLIC_REVENUECAT_TEST_STORE_API_KEY, undefined);
   assert.equal(eas.build.preview.env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL, 'disabled');
   assert.equal(eas.build.preview.env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED, 'false');
   assert.equal(eas.build.production.env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL, 'disabled');
   assert.equal(eas.build.production.env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED, 'false');
+  assert.equal(eas.build.production.env.EXPO_PUBLIC_REVENUECAT_TEST_STORE_API_KEY, undefined);
 });

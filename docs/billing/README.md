@@ -111,11 +111,13 @@ The EAS `development` profile is an internal development client and selects the
 development runtimes with a valid public `test_` key. The iOS-only `testflight`
 profile selects the preview EAS environment, the Apple public SDK key and the
 `app_store_sandbox` channel. TestFlight itself supplies Apple's sandbox runtime.
+The Android-only `android-play-testing` profile selects the production EAS
+environment, the Google Play public SDK key and the `play_store_testing` channel.
 The ordinary `preview` and `production` profiles explicitly use the `disabled`
 channel and a false switch. A future live release must deliberately change both
-production values to `app_store_production` and `true`; a non-development build
-alone cannot enable purchasing. Test Store credentials are ignored outside the
-development channel.
+production values to the platform-appropriate production channel and `true`; a
+non-development build alone cannot enable purchasing. Test Store credentials are
+ignored outside the development channel.
 
 Create the TestFlight/App Store candidate from `apps/mobile`:
 
@@ -144,6 +146,16 @@ npx expo start --dev-client
 For Android later, use `eas build --platform android --profile development` and
 install the generated APK. Test Store does not require Apple App Store Connect or
 Google Play product configuration.
+
+Create the first Google Play testing bundle from `apps/mobile` only after the
+production EAS environment contains `EXPO_PUBLIC_REVENUECAT_ANDROID_API_KEY`:
+
+```bash
+eas build --platform android --profile android-play-testing
+```
+
+This profile produces an AAB for Play testing and deliberately does not enable
+the ordinary public `production` profile.
 
 ## 6. Required sandbox acceptance
 
