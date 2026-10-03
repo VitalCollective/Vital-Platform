@@ -67,7 +67,7 @@ export function AuthShell({ title, intro, children, footer }: AuthShellProps) {
     <SafeAreaView style={styles.safeArea}>
       <KeyboardAvoidingView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView
           contentContainerStyle={[
             styles.scrollContent,
@@ -76,6 +76,7 @@ export function AuthShell({ title, intro, children, footer }: AuthShellProps) {
               paddingVertical: isTablet ? spacing.xxxl : spacing.xl,
             },
           ]}
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           keyboardShouldPersistTaps="handled">
           <View style={styles.content}>
             <View style={styles.identity}>

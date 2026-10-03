@@ -90,3 +90,19 @@ test('core read surfaces have bounded failure paths instead of permanent spinner
     );
   }
 });
+
+test('Android auth forms resize and remain scrollable when the software keyboard opens', () => {
+  const shell = readFileSync(new URL('../src/components/vital/auth-shell.tsx', import.meta.url), 'utf8');
+  assert.match(shell, /behavior=\{Platform\.OS === 'ios' \? 'padding' : 'height'\}/);
+  assert.match(shell, /keyboardDismissMode=\{Platform\.OS === 'ios' \? 'interactive' : 'on-drag'\}/);
+  assert.match(shell, /keyboardShouldPersistTaps="handled"/);
+  assert.match(shell, /contentContainerStyle=\{\[[\s\S]*styles\.scrollContent/);
+});
+
+test('bottom navigation adds the Android system inset without changing iOS spacing', () => {
+  const tabs = readFileSync(new URL('../src/app/(tabs)/_layout.tsx', import.meta.url), 'utf8');
+  assert.match(tabs, /useSafeAreaInsets\(\)/);
+  assert.match(tabs, /Platform\.OS === 'android' \? insets\.bottom : 0/);
+  assert.match(tabs, /height: 68 \+ androidBottomInset/);
+  assert.match(tabs, /paddingBottom: 8 \+ androidBottomInset/);
+});

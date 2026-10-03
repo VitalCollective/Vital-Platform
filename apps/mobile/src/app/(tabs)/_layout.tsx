@@ -1,5 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppShell } from '@/components/vital/app-shell';
 import { useResponsiveLayout } from '@/hooks/use-responsive-layout';
@@ -9,6 +11,8 @@ import { useLanguage } from '@/features/localization/language-context';
 export default function TabLayout() {
   const { isDesktop } = useResponsiveLayout();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
+  const androidBottomInset = Platform.OS === 'android' ? insets.bottom : 0;
 
   return (
     <AppShell>
@@ -21,9 +25,9 @@ export default function TabLayout() {
           tabBarStyle: isDesktop
             ? { display: 'none' }
             : {
-                height: 68,
+                height: 68 + androidBottomInset,
                 paddingTop: 7,
-                paddingBottom: 8,
+                paddingBottom: 8 + androidBottomInset,
                 borderTopColor: colors.border,
                 backgroundColor: colors.surface,
               },
