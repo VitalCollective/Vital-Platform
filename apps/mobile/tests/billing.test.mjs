@@ -33,13 +33,15 @@ test('fixed catalogue has one entitlement, default offering and reserved standar
   });
 });
 
-test('resolved RevenueCat store-localised prices take precedence over generic and fallback prices', () => {
+test('resolved RevenueCat product priceString is the normal store-localised display source', () => {
   assert.equal(storeLocalizedPlanPrice({
-    priceString: '$9.99', pricePerMonthString: '£9.99', pricePerYearString: null,
-  }, 'monthly'), '£9.99');
+    identifier: BILLING_PRODUCTS.standardMonthly, currencyCode: 'GBP',
+    priceString: '£9.99', pricePerMonthString: '$9.99', pricePerYearString: null,
+  }, 'monthly', 'app_store_production'), '£9.99');
   assert.equal(storeLocalizedPlanPrice({
-    priceString: '$59.99', pricePerMonthString: null, pricePerYearString: '£59.99',
-  }, 'annual'), '£59.99');
+    identifier: BILLING_PRODUCTS.standardAnnual, currencyCode: 'EUR',
+    priceString: '69,99 €', pricePerMonthString: null, pricePerYearString: '$59.99',
+  }, 'annual', 'app_store_production'), '69,99 €');
 
   const resolved = [{
     id: 'monthly', packageIdentifier: '$rc_monthly',
@@ -47,6 +49,29 @@ test('resolved RevenueCat store-localised prices take precedence over generic an
     price: '£9.99', interval: 'per month', trialDescription: '1-week free trial',
   }];
   assert.equal(membershipPlansForDisplay(resolved, true), resolved);
+});
+
+test('the UK TestFlight channel contains Apple sandbox USD metadata without leaking it to the paywall', () => {
+  assert.equal(storeLocalizedPlanPrice({
+    identifier: BILLING_PRODUCTS.standardMonthly, currencyCode: 'USD',
+    priceString: '$9.99', pricePerMonthString: '$9.99', pricePerYearString: '$119.88',
+  }, 'monthly', 'app_store_sandbox'), '£9.99');
+  assert.equal(storeLocalizedPlanPrice({
+    identifier: BILLING_PRODUCTS.standardAnnual, currencyCode: 'USD',
+    priceString: '$59.99', pricePerMonthString: '$5.00', pricePerYearString: '$59.99',
+  }, 'annual', 'app_store_sandbox'), '£59.99');
+
+  // The exception is not used for production, Android, Test Store, unknown
+  // products, or already-correct GBP metadata.
+  const product = {
+    identifier: BILLING_PRODUCTS.standardMonthly, currencyCode: 'USD',
+    priceString: '$9.99', pricePerMonthString: '$9.99', pricePerYearString: '$119.88',
+  };
+  assert.equal(storeLocalizedPlanPrice(product, 'monthly', 'app_store_production'), '$9.99');
+  assert.equal(storeLocalizedPlanPrice(product, 'monthly', 'play_store_testing'), '$9.99');
+  assert.equal(storeLocalizedPlanPrice(product, 'monthly', 'test_store'), '$9.99');
+  assert.equal(storeLocalizedPlanPrice({ ...product, identifier: 'another.product' }, 'monthly', 'app_store_sandbox'), '$9.99');
+  assert.equal(storeLocalizedPlanPrice({ ...product, currencyCode: 'GBP', priceString: '£9.99' }, 'monthly', 'app_store_sandbox'), '£9.99');
 });
 
 test('fallback prices are development-only and never replace resolved store plans', () => {

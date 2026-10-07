@@ -1,3 +1,5 @@
+import type { PurchaseChannel } from './billing-gate';
+
 export const VITAL_ENTITLEMENT_ID = 'vital_membership';
 export const REVENUECAT_OFFERING_ID = 'default';
 export const BILLING_PRODUCTS = {
@@ -49,19 +51,43 @@ export type BillingPlan = {
 };
 
 type StoreLocalizedPrice = {
+  identifier: string;
+  currencyCode: string;
   priceString: string;
   pricePerMonthString: string | null;
   pricePerYearString: string | null;
 };
 
+const APP_STORE_SANDBOX_UK_PRICES: Record<BillingPlan['id'], string> = {
+  monthly: '£9.99',
+  annual: '£59.99',
+};
+
 export function storeLocalizedPlanPrice(
   product: StoreLocalizedPrice,
   planId: BillingPlan['id'],
+  purchaseChannel: PurchaseChannel,
 ): string {
+  // TestFlight can return USD product metadata even when Apple's confirmation
+  // sheet resolves the UK storefront correctly. Keep this exception isolated
+  // to the sandbox channel and the two verified UK App Store products.
+  const expectedProductId = planId === 'monthly'
+    ? BILLING_PRODUCTS.standardMonthly
+    : BILLING_PRODUCTS.standardAnnual;
+  if (
+    purchaseChannel === 'app_store_sandbox'
+    && product.identifier === expectedProductId
+    && product.currencyCode !== 'GBP'
+  ) {
+    return APP_STORE_SANDBOX_UK_PRICES[planId];
+  }
+
+  const storePrice = product.priceString.trim();
+  if (storePrice) return storePrice;
   const recurringPrice = planId === 'monthly'
     ? product.pricePerMonthString
     : product.pricePerYearString;
-  return recurringPrice?.trim() || product.priceString;
+  return recurringPrice?.trim() ?? '';
 }
 
 export const EMPTY_MEMBERSHIP: VerifiedMembership = {

@@ -35,7 +35,7 @@ function plan(aPackage: PurchasesPackage): BillingPlan | null {
     packageIdentifier: aPackage.identifier as BillingPlan['packageIdentifier'],
     productId: aPackage.product.identifier,
     title: id === 'monthly' ? 'Monthly' : 'Annual',
-    price: storeLocalizedPlanPrice(aPackage.product, id),
+    price: storeLocalizedPlanPrice(aPackage.product, id, billingConfig.purchaseChannel),
     interval: id === 'monthly' ? 'per month' : 'per year',
     trialDescription: trialDescription(aPackage),
   };
