@@ -85,17 +85,16 @@ function MembershipPanel() {
   </Group>
     <Group title={t('Vital membership plans')}>
       {displayedPlans.map(plan => <View key={plan.id} style={a.rule}>
-        <Text style={a.label}>{t(plan.title)}</Text><Text style={a.title}>{plan.price} <Text style={a.meta}>{t(plan.interval)}</Text></Text>
-        {'trialDescription' in plan && plan.trialDescription && <Text style={a.meta}>{t(plan.trialDescription)}</Text>}
+        <Text style={a.label}>{t(plan.title)}</Text>
+        {'trialDescription' in plan && plan.trialDescription && <Text style={a.trialOffer}>{t('7 days free')}</Text>}
+        <Text style={a.planPrice}>{t('Then {price} {interval}', { price: plan.price, interval: t(plan.interval) })}</Text>
         {'packageIdentifier' in plan && !billing.hasAccess && <Button
-          label={plan.trialDescription
-            ? t('Start {trial} · {price}', { trial: plan.trialDescription, price: plan.price })
-            : t('Choose {plan} · {price}', { plan: t(plan.title).toLocaleLowerCase(), price: plan.price })}
+          label={t('Choose {plan}', { plan: t(plan.title).toLocaleLowerCase() })}
           disabled={!purchaseReady || Boolean(billing.busyAction)} loading={billing.busyAction === 'purchase'}
           accessibilityHint="Opens the Apple or Google purchase confirmation"
           onPress={() => void billing.purchase(plan.id)} />}
       </View>)}
-      {displayedPlans.length > 0 && <Text style={a.body}>{t('The standard introductory trial is 7 days and converts to paid membership unless cancelled through Apple or Google before it ends.')}</Text>}
+      {displayedPlans.some(plan => 'trialDescription' in plan && Boolean(plan.trialDescription)) && <Text style={a.body}>{t('Your 7-day free trial converts to a paid membership unless cancelled before it ends.')}</Text>}
       {showDevelopmentFallbackPlans && <Text style={a.meta}>{t('Development-only fallback prices are shown for testing. No payment or trial can start until store products load.')}</Text>}
       {billing.plans.length === 0 && !showDevelopmentFallbackPlans && <Text style={a.meta}>{t('Membership plans are temporarily unavailable. Please try again.')}</Text>}
       {billing.plans.length === 0 && !billing.error && <Button label={t('Try again')} variant="secondary" onPress={() => void billing.refresh()} />}

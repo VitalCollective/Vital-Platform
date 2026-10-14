@@ -61,6 +61,8 @@ export const a = StyleSheet.create({
   body: { fontFamily: typography.bodyFamily, color: colors.ink, fontSize: 16, lineHeight: 25 },
   meta: { fontFamily: typography.bodyFamily, color: colors.inkMuted, fontSize: 14, lineHeight: 22, flexShrink: 1 },
   label: { fontFamily: typography.bodySemiboldFamily, color: colors.ink, fontSize: 15, lineHeight: 23 },
+  trialOffer: { fontFamily: typography.bodyBoldFamily, color: colors.plum, fontSize: 20, lineHeight: 27 },
+  planPrice: { fontFamily: typography.bodyMediumFamily, color: colors.ink, fontSize: 16, lineHeight: 24 },
   link: { minHeight: 48, paddingVertical: 10, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: radii.sm, borderWidth: 2, borderColor: 'transparent' },
   focused: { borderColor: colors.focus },
   grow: { flex: 1, minWidth: 0, gap: 2 },

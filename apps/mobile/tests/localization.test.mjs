@@ -121,6 +121,8 @@ test('normal Welsh member journeys have translations for shared UI, failures and
     'Send feedback', 'Suggest an activity', 'Report a problem',
     'Your password has been changed successfully.', 'Vital membership plans',
     'Membership plans are temporarily unavailable. Please try again.',
+    '7 days free', 'Then {price} {interval}', 'Choose {plan}',
+    'Your 7-day free trial converts to a paid membership unless cancelled before it ends.',
     'Delete account permanently', 'Vital Community Rules',
   ];
   for (const key of required) assert.equal(hasWelshUiTranslation(key), true, key);
