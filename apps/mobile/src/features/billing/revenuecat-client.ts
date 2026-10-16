@@ -5,8 +5,13 @@ import type {
   PurchasesPackage,
 } from 'react-native-purchases';
 import { billingConfig, revenueCatApiKey } from './billing-config';
-import type { BillingPlan } from './billing-model';
-import { REVENUECAT_OFFERING_ID, storeLocalizedPlanPrice } from './billing-model';
+import type { BillingPlan, IntroEligibilityStatus } from './billing-model';
+import {
+  REVENUECAT_OFFERING_ID,
+  shouldPresentFreeTrial,
+  storeLocalizedPlanPrice,
+} from './billing-model';
+import { reportTechnicalError } from '@/lib/errors';
 
 export type RevenueCatPresentation = {
   available: boolean;
@@ -18,18 +23,26 @@ let purchasesModule: typeof import('react-native-purchases').default | null = nu
 let configuredUserId: string | null = null;
 let presentedPackages = new Map<BillingPlan['id'], PurchasesPackage>();
 
-function trialDescription(aPackage: PurchasesPackage): string | null {
-  const intro = aPackage.product.introPrice;
-  if (intro?.price === 0) return `${intro.periodNumberOfUnits}-${intro.periodUnit.toLocaleLowerCase()} free trial`;
+function hasSevenDayAndroidFreePhase(aPackage: PurchasesPackage): boolean {
   const free = aPackage.product.defaultOption?.freePhase;
-  if (free) return `${free.billingPeriod?.value ?? 7}-${free.billingPeriod?.unit?.toLocaleLowerCase() ?? 'day'} free trial`;
-  return null;
+  if (!free) return false;
+  const period = free.billingPeriod;
+  return (period.unit === 'WEEK' && period.value === 1)
+    || (period.unit === 'DAY' && period.value === 7);
 }
 
-function plan(aPackage: PurchasesPackage): BillingPlan | null {
+function plan(
+  aPackage: PurchasesPackage,
+  iosEligibility: IntroEligibilityStatus = 'unknown',
+): BillingPlan | null {
   const id = aPackage.identifier === '$rc_monthly' ? 'monthly'
     : aPackage.identifier === '$rc_annual' ? 'annual' : null;
   if (!id) return null;
+  const trialEligible = shouldPresentFreeTrial(
+    Platform.OS,
+    iosEligibility,
+    hasSevenDayAndroidFreePhase(aPackage),
+  );
   return {
     id,
     packageIdentifier: aPackage.identifier as BillingPlan['packageIdentifier'],
@@ -37,8 +50,38 @@ function plan(aPackage: PurchasesPackage): BillingPlan | null {
     title: id === 'monthly' ? 'Monthly' : 'Annual',
     price: storeLocalizedPlanPrice(aPackage.product, id, billingConfig.purchaseChannel),
     interval: id === 'monthly' ? 'per month' : 'per year',
-    trialDescription: trialDescription(aPackage),
+    trialEligible,
+    trialDescription: trialEligible ? '7 days free' : null,
   };
+}
+
+async function iosIntroEligibility(
+  Purchases: typeof import('react-native-purchases').default,
+  packages: PurchasesPackage[],
+): Promise<Map<string, IntroEligibilityStatus>> {
+  const statuses = new Map<string, IntroEligibilityStatus>();
+  if (Platform.OS !== 'ios' || packages.length === 0) return statuses;
+  try {
+    const result = await Purchases.checkTrialOrIntroductoryPriceEligibility(
+      packages.map((item) => item.product.identifier),
+    );
+    for (const item of packages) {
+      const status = result[item.product.identifier]?.status;
+      const value: IntroEligibilityStatus = status === Purchases.INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_ELIGIBLE
+        ? 'eligible'
+        : status === Purchases.INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_INELIGIBLE
+          ? 'ineligible'
+          : status === Purchases.INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_NO_INTRO_OFFER_EXISTS
+            ? 'no_offer'
+            : 'unknown';
+      statuses.set(item.product.identifier, value);
+    }
+  } catch (cause) {
+    // Eligibility is promotional copy, not access state. Fail closed to the
+    // paid presentation while keeping otherwise valid store plans available.
+    reportTechnicalError('Check introductory offer eligibility', cause);
+  }
+  return statuses;
 }
 
 async function module() {
@@ -72,9 +115,13 @@ export async function prepareRevenueCat(userId: string): Promise<RevenueCatPrese
   ]);
   const offering = offerings.current?.identifier === REVENUECAT_OFFERING_ID
     ? offerings.current : null;
-  const plans = (offering?.availablePackages ?? []).map(plan).filter((value): value is BillingPlan => Boolean(value));
-  for (const aPackage of offering?.availablePackages ?? []) {
-    const mapped = plan(aPackage);
+  const packages = offering?.availablePackages ?? [];
+  const eligibility = await iosIntroEligibility(Purchases, packages);
+  const plans = packages
+    .map((aPackage) => plan(aPackage, eligibility.get(aPackage.product.identifier)))
+    .filter((value): value is BillingPlan => Boolean(value));
+  for (const aPackage of packages) {
+    const mapped = plan(aPackage, eligibility.get(aPackage.product.identifier));
     if (mapped) presentedPackages.set(mapped.id, aPackage);
   }
   return { available: true, plans, managementUrl: customerInfo.managementURL };

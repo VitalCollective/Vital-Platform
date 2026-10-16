@@ -183,7 +183,7 @@ export function BillingProvider({ children }: PropsWithChildren) {
   const displayedState = busyAction === 'restore' ? 'restoring'
     : serverUnavailable || (providerUnavailable && !verifiedAccessStillCurrent(membership))
     ? 'provider_unavailable' : membership.state === 'no_entitlement'
-    && presentation.plans.some((plan) => Boolean(plan.trialDescription))
+    && presentation.plans.some((plan) => plan.trialEligible)
     ? 'trial_available' : membership.state;
   const value = useMemo<BillingContextValue>(() => ({
     userId: user?.id ?? null,

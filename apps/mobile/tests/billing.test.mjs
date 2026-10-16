@@ -12,6 +12,7 @@ import {
   currentVerifiedMembership,
   returnedToForeground,
   scheduleVerifiedMembershipBoundaryRefresh,
+  shouldPresentFreeTrial,
   storeLocalizedPlanPrice,
   verifiedAccessStillCurrent,
   verifiedMembershipBoundary,
@@ -46,7 +47,7 @@ test('resolved RevenueCat product priceString is the normal store-localised disp
   const resolved = [{
     id: 'monthly', packageIdentifier: '$rc_monthly',
     productId: BILLING_PRODUCTS.standardMonthly, title: 'Monthly',
-    price: '£9.99', interval: 'per month', trialDescription: '1-week free trial',
+    price: '£9.99', interval: 'per month', trialEligible: true, trialDescription: '7 days free',
   }];
   assert.equal(membershipPlansForDisplay(resolved, true), resolved);
 });
@@ -80,9 +81,24 @@ test('fallback prices are development-only and never replace resolved store plan
   const resolved = [{
     id: 'annual', packageIdentifier: '$rc_annual',
     productId: BILLING_PRODUCTS.standardAnnual, title: 'Annual',
-    price: '£59.99', interval: 'per year', trialDescription: '1-week free trial',
+    price: '£59.99', interval: 'per year', trialEligible: true, trialDescription: '7 days free',
   }];
   assert.equal(membershipPlansForDisplay(resolved, false), resolved);
+});
+
+test('free-trial presentation requires provider-confirmed eligibility for each store', () => {
+  assert.equal(shouldPresentFreeTrial('ios', 'eligible', false), true);
+  assert.equal(shouldPresentFreeTrial('ios', 'ineligible', false), false);
+  assert.equal(shouldPresentFreeTrial('ios', 'unknown', false), false);
+  assert.equal(shouldPresentFreeTrial('ios', 'no_offer', false), false);
+  assert.equal(shouldPresentFreeTrial('android', 'unknown', true), true);
+  assert.equal(shouldPresentFreeTrial('android', 'eligible', false), false);
+  assert.equal(shouldPresentFreeTrial('web', 'eligible', true), false);
+
+  const client = readFileSync(new URL('../src/features/billing/revenuecat-client.ts', import.meta.url), 'utf8');
+  assert.match(client, /checkTrialOrIntroductoryPriceEligibility/);
+  assert.match(client, /INTRO_ELIGIBILITY_STATUS_ELIGIBLE/);
+  assert.match(client, /defaultOption\?\.freePhase/);
 });
 
 test('verified states grant access only while a server-confirmed period is current', () => {

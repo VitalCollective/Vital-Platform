@@ -47,8 +47,21 @@ export type BillingPlan = {
   title: string;
   price: string;
   interval: string;
+  trialEligible: boolean;
   trialDescription: string | null;
 };
+
+export type IntroEligibilityStatus = 'eligible' | 'ineligible' | 'unknown' | 'no_offer';
+
+export function shouldPresentFreeTrial(
+  platform: string,
+  iosEligibility: IntroEligibilityStatus,
+  androidDefaultOptionHasSevenDayFreePhase: boolean,
+): boolean {
+  if (platform === 'ios') return iosEligibility === 'eligible';
+  if (platform === 'android') return androidDefaultOptionHasSevenDayFreePhase;
+  return false;
+}
 
 type StoreLocalizedPrice = {
   identifier: string;
