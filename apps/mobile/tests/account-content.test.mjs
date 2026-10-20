@@ -111,3 +111,16 @@ test('all You child panels share a leading back chevron; profile opts into nativ
   assert.match(screen, /profile.commit\(saved\)/);
   assert.match(ui, /request === generation.current/);
 });
+
+test('only the standalone membership surface opts into the top safe-area inset', () => {
+  const screen = readFileSync(new URL('../src/features/account/account-screen.tsx', import.meta.url), 'utf8');
+  const layout = readFileSync(new URL('../src/components/vital/screen.tsx', import.meta.url), 'utf8');
+  const accountSurface = screen.slice(
+    screen.indexOf('export function AccountScreen'),
+    screen.indexOf('const PAYWALL_PANELS'),
+  );
+  assert.match(layout, /includeTopSafeArea = false/);
+  assert.match(layout, /includeTopSafeArea \? \['top', 'left', 'right'\] : \['left', 'right'\]/);
+  assert.match(screen, /function MembershipAccessScreen[\s\S]*<Screen key=\{destination\} includeTopSafeArea/);
+  assert.doesNotMatch(accountSurface, /<Screen[^>]*includeTopSafeArea/);
+});

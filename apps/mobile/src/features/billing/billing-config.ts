@@ -40,6 +40,29 @@ export const billingConfig = {
   }),
 };
 
+export const testFlightBillingDiagnosticsEnabled = Platform.OS === 'ios'
+  && channel === 'app_store_sandbox'
+  && !isDevelopmentBuild;
+
+export function reportTestFlightBillingDiagnostic(
+  event: string,
+  details: Record<string, unknown>,
+): void {
+  if (!testFlightBillingDiagnosticsEnabled) return;
+  // This temporary TestFlight-only diagnostic intentionally excludes SDK keys
+  // and member identifiers. It must not run in App Store production builds.
+  console.info(`[Vital TestFlight billing] ${event}`, details);
+}
+
+reportTestFlightBillingDiagnostic('purchase gate', {
+  platform: Platform.OS,
+  purchaseChannel: channel,
+  purchasesEnabled: billingConfig.purchasesEnabled,
+  purchasesEnabledFlag: process.env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED === 'true',
+  hasIosApiKey: Boolean(iosApiKey),
+  hasTestStoreApiKey: Boolean(testStoreApiKey),
+});
+
 export function revenueCatApiKey(): string | null {
   if (billingConfig.testStoreApiKey) return billingConfig.testStoreApiKey;
   if (Platform.OS === 'ios') return billingConfig.iosApiKey;

@@ -4,7 +4,11 @@ import type {
   CustomerInfoUpdateListener,
   PurchasesPackage,
 } from 'react-native-purchases';
-import { billingConfig, revenueCatApiKey } from './billing-config';
+import {
+  billingConfig,
+  reportTestFlightBillingDiagnostic,
+  revenueCatApiKey,
+} from './billing-config';
 import type { BillingPlan, IntroEligibilityStatus } from './billing-model';
 import {
   REVENUECAT_OFFERING_ID,
@@ -55,12 +59,14 @@ function plan(
   };
 }
 
+export type RevenueCatTrialEligibility = Partial<Record<BillingPlan['id'], boolean>>;
+
 async function iosIntroEligibility(
   Purchases: typeof import('react-native-purchases').default,
   packages: PurchasesPackage[],
-): Promise<Map<string, IntroEligibilityStatus>> {
-  const statuses = new Map<string, IntroEligibilityStatus>();
-  if (Platform.OS !== 'ios' || packages.length === 0) return statuses;
+): Promise<RevenueCatTrialEligibility> {
+  const eligibility: RevenueCatTrialEligibility = {};
+  if (Platform.OS !== 'ios' || packages.length === 0) return eligibility;
   try {
     const result = await Purchases.checkTrialOrIntroductoryPriceEligibility(
       packages.map((item) => item.product.identifier),
@@ -74,14 +80,27 @@ async function iosIntroEligibility(
           : status === Purchases.INTRO_ELIGIBILITY_STATUS.INTRO_ELIGIBILITY_STATUS_NO_INTRO_OFFER_EXISTS
             ? 'no_offer'
             : 'unknown';
-      statuses.set(item.product.identifier, value);
+      const mapped = plan(item);
+      if (mapped) eligibility[mapped.id] = value === 'eligible';
+      reportTestFlightBillingDiagnostic('introductory offer eligibility', {
+        packageIdentifier: item.identifier,
+        productIdentifier: item.product.identifier,
+        status: value,
+      });
     }
   } catch (cause) {
     // Eligibility is promotional copy, not access state. Fail closed to the
     // paid presentation while keeping otherwise valid store plans available.
     reportTechnicalError('Check introductory offer eligibility', cause);
+    for (const item of packages) {
+      reportTestFlightBillingDiagnostic('introductory offer eligibility', {
+        packageIdentifier: item.identifier,
+        productIdentifier: item.product.identifier,
+        status: 'request_failed',
+      });
+    }
   }
-  return statuses;
+  return eligibility;
 }
 
 async function module() {
@@ -116,15 +135,39 @@ export async function prepareRevenueCat(userId: string): Promise<RevenueCatPrese
   const offering = offerings.current?.identifier === REVENUECAT_OFFERING_ID
     ? offerings.current : null;
   const packages = offering?.availablePackages ?? [];
-  const eligibility = await iosIntroEligibility(Purchases, packages);
   const plans = packages
-    .map((aPackage) => plan(aPackage, eligibility.get(aPackage.product.identifier)))
+    .map((aPackage) => plan(aPackage))
     .filter((value): value is BillingPlan => Boolean(value));
   for (const aPackage of packages) {
-    const mapped = plan(aPackage, eligibility.get(aPackage.product.identifier));
-    if (mapped) presentedPackages.set(mapped.id, aPackage);
+    const mapped = plan(aPackage);
+    if (mapped) {
+      presentedPackages.set(mapped.id, aPackage);
+      reportTestFlightBillingDiagnostic('resolved store package', {
+        packageIdentifier: aPackage.identifier,
+        productIdentifier: aPackage.product.identifier,
+        numericPrice: aPackage.product.price,
+        currencyCode: aPackage.product.currencyCode,
+        priceString: aPackage.product.priceString,
+        pricePerMonthString: aPackage.product.pricePerMonthString,
+        pricePerYearString: aPackage.product.pricePerYearString,
+        displayedPrice: mapped.price,
+      });
+    }
   }
+  reportTestFlightBillingDiagnostic('provider result', {
+    providerAvailable: true,
+    offeringIdentifier: offering?.identifier ?? null,
+    planCount: plans.length,
+  });
   return { available: true, plans, managementUrl: customerInfo.managementURL };
+}
+
+export async function resolveRevenueCatTrialEligibility(
+  userId: string,
+): Promise<RevenueCatTrialEligibility | null> {
+  if (Platform.OS !== 'ios') return null;
+  const Purchases = requireReady(userId);
+  return await iosIntroEligibility(Purchases, [...presentedPackages.values()]);
 }
 
 function requireReady(userId: string) {

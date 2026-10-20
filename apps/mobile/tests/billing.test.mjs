@@ -101,6 +101,33 @@ test('free-trial presentation requires provider-confirmed eligibility for each s
   assert.match(client, /defaultOption\?\.freePhase/);
 });
 
+test('iOS trial eligibility is resolved after plans load and stale results cannot replace current state', () => {
+  const client = readFileSync(new URL('../src/features/billing/revenuecat-client.ts', import.meta.url), 'utf8');
+  const provider = readFileSync(new URL('../src/features/billing/billing-provider.tsx', import.meta.url), 'utf8');
+  const prepare = client.slice(client.indexOf('export async function prepareRevenueCat'), client.indexOf('export async function resolveRevenueCatTrialEligibility'));
+  assert.doesNotMatch(prepare, /checkTrialOrIntroductoryPriceEligibility|iosIntroEligibility/);
+  assert.match(prepare, /\.map\(\(aPackage\) => plan\(aPackage\)\)/);
+  assert.match(client, /export async function resolveRevenueCatTrialEligibility[\s\S]*iosIntroEligibility/);
+  assert.match(provider, /setPresentation\(provider\)[\s\S]*resolveRevenueCatTrialEligibility\(id\)/);
+  assert.match(provider, /if \(!eligibility \|\| !mounted\.current \|\| request !== generation\.current\) return/);
+  assert.match(provider, /eligibility\[plan\.id\] === true/);
+  assert.match(provider, /trialDescription: trialEligible \? '7 days free' : null/);
+  assert.match(client, /if \(Platform\.OS !== 'ios'\) return null/);
+});
+
+test('temporary billing diagnostics are limited to non-development Apple sandbox builds and contain no credentials or member identity', () => {
+  const config = readFileSync(new URL('../src/features/billing/billing-config.ts', import.meta.url), 'utf8');
+  const client = readFileSync(new URL('../src/features/billing/revenuecat-client.ts', import.meta.url), 'utf8');
+  const provider = readFileSync(new URL('../src/features/billing/billing-provider.tsx', import.meta.url), 'utf8');
+  assert.match(config, /Platform\.OS === 'ios'[\s\S]*channel === 'app_store_sandbox'[\s\S]*!isDevelopmentBuild/);
+  assert.match(config, /purchaseChannel:[\s\S]*purchasesEnabled:[\s\S]*hasIosApiKey:[\s\S]*hasTestStoreApiKey:/);
+  assert.match(client, /numericPrice:[\s\S]*currencyCode:[\s\S]*priceString:[\s\S]*pricePerMonthString:[\s\S]*pricePerYearString:/);
+  assert.match(client, /introductory offer eligibility[\s\S]*status:/);
+  assert.match(provider, /provider state[\s\S]*providerAvailable:[\s\S]*busyAction:/);
+  const diagnostics = [config, client, provider].join('\n');
+  assert.doesNotMatch(diagnostics, /reportTestFlightBillingDiagnostic\([^)]*(?:apiKey|userId|email)/);
+});
+
 test('verified states grant access only while a server-confirmed period is current', () => {
   for (const state of ['trial_active', 'active', 'cancelled']) {
     assert.equal(verifiedAccessStillCurrent({ ...EMPTY_MEMBERSHIP, state, hasAccess: true, periodEndsAt: future }, Date.parse('2029-01-01')), true, state);

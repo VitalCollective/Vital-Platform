@@ -262,7 +262,8 @@ export function MembershipAccessScreen({ id, email, panel, api, navigate, signOu
   }
   const link = (next: AccountPanel, label: string = ACCOUNT_PANELS[next]) =>
     <AccountLink label={t(label)} onPress={() => navigate(next)} />;
-  return <Screen key={destination} keyboardAware={destination === 'suggest' || destination === 'feedback' || destination === 'problem' || destination === 'deletion'}>
+  return <Screen key={destination} includeTopSafeArea
+    keyboardAware={destination === 'suggest' || destination === 'feedback' || destination === 'problem' || destination === 'deletion'}>
     {destination !== 'membership' && <AccountLink direction="back" label={t('Back to membership')} onPress={() => navigate('membership')} />}
     <ScreenHeader eyebrow={t('Your Vital')} title={t(ACCOUNT_PANELS[destination])}
       description={destination === 'membership' ? t('Signed in as {member}', { member: email ?? t('a Vital member') }) : undefined} />

@@ -18,15 +18,22 @@ type ScreenProps = PropsWithChildren<{
   scrollProps?: ScrollViewProps;
   footer?: ReactNode;
   keyboardAware?: boolean;
+  includeTopSafeArea?: boolean;
 }>;
 
-export function Screen({ children, footer, scrollProps, keyboardAware = false }: ScreenProps) {
+export function Screen({
+  children,
+  footer,
+  scrollProps,
+  keyboardAware = false,
+  includeTopSafeArea = false,
+}: ScreenProps) {
   const { horizontalPadding, isDesktop } = useResponsiveLayout();
   const container = useRef<View>(null);
   const [keyboardOffset, setKeyboardOffset] = useState(0);
 
   const content = (
-    <SafeAreaView edges={['left', 'right']} style={styles.safeArea}>
+    <SafeAreaView edges={includeTopSafeArea ? ['top', 'left', 'right'] : ['left', 'right']} style={styles.safeArea}>
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"

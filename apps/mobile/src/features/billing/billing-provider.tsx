@@ -6,7 +6,7 @@ import { withRequestTimeout } from '@/lib/request-lifecycle';
 import { sessionStorage } from '@/lib/session-storage';
 import { supabase } from '@/lib/supabase';
 import { createBillingApi } from './billing-api';
-import { billingConfig } from './billing-config';
+import { billingConfig, reportTestFlightBillingDiagnostic } from './billing-config';
 import { BillingContext, type BillingContextValue } from './billing-context';
 import {
   currentVerifiedMembership,
@@ -22,6 +22,7 @@ import {
   observeRevenueCatCustomerInfo,
   prepareRevenueCat,
   purchaseRevenueCatPlan,
+  resolveRevenueCatTrialEligibility,
   restoreRevenueCatPurchases,
   type RevenueCatPresentation,
 } from './revenuecat-client';
@@ -50,7 +51,16 @@ export function BillingProvider({ children }: PropsWithChildren) {
   const [busyAction, setBusyAction] = useState<BillingContextValue['busyAction']>(null);
   const [error, setError] = useState<string | null>(null);
   const generation = useRef(0);
+  const mounted = useRef(true);
   const verified = useRef<{ userId: string; membership: VerifiedMembership } | null>(null);
+
+  useEffect(() => {
+    mounted.current = true;
+    return () => {
+      mounted.current = false;
+      generation.current += 1;
+    };
+  }, []);
 
   const load = useCallback(async (
     id: string,
@@ -64,7 +74,29 @@ export function BillingProvider({ children }: PropsWithChildren) {
     ]);
     if (request !== generation.current) return;
     const provider = providerResult.status === 'fulfilled' ? providerResult.value : null;
-    if (provider) setPresentation(provider);
+    if (provider) {
+      setPresentation(provider);
+      if (refreshProvider && provider.available && provider.plans.length > 0) {
+        void resolveRevenueCatTrialEligibility(id).then((eligibility) => {
+          if (!eligibility || !mounted.current || request !== generation.current) return;
+          setPresentation((current) => ({
+            ...current,
+            plans: current.plans.map((plan) => {
+              const trialEligible = eligibility[plan.id] === true;
+              return {
+                ...plan,
+                trialEligible,
+                trialDescription: trialEligible ? '7 days free' : null,
+              };
+            }),
+          }));
+        }).catch((cause) => {
+          if (mounted.current && request === generation.current) {
+            reportTechnicalError('Resolve introductory offer eligibility', cause);
+          }
+        });
+      }
+    }
     if (refreshProvider && providerResult.status === 'rejected') {
       reportTechnicalError('Load RevenueCat membership options', providerResult.reason);
       setProviderUnavailable(true);
@@ -158,6 +190,16 @@ export function BillingProvider({ children }: PropsWithChildren) {
       unsubscribe();
     };
   }, [isPasswordRecovery, load, resolvedUserId, user?.id]);
+
+  useEffect(() => {
+    reportTestFlightBillingDiagnostic('provider state', {
+      providerAvailable: presentation.available,
+      providerUnavailable,
+      isResolving,
+      busyAction: busyAction ?? 'none',
+      planCount: presentation.plans.length,
+    });
+  }, [busyAction, isResolving, presentation.available, presentation.plans.length, providerUnavailable]);
 
   const run = useCallback(async (action: 'purchase' | 'restore', plan?: BillingPlan['id']) => {
     if (!user || busyAction) return;
