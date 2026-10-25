@@ -63,6 +63,7 @@ export const a = StyleSheet.create({
   label: { fontFamily: typography.bodySemiboldFamily, color: colors.ink, fontSize: 15, lineHeight: 23 },
   trialOffer: { fontFamily: typography.bodyBoldFamily, color: colors.plum, fontSize: 22, lineHeight: 29, letterSpacing: 0.4 },
   planPrice: { fontFamily: typography.bodyMediumFamily, color: colors.ink, fontSize: 16, lineHeight: 24 },
+  diagnostics: { fontFamily: typography.bodyFamily, color: colors.ink, fontSize: 12, lineHeight: 18 },
   link: { minHeight: 48, paddingVertical: 10, paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center', gap: 8, borderRadius: radii.sm, borderWidth: 2, borderColor: 'transparent' },
   focused: { borderColor: colors.focus },
   grow: { flex: 1, minWidth: 0, gap: 2 },

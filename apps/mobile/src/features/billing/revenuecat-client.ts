@@ -16,11 +16,16 @@ import {
   storeLocalizedPlanPrice,
 } from './billing-model';
 import { reportTechnicalError } from '@/lib/errors';
+import {
+  safeEligibilityError,
+  type BillingProductDiagnostic,
+} from './billing-diagnostics';
 
 export type RevenueCatPresentation = {
   available: boolean;
   plans: BillingPlan[];
   managementUrl: string | null;
+  diagnosticProducts: BillingProductDiagnostic[];
 };
 
 let purchasesModule: typeof import('react-native-purchases').default | null = null;
@@ -59,14 +64,20 @@ function plan(
   };
 }
 
-export type RevenueCatTrialEligibility = Partial<Record<BillingPlan['id'], boolean>>;
+export type RevenueCatTrialEligibility = {
+  request: 'completed' | 'failed';
+  statuses: Partial<Record<BillingPlan['id'], IntroEligibilityStatus | 'request_failed'>>;
+  error: string | null;
+};
 
 async function iosIntroEligibility(
   Purchases: typeof import('react-native-purchases').default,
   packages: PurchasesPackage[],
 ): Promise<RevenueCatTrialEligibility> {
-  const eligibility: RevenueCatTrialEligibility = {};
-  if (Platform.OS !== 'ios' || packages.length === 0) return eligibility;
+  const statuses: RevenueCatTrialEligibility['statuses'] = {};
+  if (Platform.OS !== 'ios' || packages.length === 0) {
+    return { request: 'completed', statuses, error: null };
+  }
   try {
     const result = await Purchases.checkTrialOrIntroductoryPriceEligibility(
       packages.map((item) => item.product.identifier),
@@ -81,26 +92,29 @@ async function iosIntroEligibility(
             ? 'no_offer'
             : 'unknown';
       const mapped = plan(item);
-      if (mapped) eligibility[mapped.id] = value === 'eligible';
+      if (mapped) statuses[mapped.id] = value;
       reportTestFlightBillingDiagnostic('introductory offer eligibility', {
         packageIdentifier: item.identifier,
         productIdentifier: item.product.identifier,
         status: value,
       });
     }
+    return { request: 'completed', statuses, error: null };
   } catch (cause) {
     // Eligibility is promotional copy, not access state. Fail closed to the
     // paid presentation while keeping otherwise valid store plans available.
     reportTechnicalError('Check introductory offer eligibility', cause);
     for (const item of packages) {
+      const mapped = plan(item);
+      if (mapped) statuses[mapped.id] = 'request_failed';
       reportTestFlightBillingDiagnostic('introductory offer eligibility', {
         packageIdentifier: item.identifier,
         productIdentifier: item.product.identifier,
         status: 'request_failed',
       });
     }
+    return { request: 'failed', statuses, error: safeEligibilityError(cause) };
   }
-  return eligibility;
 }
 
 async function module() {
@@ -119,7 +133,7 @@ export async function prepareRevenueCat(userId: string): Promise<RevenueCatPrese
   const apiKey = revenueCatApiKey();
   if (Platform.OS === 'web' || !apiKey) {
     clearRevenueCatPresentation();
-    return { available: false, plans: [], managementUrl: null };
+    return { available: false, plans: [], managementUrl: null, diagnosticProducts: [] };
   }
   const Purchases = await module();
   if (!configuredUserId) {
@@ -138,10 +152,22 @@ export async function prepareRevenueCat(userId: string): Promise<RevenueCatPrese
   const plans = packages
     .map((aPackage) => plan(aPackage))
     .filter((value): value is BillingPlan => Boolean(value));
+  const diagnosticProducts: BillingProductDiagnostic[] = [];
   for (const aPackage of packages) {
     const mapped = plan(aPackage);
     if (mapped) {
       presentedPackages.set(mapped.id, aPackage);
+      diagnosticProducts.push({
+        planId: mapped.id,
+        packageIdentifier: aPackage.identifier,
+        productIdentifier: aPackage.product.identifier,
+        numericPrice: aPackage.product.price,
+        currencyCode: aPackage.product.currencyCode,
+        priceString: aPackage.product.priceString,
+        pricePerMonthString: aPackage.product.pricePerMonthString,
+        pricePerYearString: aPackage.product.pricePerYearString,
+        eligibility: 'pending',
+      });
       reportTestFlightBillingDiagnostic('resolved store package', {
         packageIdentifier: aPackage.identifier,
         productIdentifier: aPackage.product.identifier,
@@ -159,7 +185,12 @@ export async function prepareRevenueCat(userId: string): Promise<RevenueCatPrese
     offeringIdentifier: offering?.identifier ?? null,
     planCount: plans.length,
   });
-  return { available: true, plans, managementUrl: customerInfo.managementURL };
+  return {
+    available: true,
+    plans,
+    managementUrl: customerInfo.managementURL,
+    diagnosticProducts,
+  };
 }
 
 export async function resolveRevenueCatTrialEligibility(

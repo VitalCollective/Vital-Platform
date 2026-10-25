@@ -1,5 +1,6 @@
 import { createContext, useContext } from 'react';
 import type { BillingPlan, MembershipState, VerifiedMembership } from './billing-model';
+import type { BillingDiagnostics } from './billing-diagnostics';
 
 export type BillingContextValue = {
   userId: string | null;
@@ -10,6 +11,7 @@ export type BillingContextValue = {
   providerAvailable: boolean;
   purchasesEnabled: boolean;
   plans: BillingPlan[];
+  diagnostics: BillingDiagnostics | null;
   managementUrl: string | null;
   busyAction: 'purchase' | 'restore' | null;
   error: string | null;

@@ -18,6 +18,7 @@ import {
   verifiedMembershipBoundary,
 } from '../src/features/billing/billing-model.ts';
 import { purchaseChannel, purchaseGate } from '../src/features/billing/billing-gate.ts';
+import { formatBillingDiagnostics, safeEligibilityError } from '../src/features/billing/billing-diagnostics.ts';
 import { membershipPlansForDisplay, MEMBERSHIP_PLANS } from '../src/features/account/account-content.ts';
 
 const future = '2030-01-01T00:00:00.000Z';
@@ -110,9 +111,48 @@ test('iOS trial eligibility is resolved after plans load and stale results canno
   assert.match(client, /export async function resolveRevenueCatTrialEligibility[\s\S]*iosIntroEligibility/);
   assert.match(provider, /setPresentation\(provider\)[\s\S]*resolveRevenueCatTrialEligibility\(id\)/);
   assert.match(provider, /if \(!eligibility \|\| !mounted\.current \|\| request !== generation\.current\) return/);
-  assert.match(provider, /eligibility\[plan\.id\] === true/);
+  assert.match(provider, /eligibility\.statuses\[plan\.id\] === 'eligible'/);
   assert.match(provider, /trialDescription: trialEligible \? '7 days free' : null/);
   assert.match(client, /if \(Platform\.OS !== 'ios'\) return null/);
+});
+
+test('TestFlight diagnostics format both products without account or credential data', () => {
+  const text = formatBillingDiagnostics({
+    purchaseChannel: 'app_store_sandbox',
+    purchasesEnabled: true,
+    providerAvailable: true,
+    eligibilityRequest: 'completed',
+    eligibilityError: null,
+    products: [{
+      planId: 'annual', packageIdentifier: '$rc_annual',
+      productIdentifier: BILLING_PRODUCTS.standardAnnual,
+      numericPrice: 59.99, currencyCode: 'GBP', priceString: '£59.99',
+      pricePerMonthString: '£5.00', pricePerYearString: '£59.99',
+      eligibility: 'ineligible',
+    }, {
+      planId: 'monthly', packageIdentifier: '$rc_monthly',
+      productIdentifier: BILLING_PRODUCTS.standardMonthly,
+      numericPrice: 9.99, currencyCode: 'GBP', priceString: '£9.99',
+      pricePerMonthString: '£9.99', pricePerYearString: '£119.88',
+      eligibility: 'eligible',
+    }],
+  });
+  assert.match(text, /Eligibility request: completed/);
+  assert.match(text, /Monthly product[\s\S]*Eligibility: eligible[\s\S]*Currency code: GBP[\s\S]*Price string: £9\.99/);
+  assert.match(text, /Annual product[\s\S]*Eligibility: ineligible[\s\S]*Price per year: £59\.99/);
+  assert.doesNotMatch(text, /user|email|api key/i);
+});
+
+test('eligibility errors retain useful fields while redacting identifiers and credentials', () => {
+  const detail = safeEligibilityError({
+    name: 'PurchasesError', code: 'STORE_PROBLEM',
+    message: 'member 123e4567-e89b-12d3-a456-426614174000 at clay@example.com used appl_abcdefghijklmnopqrstuvwxyz',
+  });
+  assert.match(detail, /PurchasesError · STORE_PROBLEM/);
+  assert.match(detail, /\[redacted-id\]/);
+  assert.match(detail, /\[redacted-email\]/);
+  assert.match(detail, /\[redacted-value\]/);
+  assert.doesNotMatch(detail, /123e4567|clay@example|appl_abcdefghijkl/);
 });
 
 test('temporary billing diagnostics are limited to non-development Apple sandbox builds and contain no credentials or member identity', () => {
@@ -124,6 +164,7 @@ test('temporary billing diagnostics are limited to non-development Apple sandbox
   assert.match(client, /numericPrice:[\s\S]*currencyCode:[\s\S]*priceString:[\s\S]*pricePerMonthString:[\s\S]*pricePerYearString:/);
   assert.match(client, /introductory offer eligibility[\s\S]*status:/);
   assert.match(provider, /provider state[\s\S]*providerAvailable:[\s\S]*busyAction:/);
+  assert.match(provider, /eligibilityRequest: 'failed'[\s\S]*safeEligibilityError/);
   const diagnostics = [config, client, provider].join('\n');
   assert.doesNotMatch(diagnostics, /reportTestFlightBillingDiagnostic\([^)]*(?:apiKey|userId|email)/);
 });

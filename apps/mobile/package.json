@@ -10,6 +10,7 @@
     "@expo/vector-icons": "^15.0.2",
     "@supabase/supabase-js": "^2.112.4",
     "expo": "~57.0.25",
+    "expo-clipboard": "~57.0.2",
     "expo-constants": "~57.0.12",
     "expo-dev-client": "~57.0.19",
     "expo-device": "~57.0.2",

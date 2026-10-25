@@ -1,6 +1,7 @@
 import { useCallback, useState } from 'react';
 import { Keyboard, Linking, Pressable, Text, View } from 'react-native';
 import Constants from 'expo-constants';
+import * as Clipboard from 'expo-clipboard';
 import { Ionicons } from '@expo/vector-icons';
 import { Button } from '@/components/vital/button';
 import { ProfileAvatar } from '@/components/vital/profile-avatar';
@@ -25,9 +26,30 @@ import { AccountProfilePhoto } from './account-profile-photo';
 import { ActivitySubmissionForm, FeedbackSubmissionForm } from './account-submissions';
 import { a, AccountLink, AccountLoadState, Group, useAccountLoad } from './account-ui';
 import { colors } from '@/theme/tokens';
+import { formatBillingDiagnostics, type BillingDiagnostics } from '@/features/billing/billing-diagnostics';
 
 type Profile = NonNullable<Awaited<ReturnType<typeof getOwnCommunityProfile>>>;
 type Props = { id: string; email?: string; panel: AccountPanel | null; api: AccountApi; community: CommunityApi; navigate: (panel: AccountPanel | null) => void; openCommunity: () => void; signOut: () => Promise<void> };
+
+function MembershipDiagnosticsPanel({ diagnostics }: { diagnostics: BillingDiagnostics | null }) {
+  const [copyState, setCopyState] = useState<'idle' | 'copied' | 'failed'>('idle');
+  if (!diagnostics || billingConfig.purchaseChannel !== 'app_store_sandbox') return null;
+  const text = formatBillingDiagnostics(diagnostics);
+  async function copy() {
+    try {
+      await Clipboard.setStringAsync(text);
+      setCopyState('copied');
+    } catch {
+      setCopyState('failed');
+    }
+  }
+  return <Group title="TestFlight subscription diagnostics">
+    <Text style={a.meta}>Safe store and eligibility information only. No account identifiers or API keys are included.</Text>
+    <Text selectable style={a.diagnostics}>{text}</Text>
+    {copyState === 'failed' && <CommunityNotice message="Diagnostics could not be copied. You can select the text above." error />}
+    <Button label={copyState === 'copied' ? 'Diagnostics copied' : 'Copy diagnostics'} variant="secondary" onPress={() => void copy()} />
+  </Group>;
+}
 
 function EditProfile({ id, profile, onSaved, onPhotoChanged }: {
   id: string; profile: Profile; onSaved: (profile: Profile) => void; onPhotoChanged: (profile: Profile) => void;
@@ -109,6 +131,7 @@ function MembershipPanel() {
       {billing.managementUrl && <Button label={t('Manage subscription')} variant="secondary"
         onPress={() => void Linking.openURL(billing.managementUrl!)} />}
     </Group>
+    <MembershipDiagnosticsPanel diagnostics={billing.diagnostics} />
   </View>;
 }
 function CommunityPanel({ community, navigate, openCommunity }: Pick<Props, 'community' | 'navigate' | 'openCommunity'>) {

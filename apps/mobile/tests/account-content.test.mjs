@@ -68,6 +68,11 @@ test('contact actions use approved email subjects and store plans remain display
   assert.match(screen, /onPress=\{\(\) => void billing\.purchase\(plan\.id\)\}/);
   assert.match(screen, /label=\{t\('Restore purchases'\)\}/);
   assert.match(screen, /label=\{t\('Manage subscription'\)\}/);
+  assert.match(screen, /billingConfig\.purchaseChannel !== 'app_store_sandbox'/);
+  assert.match(screen, /TestFlight subscription diagnostics/);
+  assert.match(screen, /Clipboard\.setStringAsync\(text\)/);
+  assert.match(screen, /Copy diagnostics/);
+  assert.match(screen, /<MembershipDiagnosticsPanel diagnostics=\{billing\.diagnostics\}/);
   assert.doesNotMatch(screen, /RevenueCat|Sandbox membership|configured for development|not configured in this build/);
 });
 
