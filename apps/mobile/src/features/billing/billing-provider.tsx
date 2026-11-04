@@ -6,16 +6,8 @@ import { withRequestTimeout } from '@/lib/request-lifecycle';
 import { sessionStorage } from '@/lib/session-storage';
 import { supabase } from '@/lib/supabase';
 import { createBillingApi } from './billing-api';
-import {
-  billingConfig,
-  reportTestFlightBillingDiagnostic,
-  testFlightBillingDiagnosticsEnabled,
-} from './billing-config';
+import { billingConfig, reportTestFlightBillingDiagnostic } from './billing-config';
 import { BillingContext, type BillingContextValue } from './billing-context';
-import {
-  safeEligibilityError,
-  type BillingDiagnostics,
-} from './billing-diagnostics';
 import {
   currentVerifiedMembership,
   EMPTY_MEMBERSHIP,
@@ -40,23 +32,7 @@ import {
   writeVerifiedMembershipCache,
 } from './verified-membership-cache';
 
-const EMPTY_PRESENTATION: RevenueCatPresentation = {
-  available: false,
-  plans: [],
-  managementUrl: null,
-  diagnosticProducts: [],
-};
-
-function pendingDiagnostics(): BillingDiagnostics | null {
-  return testFlightBillingDiagnosticsEnabled ? {
-    purchaseChannel: 'app_store_sandbox',
-    purchasesEnabled: billingConfig.purchasesEnabled,
-    providerAvailable: false,
-    eligibilityRequest: 'pending',
-    eligibilityError: null,
-    products: [],
-  } : null;
-}
+const EMPTY_PRESENTATION: RevenueCatPresentation = { available: false, plans: [], managementUrl: null };
 
 function purchaseWasCancelled(cause: unknown): boolean {
   return typeof cause === 'object' && cause !== null
@@ -68,7 +44,6 @@ export function BillingProvider({ children }: PropsWithChildren) {
   const api = useMemo(() => supabase ? createBillingApi(supabase) : null, []);
   const [membership, setMembership] = useState(EMPTY_MEMBERSHIP);
   const [presentation, setPresentation] = useState(EMPTY_PRESENTATION);
-  const [diagnostics, setDiagnostics] = useState<BillingDiagnostics | null>(pendingDiagnostics);
   const [isResolving, setIsResolving] = useState(false);
   const [resolvedUserId, setResolvedUserId] = useState<string | null>(null);
   const [serverUnavailable, setServerUnavailable] = useState(false);
@@ -93,7 +68,6 @@ export function BillingProvider({ children }: PropsWithChildren) {
   ) => {
     const request = ++generation.current;
     setIsResolving(true); setServerUnavailable(false); setProviderUnavailable(false); setError(null);
-    if (refreshProvider && testFlightBillingDiagnosticsEnabled) setDiagnostics(pendingDiagnostics());
     const [serverResult, providerResult] = await Promise.allSettled([
       withRequestTimeout(api ? api.membership(id) : Promise.reject(new Error('Supabase is not configured'))),
       refreshProvider ? withRequestTimeout(prepareRevenueCat(id)) : Promise.resolve(null),
@@ -102,23 +76,13 @@ export function BillingProvider({ children }: PropsWithChildren) {
     const provider = providerResult.status === 'fulfilled' ? providerResult.value : null;
     if (provider) {
       setPresentation(provider);
-      if (testFlightBillingDiagnosticsEnabled) {
-        setDiagnostics({
-          purchaseChannel: 'app_store_sandbox',
-          purchasesEnabled: billingConfig.purchasesEnabled,
-          providerAvailable: provider.available,
-          eligibilityRequest: provider.diagnosticProducts.length > 0 ? 'pending' : 'completed',
-          eligibilityError: null,
-          products: provider.diagnosticProducts,
-        });
-      }
       if (refreshProvider && provider.available && provider.plans.length > 0) {
         void resolveRevenueCatTrialEligibility(id).then((eligibility) => {
           if (!eligibility || !mounted.current || request !== generation.current) return;
           setPresentation((current) => ({
             ...current,
             plans: current.plans.map((plan) => {
-              const trialEligible = eligibility.statuses[plan.id] === 'eligible';
+              const trialEligible = eligibility[plan.id] === true;
               return {
                 ...plan,
                 trialEligible,
@@ -126,28 +90,9 @@ export function BillingProvider({ children }: PropsWithChildren) {
               };
             }),
           }));
-          setDiagnostics((current) => current ? {
-            ...current,
-            eligibilityRequest: eligibility.request,
-            eligibilityError: eligibility.error,
-            products: current.products.map((product) => ({
-              ...product,
-              eligibility: eligibility.statuses[product.planId]
-                ?? (eligibility.request === 'failed' ? 'request_failed' : 'unknown'),
-            })),
-          } : null);
         }).catch((cause) => {
           if (mounted.current && request === generation.current) {
             reportTechnicalError('Resolve introductory offer eligibility', cause);
-            setDiagnostics((current) => current ? {
-              ...current,
-              eligibilityRequest: 'failed',
-              eligibilityError: safeEligibilityError(cause),
-              products: current.products.map((product) => ({
-                ...product,
-                eligibility: 'request_failed',
-              })),
-            } : null);
           }
         });
       }
@@ -156,16 +101,6 @@ export function BillingProvider({ children }: PropsWithChildren) {
       reportTechnicalError('Load RevenueCat membership options', providerResult.reason);
       setProviderUnavailable(true);
       setError("We couldn't load store membership options just now. Please try again.");
-      if (testFlightBillingDiagnosticsEnabled) {
-        setDiagnostics({
-          purchaseChannel: 'app_store_sandbox',
-          purchasesEnabled: billingConfig.purchasesEnabled,
-          providerAvailable: false,
-          eligibilityRequest: 'failed',
-          eligibilityError: `Products unavailable before eligibility check · ${safeEligibilityError(providerResult.reason)}`,
-          products: [],
-        });
-      }
     }
 
     let next = serverResult.status === 'fulfilled' ? serverResult.value : null;
@@ -200,7 +135,6 @@ export function BillingProvider({ children }: PropsWithChildren) {
     if (authLoading || !user || isPasswordRecovery) {
       verified.current = null;
       setMembership(EMPTY_MEMBERSHIP); setPresentation(EMPTY_PRESENTATION);
-      setDiagnostics(pendingDiagnostics());
       setResolvedUserId(null);
       setServerUnavailable(false); setProviderUnavailable(false); setIsResolving(false);
       if (!authLoading && !user) clearVerifiedMembershipCache(sessionStorage);
@@ -302,13 +236,12 @@ export function BillingProvider({ children }: PropsWithChildren) {
     providerAvailable: presentation.available,
     purchasesEnabled: billingConfig.purchasesEnabled,
     plans: presentation.plans,
-    diagnostics,
     managementUrl: presentation.managementUrl,
     busyAction,
     error,
     refresh: async () => { if (user) await load(user.id); },
     purchase: async (plan) => run('purchase', plan),
     restore: async () => run('restore'),
-  }), [busyAction, diagnostics, displayedState, error, isResolving, load, membership, presentation, resolvedUserId, run, user]);
+  }), [busyAction, displayedState, error, isResolving, load, membership, presentation, resolvedUserId, run, user]);
   return <BillingContext.Provider value={value}>{children}</BillingContext.Provider>;
 }
