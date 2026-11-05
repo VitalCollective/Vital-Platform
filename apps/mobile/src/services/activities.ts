@@ -11,6 +11,11 @@ import {
   reportTechnicalError,
   withFutureJwtTimingRetry,
 } from '@/lib/errors';
+import {
+  currentUtcDay,
+  selectHomeIdeaIds,
+  type HomeIdeaCandidate,
+} from '@/lib/home-ideas';
 import { classifyPrintableResourceState } from '@/lib/printable-resources';
 import { requireSupabase } from '@/lib/supabase';
 import {
@@ -22,7 +27,6 @@ import {
 } from '@/features/localization/content-localization';
 import type { AppLanguage } from '@/features/localization/localization-model';
 import {
-  VITAL_SECTIONS,
   type ActivityDetail,
   type ActivityResource,
   type ActivitySummary,
@@ -39,7 +43,9 @@ const SUMMARY_FIELDS =
 const DETAIL_FIELDS = `${SUMMARY_FIELDS},instructions,why_children_enjoy_it,physical_benefits,mental_benefits,social_benefits,cost,equipment,prep_time,parent_involvement,difficulty,mess_level,weather,season,country_origin,community_prompt,safety_notes,variations`;
 
 const HOME_IDEA_COUNT = 3;
-const HOME_SECTION_POOL_SIZE = 3;
+const HOME_CATALOGUE_LIMIT = 1_000;
+const HOME_INDEX_FIELDS =
+  'id,section,age_min,age_max,type,tags,duration,collection_labels';
 const ACTIVITY_TRANSLATION_SELECT = `activity_id,locale,${ACTIVITY_TRANSLATION_FIELDS.join(',')},tags,collection_labels`;
 
 async function translatedActivities<T extends ActivitySummary | ActivityDetail>(
@@ -107,48 +113,71 @@ type ActivityResourceQueryRow = {
     | null;
 };
 
-export async function fetchIdeasForToday(language: AppLanguage = 'en'): Promise<ActivitySummary[]> {
+type HomeFamilyRow = {
+  members: { relationship: string; age_years: number }[] | null;
+};
+
+async function homeChildAges(userId: string | undefined): Promise<number[]> {
+  if (!userId) return [];
   const client = requireSupabase();
-  const loadSectionPools = async () => {
-    const results = await Promise.all(
-      VITAL_SECTIONS.map((section) =>
-        client
-          .from('activities')
-          .select(SUMMARY_FIELDS)
-          .eq('status', 'published')
-          .eq('section', section)
-          .order('id')
-          .limit(HOME_SECTION_POOL_SIZE),
-      ),
-    );
+  const { data, error } = await client.from('families')
+    .select('members:family_members(relationship,age_years)')
+    .eq('owner_id', userId)
+    .maybeSingle();
+  if (error) {
+    reportTechnicalError('Load private family ages for Home ideas; using balanced fallback', error);
+    return [];
+  }
+  return ((data as HomeFamilyRow | null)?.members ?? [])
+    .filter(({ relationship }) => relationship === 'Child')
+    .map(({ age_years }) => age_years);
+}
 
-    const failure = results.find((result) => result.error);
-    if (failure?.error) throw failure.error;
-
-    return results.map(
-      ({ data }) => (data ?? []) as unknown as ActivitySummary[],
-    );
+export async function fetchIdeasForToday(
+  language: AppLanguage = 'en',
+  userId?: string,
+): Promise<ActivitySummary[]> {
+  const client = requireSupabase();
+  const loadCatalogueIndex = async () => {
+    const { data, error } = await client.from('activities')
+      .select(HOME_INDEX_FIELDS)
+      .eq('status', 'published')
+      .order('id')
+      .limit(HOME_CATALOGUE_LIMIT);
+    if (error) throw error;
+    return (data ?? []) as unknown as HomeIdeaCandidate[];
   };
 
   // Contain Supabase's transient PostgREST time-cache rejection without
   // retrying permission, expiry, network, or other genuine failures.
-  const sectionPools = await withFutureJwtTimingRetry(loadSectionPools, {
-    onRetry: (error, attempt, delayMs) =>
-      reportTechnicalError(
-        `Home ideas received transient PGRST303; retry ${attempt} in ${delayMs}ms`,
-        error,
-      ),
+  const [catalogue, childAges] = await Promise.all([
+    withFutureJwtTimingRetry(loadCatalogueIndex, {
+      onRetry: (error, attempt, delayMs) =>
+        reportTechnicalError(
+          `Home ideas received transient PGRST303; retry ${attempt} in ${delayMs}ms`,
+          error,
+        ),
+    }),
+    homeChildAges(userId),
+  ]);
+  const selectedIds = selectHomeIdeaIds(catalogue, {
+    childAges,
+    count: HOME_IDEA_COUNT,
+    utcDay: currentUtcDay(),
   });
+  if (!selectedIds.length) return [];
 
-  const utcDay = Math.floor(Date.now() / 86_400_000);
-  const rotatedPools = sectionPools.map(
-    (_, index) => sectionPools[(index + utcDay) % sectionPools.length],
+  const { data, error } = await client.from('activities')
+    .select(SUMMARY_FIELDS)
+    .eq('status', 'published')
+    .in('id', selectedIds);
+  if (error) throw error;
+  const byId = new Map(
+    ((data ?? []) as unknown as ActivitySummary[]).map((activity) => [activity.id, activity]),
   );
-
-  const selected = rotatedPools
-    .map((pool, index) => pool[(utcDay + index) % pool.length])
-    .filter((activity): activity is ActivitySummary => Boolean(activity))
-    .slice(0, HOME_IDEA_COUNT);
+  const selected = selectedIds
+    .map((id) => byId.get(id))
+    .filter((activity): activity is ActivitySummary => Boolean(activity));
   return translatedActivities(selected, language);
 }
 

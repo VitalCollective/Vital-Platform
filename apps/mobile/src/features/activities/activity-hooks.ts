@@ -18,6 +18,7 @@ import type {
   VitalSection,
 } from '@/types/content';
 import { useLanguage } from '@/features/localization/language-context';
+import { useAuth } from '@/features/auth/auth-context';
 
 type AsyncState<T> = {
   data: T | null;
@@ -26,7 +27,10 @@ type AsyncState<T> = {
 };
 
 export function useIdeasForToday() {
+  const { user } = useAuth();
+  const userId = user?.id;
   const { language, t } = useLanguage();
+  const requestId = useRef(0);
   const [state, setState] = useState<AsyncState<ActivitySummary[]>>({
     data: null,
     error: null,
@@ -34,25 +38,33 @@ export function useIdeasForToday() {
   });
 
   const load = useCallback(async () => {
+    const currentRequestId = ++requestId.current;
     setState((current) => ({ ...current, isLoading: true, error: null }));
     try {
-      const data = await withRequestTimeout(fetchIdeasForToday(language));
-      setState({ data, error: null, isLoading: false });
+      const data = await withRequestTimeout(fetchIdeasForToday(language, userId));
+      if (currentRequestId === requestId.current) {
+        setState({ data, error: null, isLoading: false });
+      }
     } catch (error) {
-      setState({
-        data: null,
-        error: customerSafeErrorMessage(
-          'Unable to load Home ideas',
-          error,
-          t("We couldn't load your ideas just now."),
-        ),
-        isLoading: false,
-      });
+      if (currentRequestId === requestId.current) {
+        setState({
+          data: null,
+          error: customerSafeErrorMessage(
+            'Unable to load Home ideas',
+            error,
+            t("We couldn't load your ideas just now."),
+          ),
+          isLoading: false,
+        });
+      }
     }
-  }, [language, t]);
+  }, [language, t, userId]);
 
   useEffect(() => {
     void load();
+    return () => {
+      requestId.current += 1;
+    };
   }, [load]);
 
   return { ...state, retry: load };
