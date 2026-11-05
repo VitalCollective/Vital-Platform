@@ -297,6 +297,7 @@ test('purchase channels require the intended runtime, key and explicit enable fl
   assert.equal(purchaseGate({ ...common, channel: 'app_store_sandbox', platform: 'android' }), false);
   assert.equal(purchaseGate({ ...common, channel: 'app_store_production', isDevelopmentBuild: false }), true);
   assert.equal(purchaseGate({ ...common, channel: 'app_store_production', enabled: false }), false);
+  assert.equal(purchaseGate({ ...common, channel: 'app_store_production', platform: 'android' }), false);
   assert.equal(purchaseGate({ ...common, channel: 'play_store_testing', platform: 'android', isDevelopmentBuild: false }), true);
   assert.equal(purchaseGate({ ...common, channel: 'play_store_testing', platform: 'ios' }), false);
   assert.equal(purchaseGate({ ...common, channel: 'play_store_testing', platform: 'android', enabled: false }), false);
@@ -309,7 +310,7 @@ test('purchase channels require the intended runtime, key and explicit enable fl
   assert.equal(purchaseChannel('unexpected'), 'disabled');
 });
 
-test('EAS profiles isolate Test Store, TestFlight and protected production purchasing', () => {
+test('EAS profiles isolate Test Store, TestFlight, App Store production and Play testing', () => {
   const config = readFileSync(new URL('../src/features/billing/billing-config.ts', import.meta.url), 'utf8');
   const eas = JSON.parse(readFileSync(new URL('../eas.json', import.meta.url), 'utf8'));
   assert.match(config, /typeof __DEV__ !== 'undefined' && __DEV__/);
@@ -337,7 +338,7 @@ test('EAS profiles isolate Test Store, TestFlight and protected production purch
   assert.equal(eas.build['android-play-testing'].env.EXPO_PUBLIC_REVENUECAT_TEST_STORE_API_KEY, undefined);
   assert.equal(eas.build.preview.env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL, 'disabled');
   assert.equal(eas.build.preview.env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED, 'false');
-  assert.equal(eas.build.production.env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL, 'disabled');
-  assert.equal(eas.build.production.env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED, 'false');
+  assert.equal(eas.build.production.env.EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL, 'app_store_production');
+  assert.equal(eas.build.production.env.EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED, 'true');
   assert.equal(eas.build.production.env.EXPO_PUBLIC_REVENUECAT_TEST_STORE_API_KEY, undefined);
 });

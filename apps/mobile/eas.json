@@ -55,8 +55,8 @@
       "autoIncrement": true,
       "environment": "production",
       "env": {
-        "EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL": "disabled",
-        "EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED": "false"
+        "EXPO_PUBLIC_REVENUECAT_PURCHASE_CHANNEL": "app_store_production",
+        "EXPO_PUBLIC_REVENUECAT_PURCHASES_ENABLED": "true"
       }
     }
   }
