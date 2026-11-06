@@ -85,21 +85,16 @@ function MembershipPanel() {
   </Group>
     <Group title={t('Vital membership plans')}>
       {displayedPlans.map(plan => {
-        const trialEligible = 'trialEligible' in plan && plan.trialEligible;
         return <View key={plan.id} style={a.rule}>
           <Text style={a.label}>{t(plan.title)}</Text>
-          {trialEligible && <Text style={a.trialOffer}>{t('7 DAYS FREE')}</Text>}
-          <Text style={a.planPrice}>{trialEligible
-            ? t('Then {price} {interval}', { price: plan.price, interval: t(plan.interval) })
-            : `${plan.price} ${t(plan.interval)}`}</Text>
+          <Text style={a.planPrice}>{plan.price} {t(plan.interval)}</Text>
           {'packageIdentifier' in plan && !billing.hasAccess && <Button
-            label={trialEligible ? t('Start 7-day free trial') : t('Choose {plan}', { plan: t(plan.title).toLocaleLowerCase() })}
+            label={t('Choose {plan}', { plan: t(plan.title).toLocaleLowerCase() })}
             disabled={!purchaseReady || Boolean(billing.busyAction)} loading={billing.busyAction === 'purchase'}
             accessibilityHint="Opens the Apple or Google purchase confirmation"
             onPress={() => void billing.purchase(plan.id)} />}
         </View>;
       })}
-      {displayedPlans.some(plan => 'trialEligible' in plan && plan.trialEligible) && <Text style={a.body}>{t('Your 7-day free trial converts to your chosen paid membership unless cancelled before the trial ends.')}</Text>}
       {showDevelopmentFallbackPlans && <Text style={a.meta}>{t('Development-only fallback prices are shown for testing. No payment or trial can start until store products load.')}</Text>}
       {billing.plans.length === 0 && !showDevelopmentFallbackPlans && <Text style={a.meta}>{t('Membership plans are temporarily unavailable. Please try again.')}</Text>}
       {billing.plans.length === 0 && !billing.error && <Button label={t('Try again')} variant="secondary" onPress={() => void billing.refresh()} />}

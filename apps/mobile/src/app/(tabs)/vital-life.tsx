@@ -4,7 +4,7 @@ export default function VitalLifeScreen() {
   return (
     <SectionActivityCatalogue
       title="Vital Life"
-      sentence="Practical ideas for capable, connected everyday family life will live here."
+      sentence="Everyday skills, confidence and capability for family life."
     />
   );
 }

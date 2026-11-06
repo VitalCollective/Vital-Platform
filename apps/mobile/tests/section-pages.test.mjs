@@ -11,11 +11,11 @@ import { fetchSectionActivities } from '../src/features/activities/section-activ
 import { orderSectionCatalogueActivities } from '../src/lib/discover.ts';
 
 const SECTIONS = [
-  ['vital-mums', 'Vital Mums'],
-  ['vital-kids', 'Vital Kids'],
-  ['vital-together', 'Vital Together'],
-  ['vital-life', 'Vital Life'],
-  ['vital-food', 'Vital Food'],
+  ['vital-mums', 'Vital Mums', 'Practical care, perspective and space for the grown-ups.'],
+  ['vital-kids', 'Vital Kids', 'Play, make, learn and follow their curiosity.'],
+  ['vital-together', 'Vital Together', 'Shared rituals, adventures and time that feels well spent.'],
+  ['vital-life', 'Vital Life', 'Everyday skills, confidence and capability for family life.'],
+  ['vital-food', 'Vital Food', 'Cook, taste, grow and understand what is on the table.'],
 ];
 
 function activity(id, ageMin, ageMax, indoor, outdoor) {
@@ -68,15 +68,17 @@ test('show-more slices preserve the initial twenty-item prefix', () => {
   assert.equal(ordered.slice(0, 40).length, 40);
 });
 
-test('all five section routes use the shared approved activity catalogue', () => {
-  for (const [route, section] of SECTIONS) {
+test('all five section routes use the populated catalogue and present-tense introductions', () => {
+  for (const [route, section, introduction] of SECTIONS) {
     const source = readFileSync(
       new URL(`../src/app/(tabs)/${route}.tsx`, import.meta.url),
       'utf8',
     );
     assert.match(source, /SectionActivityCatalogue/);
     assert.match(source, new RegExp(`title="${section}"`));
+    assert.ok(source.includes(`sentence="${introduction}"`));
     assert.doesNotMatch(source, /SectionPlaceholder/);
+    assert.doesNotMatch(source, /coming here|will live here/i);
   }
 });
 

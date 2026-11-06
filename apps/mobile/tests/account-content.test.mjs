@@ -59,11 +59,9 @@ test('contact actions use approved email subjects and store plans remain display
   assert.match(screen, /showDevelopmentFallbackPlans = billing\.plans\.length === 0[\s\S]*billingConfig\.purchaseChannel === 'test_store'/);
   assert.match(screen, /membershipPlansForDisplay\(billing\.plans, showDevelopmentFallbackPlans\)/);
   assert.match(screen, /Membership plans are temporarily unavailable\. Please try again\./);
-  assert.match(screen, /style=\{a\.trialOffer\}>\{t\('7 DAYS FREE'\)\}/);
-  assert.match(screen, /Then \{price\} \{interval\}/);
-  assert.match(screen, /trialEligible \? t\('Start 7-day free trial'\) : t\('Choose \{plan\}'/);
-  assert.match(screen, /Your 7-day free trial converts to your chosen paid membership unless cancelled before the trial ends\./);
-  assert.match(screen, /'trialEligible' in plan && plan\.trialEligible/);
+  assert.match(screen, /\{plan\.price\} \{t\(plan\.interval\)\}/);
+  assert.match(screen, /label=\{t\('Choose \{plan\}'/);
+  assert.doesNotMatch(screen, /7 DAYS FREE|Start 7-day free trial|Your 7-day free trial converts/);
   assert.doesNotMatch(screen, /Start \{trial\} · \{price\}|Choose \{plan\} · \{price\}/);
   assert.match(screen, /onPress=\{\(\) => void billing\.purchase\(plan\.id\)\}/);
   assert.match(screen, /label=\{t\('Restore purchases'\)\}/);

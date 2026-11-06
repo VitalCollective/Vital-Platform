@@ -4,7 +4,7 @@ export default function VitalKidsScreen() {
   return (
     <SectionActivityCatalogue
       title="Vital Kids"
-      sentence="Thoughtful ideas for children to make, explore and enjoy will live here."
+      sentence="Play, make, learn and follow their curiosity."
     />
   );
 }

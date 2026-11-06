@@ -4,7 +4,7 @@ export default function VitalFoodScreen() {
   return (
     <SectionActivityCatalogue
       title="Vital Food"
-      sentence="Calm, approachable ways to cook, taste and learn together will live here."
+      sentence="Cook, taste, grow and understand what is on the table."
     />
   );
 }
