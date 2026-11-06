@@ -123,6 +123,9 @@ test('normal Welsh member journeys have translations for shared UI, failures and
     'Membership plans are temporarily unavailable. Please try again.',
     'Choose {plan}',
     'Delete account permanently', 'Vital Community Rules',
+    'I confirm that I am 18 or over.',
+    'Confirm that you are 18 or over to create a Vital account.',
+    'Required to create a Vital account.',
   ];
   for (const key of required) assert.equal(hasWelshUiTranslation(key), true, key);
 

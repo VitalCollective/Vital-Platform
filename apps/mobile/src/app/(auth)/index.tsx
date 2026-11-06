@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { Link } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
@@ -9,6 +10,10 @@ import {
 } from '@/components/vital/auth-shell';
 import { Button } from '@/components/vital/button';
 import { useAuth } from '@/features/auth/auth-context';
+import {
+  AGE_CONFIRMATION_LABEL,
+  validateAuthForm,
+} from '@/features/auth/auth-form-validation';
 import { useLanguage } from '@/features/localization/language-context';
 import { LanguageSelector } from '@/features/localization/language-selector';
 import { customerSafeErrorMessage } from '@/lib/errors';
@@ -23,6 +28,7 @@ export default function AuthScreen() {
   const [displayName, setDisplayName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
@@ -31,12 +37,14 @@ export default function AuthScreen() {
     setError(null);
     setMessage(null);
 
-    if (!email.trim() || !password) {
-      setError(t('Enter both your email address and password.'));
-      return;
-    }
-    if (mode === 'sign-up' && password.length < 8) {
-      setError(t('Choose a password with at least 8 characters.'));
+    const validationError = validateAuthForm({
+      mode,
+      email,
+      password,
+      ageConfirmed,
+    });
+    if (validationError) {
+      setError(t(validationError));
       return;
     }
 
@@ -46,6 +54,7 @@ export default function AuthScreen() {
         await signIn(email, password);
       } else {
         const result = await signUp(email, password, displayName);
+        setAgeConfirmed(false);
         if (result.needsEmailConfirmation) {
           setMessage(
             t('Check your inbox to confirm your email, then come back and sign in.'),
@@ -74,6 +83,7 @@ export default function AuthScreen() {
     setError(null);
     setMessage(null);
     setPassword('');
+    setAgeConfirmed(false);
   };
 
   const isSignIn = mode === 'sign-in';
@@ -142,6 +152,28 @@ export default function AuthScreen() {
         ) : null}
       </View>
 
+      {!isSignIn ? (
+        <Pressable
+          accessibilityHint={t('Required to create a Vital account.')}
+          accessibilityLabel={t(AGE_CONFIRMATION_LABEL)}
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: ageConfirmed, disabled: isSubmitting }}
+          disabled={isSubmitting}
+          hitSlop={4}
+          onPress={() => setAgeConfirmed((current) => !current)}
+          style={({ pressed }) => [
+            styles.ageConfirmation,
+            pressed && styles.ageConfirmationPressed,
+          ]}>
+          <Ionicons
+            name={ageConfirmed ? 'checkbox' : 'square-outline'}
+            size={26}
+            color={colors.plum}
+          />
+          <Text style={styles.ageConfirmationText}>{t(AGE_CONFIRMATION_LABEL)}</Text>
+        </Pressable>
+      ) : null}
+
       {error ? <AuthNotice kind="error">{error}</AuthNotice> : null}
       {message ? <AuthNotice kind="success">{message}</AuthNotice> : null}
 
@@ -185,6 +217,24 @@ const styles = StyleSheet.create({
     color: colors.plum,
     fontFamily: typography.bodySemiboldFamily,
     fontSize: typography.small,
+  },
+  ageConfirmation: {
+    minHeight: layout.touchTarget,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.xxs,
+  },
+  ageConfirmationPressed: {
+    opacity: 0.72,
+  },
+  ageConfirmationText: {
+    flex: 1,
+    color: colors.ink,
+    fontFamily: typography.bodySemiboldFamily,
+    fontSize: typography.small,
+    lineHeight: 21,
   },
   switchButton: {
     minHeight: layout.touchTarget,
