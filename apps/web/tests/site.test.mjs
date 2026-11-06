@@ -87,7 +87,9 @@ test('home, how-it-works and membership state the approved launch proposition', 
   assert.doesNotMatch(home, /<form\b/i);
   assert.match(how, /Vital is primarily a mobile app/);
   assert.match(how, /Find it\. Do it\. Keep the good ones\./);
-  assert.match(membership, /7-day free trial/);
+  assert.doesNotMatch(membership, /7-day free trial|standard trial lasts 7 days/i);
+  assert.match(membership, /Monthly and annual membership both open the complete app/);
+  assert.match(membership, /Both provide full Vital membership access/);
   assert.match(membership, /£9\.99/);
   assert.match(membership, /£59\.99/);
   assert.match(membership, /does not have a cut-down free tier/);
@@ -104,7 +106,7 @@ test('headings keep whole words and About uses the approved positioning', async 
   assert.match(about, /A UK-based app, built for everyday family life\./);
   assert.match(
     about,
-    /Vital Collective began with a simple idea: families often want to do more together, but what they need is practical inspiration—not more scrolling\. With new ideas and activities being added all the time, there’s always something new to discover\./,
+    /Vital Collective began with a simple idea: families often want to do more together, but what they need is practical inspiration—not more scrolling\. Vital brings together hundreds of practical activities and a substantial collection of useful family resources\./,
   );
   assert.match(membership, /<h2>One membership<\/h2>/);
   assert.match(css, /h1,[\s\S]*h2,[\s\S]*h3 \{[\s\S]*hyphens: none;[\s\S]*overflow-wrap: normal;[\s\S]*word-break: normal;/);

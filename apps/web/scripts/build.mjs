@@ -268,7 +268,7 @@ const membershipContent = `<section class="hero">
   <div class="hero-copy">
     <p class="eyebrow">Vital membership</p>
     <h1>Full Vital, from the start.</h1>
-    <p class="lede">Vital does not have a cut-down free tier. A membership opens the complete app, with a 7-day free trial before the chosen plan begins.</p>
+    <p class="lede">Vital does not have a cut-down free tier. Monthly and annual membership both open the complete app.</p>
   </div>
   <aside class="hero-note">
     <h2>One membership</h2>
@@ -284,13 +284,13 @@ const membershipContent = `<section class="hero">
       <p class="eyebrow">Monthly</p>
       <h3>Vital monthly</h3>
       <p class="price">£9.99 <span class="price-period">/ month</span></p>
-      <p class="price-note">Includes the 7-day free trial for eligible new members.</p>
+      <p class="price-note">Full Vital membership, billed monthly.</p>
     </article>
     <article class="price-card featured">
       <p class="eyebrow">Annual</p>
       <h3>Vital annual</h3>
       <p class="price">£59.99 <span class="price-period">/ year</span></p>
-      <p class="price-note">The complete Vital membership on one annual plan.</p>
+      <p class="price-note">Full Vital membership, billed annually.</p>
     </article>
   </div>
 </section>
@@ -298,9 +298,9 @@ const membershipContent = `<section class="hero">
 <section class="section">
   <div class="split">
     <article class="content-card">
-      <h2>Your trial</h2>
-      <p>The standard trial lasts 7 days. Unless cancelled through the relevant app store before it ends, the trial converts to the selected paid monthly or annual subscription.</p>
-      <p>Eligibility and the exact renewal details are shown by Apple App Store or Google Play before confirmation.</p>
+      <h2>Before you subscribe</h2>
+      <p>Apple App Store or Google Play shows the exact price, billing interval and renewal details before confirmation.</p>
+      <p>Choose the monthly or annual option that suits you. Both provide full Vital membership access.</p>
     </article>
     <article class="content-card">
       <h2>Managing membership</h2>
@@ -320,7 +320,7 @@ const aboutContent = `<section class="hero">
   <div class="hero-copy">
     <p class="eyebrow">About Vital</p>
     <h1>A UK-based app, built for everyday family life.</h1>
-    <p class="lede">Vital Collective began with a simple idea: families often want to do more together, but what they need is practical inspiration—not more scrolling. With new ideas and activities being added all the time, there’s always something new to discover.</p>
+    <p class="lede">Vital Collective began with a simple idea: families often want to do more together, but what they need is practical inspiration—not more scrolling. Vital brings together hundreds of practical activities and a substantial collection of useful family resources.</p>
   </div>
   <aside class="hero-note">
     <h2>The thought behind Vital</h2>
@@ -560,7 +560,7 @@ const pageDefinitions = (privacy, terms, faq) => [
     activeKey: 'membership',
     title: 'Vital membership',
     description:
-      'Vital Collective membership includes a 7-day free trial, then costs £9.99 monthly or £59.99 annually for full app access.',
+      'Vital Collective membership costs £9.99 monthly or £59.99 annually for full app access.',
     content: membershipContent,
   },
   {
